@@ -97,7 +97,6 @@ func boardToString(board []byte) string {
 
 	for i := 0; i < 8; i++ {
 		for j := 0; j < 8; j++ {
-			fmt.Println(i, j)
 			s[i*9+j] = toString(pieceAtSquare(board, byte(i), byte(j)))
 		}
 		s[i*9+8] = '\n'

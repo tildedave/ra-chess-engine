@@ -31,5 +31,6 @@ func TestInitialBoard(t *testing.T) {
 }
 
 func TestToString(t *testing.T) {
-    print(boardToString(initialBoard))
+    var str = boardToString(initialBoard)
+    assert.Equal(t, str, "RNBQKBNR\nPPPPPPPP\n........\n........\n........\n........\npppppppp\nrnbqkbnr\n")
 }
