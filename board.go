@@ -57,10 +57,10 @@ func isSquareEmpty(p byte) bool {
 	return p == 0x00
 }
 
-func pieceAtSquare(board []byte, row byte, col byte) byte {
+func PieceAtSquare(boardState BoardState, sq uint8) byte {
 	// row is 0 - 7, col is 0 - 8
 	// 10x12 board
-	return board[20+row*10+1+col]
+	return boardState.board[sq]
 }
 
 func pieceToString(p byte) byte {
@@ -95,25 +95,26 @@ func pieceToString(p byte) byte {
 	return '-'
 }
 
-func boardToString(board []byte) string {
+func BoardToString(boardState BoardState) string {
 	var s [9 * 8]byte
 
 	for i := 0; i < 8; i++ {
 		for j := 0; j < 8; j++ {
-			s[(7-i)*9+j] = pieceToString(pieceAtSquare(board, byte(i), byte(j)))
+			var p = PieceAtSquare(boardState, RowAndColToSquare(byte(i), byte(j)))
+			s[(7-i)*9+j] = pieceToString(p)
 		}
 		s[(7-i)*9+8] = '\n'
 	}
 	return string(s[:9*8])
 }
 
-func boardStateToFENString(boardState BoardState) string {
+func BoardStateToFENString(boardState BoardState) string {
 	var s string
 
 	for i := 0; i < 8; i++ {
 		var numEmpty = 0
 		for j := 0; j < 8; j++ {
-			p := pieceAtSquare(boardState.board, byte(7-i), byte(j))
+			p := PieceAtSquare(boardState, RowAndColToSquare(byte(7-i), byte(j)))
 			if isSquareEmpty(p) {
 				numEmpty++
 			} else {
@@ -166,11 +167,52 @@ func boardStateToFENString(boardState BoardState) string {
 	if boardState.enPassantTargetSquare == 255 {
 		s += "-"
 	} else {
+		s += SquareToAlgebraicString(boardState.enPassantTargetSquare)
 		// TODO: need to convert a square number (10x12) to algebraic notation (yawn)
 	}
 	s += " " + strconv.Itoa(boardState.halfmoveClock) + " " + strconv.Itoa(boardState.fullmoveNumber)
 
 	return s
+}
+
+func RowAndColToSquare(row uint8, col uint8) uint8 {
+	return 20 + row*10 + 1 + col
+}
+
+func SquareToAlgebraicString(sq uint8) string {
+	var row = sq / 10
+	var col = sq % 10
+
+	if row < 2 || row > 9 {
+		return "??"
+	}
+	if col == 0 || col == 9 {
+		return "??"
+	}
+
+	// No need to offset this as 1 is board is 1-idnexed
+	var rowStr = strconv.Itoa(int(col))
+	switch row {
+	case 2:
+		return "a" + rowStr
+	case 3:
+		return "b" + rowStr
+	case 4:
+		return "c" + rowStr
+	case 5:
+		return "d" + rowStr
+	case 6:
+		return "e" + rowStr
+	case 7:
+		return "f" + rowStr
+	case 8:
+		return "g" + rowStr
+	case 9:
+		return "h" + rowStr
+	default:
+	}
+	return "-"
+
 }
 
 // https://chessprogramming.wikispaces.com/10x12+Board
@@ -196,7 +238,7 @@ type BoardState struct {
 	whiteCanCastleQueenside bool
 	blackCanCastleKingside  bool
 	blackCanCastleQueenside bool
-	enPassantTargetSquare   byte
+	enPassantTargetSquare   uint8
 	// number of moves since last capture or pawn advance
 	halfmoveClock int
 	// starts at 1, incremented after Black moves
