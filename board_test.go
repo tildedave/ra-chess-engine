@@ -264,3 +264,39 @@ func TestFiddlingWithQueensideRooks(t *testing.T) {
 	testBoard.UnapplyMove(m1)
 	assert.True(t, testBoard.boardInfo.whiteCanCastleQueenside)
 }
+
+func TestFiddlingWithKingsideRooks(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+
+	testBoard.board[95] = BLACK_MASK | KING_MASK
+	testBoard.board[98] = BLACK_MASK | ROOK_MASK
+	testBoard.board[25] = WHITE_MASK | KING_MASK
+	testBoard.board[28] = WHITE_MASK | ROOK_MASK
+	testBoard.boardInfo.blackCanCastleKingside = true
+	testBoard.boardInfo.blackCanCastleQueenside = true
+	testBoard.boardInfo.whiteCanCastleKingside = true
+	testBoard.boardInfo.whiteCanCastleQueenside = true
+
+	var m1 Move = CreateMove(28, 48)
+	var m2 Move = CreateMove(98, 78)
+	var m3 Move = CreateMove(48, 28)
+	var m4 Move = CreateMove(78, 98)
+
+	testBoard.ApplyMove(m1)
+	assert.False(t, testBoard.boardInfo.whiteCanCastleKingside)
+	testBoard.ApplyMove(m2)
+	assert.False(t, testBoard.boardInfo.blackCanCastleKingside)
+	testBoard.ApplyMove(m3)
+	assert.False(t, testBoard.boardInfo.whiteCanCastleKingside)
+	testBoard.ApplyMove(m4)
+	assert.False(t, testBoard.boardInfo.blackCanCastleKingside)
+
+	testBoard.UnapplyMove(m4)
+	assert.False(t, testBoard.boardInfo.blackCanCastleKingside)
+	testBoard.UnapplyMove(m3)
+	assert.False(t, testBoard.boardInfo.whiteCanCastleKingside)
+	testBoard.UnapplyMove(m2)
+	assert.True(t, testBoard.boardInfo.blackCanCastleKingside)
+	testBoard.UnapplyMove(m1)
+	assert.True(t, testBoard.boardInfo.whiteCanCastleKingside)
+}
