@@ -58,12 +58,6 @@ func isSquareEmpty(p byte) bool {
 	return p == 0x00
 }
 
-func PieceAtSquare(boardState *BoardState, sq uint8) byte {
-	// row is 0 - 7, col is 0 - 8
-	// 10x12 board
-	return boardState.board[sq]
-}
-
 func pieceToString(p byte) byte {
 	if p == 0x00 {
 		return '.'
@@ -101,7 +95,7 @@ func (boardState *BoardState) ToString() string {
 
 	for i := 0; i < 8; i++ {
 		for j := 0; j < 8; j++ {
-			var p = PieceAtSquare(boardState, RowAndColToSquare(byte(i), byte(j)))
+			var p = boardState.PieceAtSquare(RowAndColToSquare(byte(i), byte(j)))
 			s[(7-i)*9+j] = pieceToString(p)
 		}
 		s[(7-i)*9+8] = '\n'
@@ -115,7 +109,7 @@ func (boardState *BoardState) ToFENString() string {
 	for i := 0; i < 8; i++ {
 		var numEmpty = 0
 		for j := 0; j < 8; j++ {
-			p := PieceAtSquare(boardState, RowAndColToSquare(byte(7-i), byte(j)))
+			p := boardState.PieceAtSquare(RowAndColToSquare(byte(7-i), byte(j)))
 			if isSquareEmpty(p) {
 				numEmpty++
 			} else {
@@ -173,6 +167,12 @@ func (boardState *BoardState) ToFENString() string {
 	s += " " + strconv.Itoa(boardState.halfmoveClock) + " " + strconv.Itoa(boardState.fullmoveNumber)
 
 	return s
+}
+
+func (boardState *BoardState) PieceAtSquare(sq uint8) byte {
+	// row is 0 - 7, col is 0 - 8
+	// 10x12 board
+	return boardState.board[sq]
 }
 
 func RowAndColToSquare(row uint8, col uint8) uint8 {

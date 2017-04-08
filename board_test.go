@@ -11,24 +11,24 @@ var _ = fmt.Println
 func TestInitialBoard(t *testing.T) {
 	var initialBoard BoardState = CreateInitialBoardState()
 
-	assert.Equal(t, PieceAtSquare(&initialBoard, RowAndColToSquare(0, 0)), byte(0x04))
-	assert.Equal(t, PieceAtSquare(&initialBoard, RowAndColToSquare(0, 1)), byte(0x02))
+	assert.Equal(t, initialBoard.PieceAtSquare(RowAndColToSquare(0, 0)), byte(0x04))
+	assert.Equal(t, initialBoard.PieceAtSquare(RowAndColToSquare(0, 1)), byte(0x02))
 
 	for i := 0; i < 8; i++ {
-		piece := PieceAtSquare(&initialBoard, RowAndColToSquare(1, byte(i)))
+		piece := initialBoard.PieceAtSquare(RowAndColToSquare(1, byte(i)))
 		assert.Equal(t, piece, byte(0x01))
 		assert.True(t, isPieceWhite(piece))
 		assert.True(t, isPawn(piece))
 	}
 	for i := 2; i <= 5; i++ {
 		for j := 0; j < 8; j++ {
-			piece := PieceAtSquare(&initialBoard, RowAndColToSquare(byte(i), byte(j)))
+			piece := initialBoard.PieceAtSquare(RowAndColToSquare(byte(i), byte(j)))
 			assert.Equal(t, piece, byte(0x00))
 			assert.True(t, isSquareEmpty(piece))
 		}
 	}
 	for i := 0; i < 8; i++ {
-		piece := PieceAtSquare(&initialBoard, RowAndColToSquare(6, byte(i)))
+		piece := initialBoard.PieceAtSquare(RowAndColToSquare(6, byte(i)))
 		assert.Equal(t, piece, byte(0x81))
 		assert.True(t, isPieceBlack(piece))
 		assert.True(t, isPawn(piece))
