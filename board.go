@@ -1,6 +1,9 @@
 package main
 
-import "fmt"
+import (
+	"fmt"
+	"strconv"
+)
 
 const SENTINEL_MASK byte = 0xFF
 const PAWN_MASK byte = 0x01
@@ -60,34 +63,34 @@ func pieceAtSquare(board []byte, row byte, col byte) byte {
 	return board[20+row*10+1+col]
 }
 
-func toString(p byte) byte {
+func pieceToString(p byte) byte {
 	if p == 0x00 {
 		return '.'
-    } else if p == PAWN_MASK|WHITE_MASK {
-        return 'P'
-    } else if p == KNIGHT_MASK|WHITE_MASK {
-        return 'N'
-    } else if p == BISHOP_MASK|WHITE_MASK {
-        return 'B'
-    } else if p == ROOK_MASK|WHITE_MASK {
-        return 'R'
-    } else if p == QUEEN_MASK|WHITE_MASK {
-        return 'Q'
-    } else if p == KING_MASK|WHITE_MASK {
-        return 'K'
-    } else if p == PAWN_MASK|BLACK_MASK {
-        return 'p'
-    } else if p == KNIGHT_MASK|BLACK_MASK {
-        return 'n'
-    } else if p == BISHOP_MASK|BLACK_MASK {
-        return 'b'
-    } else if p == ROOK_MASK|BLACK_MASK {
-        return 'r'
-    } else if p == QUEEN_MASK|BLACK_MASK {
-        return 'q'
-    } else if p == KING_MASK|BLACK_MASK {
-        return 'k'
-    }
+	} else if p == PAWN_MASK|WHITE_MASK {
+		return 'P'
+	} else if p == KNIGHT_MASK|WHITE_MASK {
+		return 'N'
+	} else if p == BISHOP_MASK|WHITE_MASK {
+		return 'B'
+	} else if p == ROOK_MASK|WHITE_MASK {
+		return 'R'
+	} else if p == QUEEN_MASK|WHITE_MASK {
+		return 'Q'
+	} else if p == KING_MASK|WHITE_MASK {
+		return 'K'
+	} else if p == PAWN_MASK|BLACK_MASK {
+		return 'p'
+	} else if p == KNIGHT_MASK|BLACK_MASK {
+		return 'n'
+	} else if p == BISHOP_MASK|BLACK_MASK {
+		return 'b'
+	} else if p == ROOK_MASK|BLACK_MASK {
+		return 'r'
+	} else if p == QUEEN_MASK|BLACK_MASK {
+		return 'q'
+	} else if p == KING_MASK|BLACK_MASK {
+		return 'k'
+	}
 
 	return '-'
 }
@@ -97,12 +100,77 @@ func boardToString(board []byte) string {
 
 	for i := 0; i < 8; i++ {
 		for j := 0; j < 8; j++ {
-			s[i*9+j] = toString(pieceAtSquare(board, byte(i), byte(j)))
+			s[(7-i)*9+j] = pieceToString(pieceAtSquare(board, byte(i), byte(j)))
 		}
-		s[i*9+8] = '\n'
+		s[(7-i)*9+8] = '\n'
 	}
 	return string(s[:9*8])
+}
 
+func boardStateToFENString(boardState BoardState) string {
+	var s string
+
+	for i := 0; i < 8; i++ {
+		var numEmpty = 0
+		for j := 0; j < 8; j++ {
+			p := pieceAtSquare(boardState.board, byte(7-i), byte(j))
+			if isSquareEmpty(p) {
+				numEmpty++
+			} else {
+				if numEmpty > 0 {
+					s += strconv.Itoa(numEmpty)
+					numEmpty = 0
+				}
+				s += string(pieceToString(p))
+				numEmpty = 0
+			}
+		}
+		if numEmpty > 0 {
+			s += strconv.Itoa(numEmpty)
+			numEmpty = 0
+		}
+		if i < 7 {
+			s += "/"
+		} else {
+			s += " "
+		}
+	}
+
+	if boardState.whiteToMove {
+		s += "w "
+	} else {
+		s += "b "
+	}
+
+	var hasCastleSquare = false
+	if boardState.whiteCanCastleKingside {
+		s += "K"
+		hasCastleSquare = true
+	}
+	if boardState.whiteCanCastleQueenside {
+		s += "Q"
+		hasCastleSquare = true
+	}
+	if boardState.blackCanCastleKingside {
+		s += "k"
+		hasCastleSquare = true
+	}
+	if boardState.blackCanCastleQueenside {
+		s += "q"
+		hasCastleSquare = true
+	}
+	if !hasCastleSquare {
+		s += "-"
+	}
+	s += " "
+	if boardState.enPassantTargetSquare == 255 {
+		s += "-"
+	} else {
+		// TODO: need to convert a square number (10x12) to algebraic notation (yawn)
+	}
+	s += " " + strconv.Itoa(boardState.halfmoveClock) + " " + strconv.Itoa(boardState.fullmoveNumber)
+
+	return s
 }
 
 // https://chessprogramming.wikispaces.com/10x12+Board
@@ -119,6 +187,35 @@ var initialBoard []byte = []byte{
 	0xFF, 0x84, 0x82, 0x83, 0x85, 0x86, 0x83, 0x82, 0x84, 0xFF,
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
 	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+}
+
+type BoardState struct {
+	board                   []byte
+	whiteToMove             bool
+	whiteCanCastleKingside  bool
+	whiteCanCastleQueenside bool
+	blackCanCastleKingside  bool
+	blackCanCastleQueenside bool
+	enPassantTargetSquare   byte
+	// number of moves since last capture or pawn advance
+	halfmoveClock int
+	// starts at 1, incremented after Black moves
+	fullmoveNumber int
+}
+
+func CreateInitialBoardState() BoardState {
+	var b BoardState
+	b.board = initialBoard
+	b.whiteToMove = true
+	b.whiteCanCastleKingside = true
+	b.whiteCanCastleQueenside = true
+	b.blackCanCastleKingside = true
+	b.blackCanCastleQueenside = true
+	b.enPassantTargetSquare = 255
+	b.halfmoveClock = 0
+	b.fullmoveNumber = 1
+
+	return b
 }
 
 func main() {
