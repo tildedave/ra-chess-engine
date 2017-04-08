@@ -190,24 +190,24 @@ func SquareToAlgebraicString(sq uint8) string {
 		return "??"
 	}
 
-	// No need to offset this as 1 is board is 1-idnexed
-	var rowStr = strconv.Itoa(int(col))
-	switch row {
-	case 2:
+	// No need to offset this as board is 1-indexed
+	var rowStr = strconv.Itoa(int(row - 1))
+	switch col {
+	case 1:
 		return "a" + rowStr
-	case 3:
+	case 2:
 		return "b" + rowStr
-	case 4:
+	case 3:
 		return "c" + rowStr
-	case 5:
+	case 4:
 		return "d" + rowStr
-	case 6:
+	case 5:
 		return "e" + rowStr
-	case 7:
+	case 6:
 		return "f" + rowStr
-	case 8:
+	case 7:
 		return "g" + rowStr
-	case 9:
+	case 8:
 		return "h" + rowStr
 	default:
 	}
