@@ -5,17 +5,6 @@ import (
 	"strconv"
 )
 
-const SENTINEL_MASK byte = 0xFF
-const EMPTY_SQUARE byte = 0x00
-const PAWN_MASK byte = 0x01
-const KNIGHT_MASK byte = 0x02
-const BISHOP_MASK byte = 0x03
-const ROOK_MASK byte = 0x04
-const QUEEN_MASK byte = 0x05
-const KING_MASK byte = 0x06
-const BLACK_MASK byte = 0x80
-const WHITE_MASK byte = 0x00
-
 var m map[byte]byte = make(map[byte]byte)
 
 func isPieceBlack(p byte) bool {
@@ -361,6 +350,14 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			} else if move.from == 91 {
 				boardState.boardInfo.blackCanCastleQueenside = false
 			}
+		}
+	} else if p&PAWN_MASK == PAWN_MASK && !move.IsCapture() {
+		if move.to > move.from {
+			if move.to-move.from > 10 {
+				boardState.boardInfo.enPassantTargetSquare = move.from + 10
+			}
+		} else if move.from-move.to > 10 {
+			boardState.boardInfo.enPassantTargetSquare = move.from - 10
 		}
 	}
 
