@@ -44,9 +44,10 @@ func TestToString(t *testing.T) {
 
 func TestToFEN(t *testing.T) {
 	var initialBoard BoardState = CreateInitialBoardState()
+	assert.Equal(t, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", initialBoard.ToFENString())
 
-	var str = initialBoard.ToFENString()
-	assert.Equal(t, "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", str)
+	var emptyBoard BoardState = CreateEmptyBoardState()
+	assert.Equal(t, "8/8/8/8/8/8/8/8 w - - 0 1", emptyBoard.ToFENString())
 }
 
 func TestSquareToAlgebraicString(t *testing.T) {
@@ -152,13 +153,13 @@ func TestApplyWhiteKingsideCastle(t *testing.T) {
 	assert.Equal(t, EMPTY_SQUARE, testBoard.board[25])
 	assert.Equal(t, WHITE_MASK|KING_MASK, testBoard.board[27])
 	assert.Equal(t, WHITE_MASK|ROOK_MASK, testBoard.board[26])
-	assert.False(t, testBoard.whiteCanCastleKingside)
+	assert.False(t, testBoard.boardInfo.whiteCanCastleKingside)
 
 	testBoard.UnapplyMove(m)
 
 	assert.Equal(t, WHITE_MASK|KING_MASK, testBoard.board[25])
 	assert.Equal(t, WHITE_MASK|ROOK_MASK, testBoard.board[28])
-	assert.True(t, testBoard.whiteCanCastleKingside)
+	assert.True(t, testBoard.boardInfo.whiteCanCastleKingside)
 }
 
 func TestApplyBlackKingsideCastle(t *testing.T) {
@@ -166,6 +167,7 @@ func TestApplyBlackKingsideCastle(t *testing.T) {
 	testBoard.board[95] = BLACK_MASK | KING_MASK
 	testBoard.board[98] = BLACK_MASK | ROOK_MASK
 	testBoard.whiteToMove = false
+	testBoard.boardInfo.blackCanCastleKingside = true
 
 	var m Move = CreateKingsideCastle(95, 97)
 
@@ -174,13 +176,13 @@ func TestApplyBlackKingsideCastle(t *testing.T) {
 	assert.Equal(t, EMPTY_SQUARE, testBoard.board[95])
 	assert.Equal(t, BLACK_MASK|KING_MASK, testBoard.board[97])
 	assert.Equal(t, BLACK_MASK|ROOK_MASK, testBoard.board[96])
-	assert.False(t, testBoard.blackCanCastleKingside)
+	assert.False(t, testBoard.boardInfo.blackCanCastleKingside)
 
 	testBoard.UnapplyMove(m)
 
 	assert.Equal(t, BLACK_MASK|KING_MASK, testBoard.board[95])
 	assert.Equal(t, BLACK_MASK|ROOK_MASK, testBoard.board[98])
-	assert.True(t, testBoard.blackCanCastleKingside)
+	assert.True(t, testBoard.boardInfo.blackCanCastleKingside)
 }
 
 func TestApplyWhiteQueensideCastle(t *testing.T) {
@@ -195,13 +197,13 @@ func TestApplyWhiteQueensideCastle(t *testing.T) {
 	assert.Equal(t, EMPTY_SQUARE, testBoard.board[25])
 	assert.Equal(t, WHITE_MASK|KING_MASK, testBoard.board[23])
 	assert.Equal(t, WHITE_MASK|ROOK_MASK, testBoard.board[24])
-	assert.False(t, testBoard.whiteCanCastleQueenside)
+	assert.False(t, testBoard.boardInfo.whiteCanCastleQueenside)
 
 	testBoard.UnapplyMove(m)
 
 	assert.Equal(t, WHITE_MASK|KING_MASK, testBoard.board[25])
 	assert.Equal(t, WHITE_MASK|ROOK_MASK, testBoard.board[21])
-	assert.True(t, testBoard.whiteCanCastleQueenside)
+	assert.True(t, testBoard.boardInfo.whiteCanCastleQueenside)
 }
 
 func TestApplyBlackQueensideCastle(t *testing.T) {
@@ -209,6 +211,7 @@ func TestApplyBlackQueensideCastle(t *testing.T) {
 	testBoard.board[95] = BLACK_MASK | KING_MASK
 	testBoard.board[91] = BLACK_MASK | ROOK_MASK
 	testBoard.whiteToMove = false
+	testBoard.boardInfo.blackCanCastleQueenside = true
 
 	var m Move = CreateQueensideCastle(95, 93)
 
@@ -217,11 +220,47 @@ func TestApplyBlackQueensideCastle(t *testing.T) {
 	assert.Equal(t, EMPTY_SQUARE, testBoard.board[95])
 	assert.Equal(t, BLACK_MASK|KING_MASK, testBoard.board[93])
 	assert.Equal(t, BLACK_MASK|ROOK_MASK, testBoard.board[94])
-	assert.False(t, testBoard.blackCanCastleQueenside)
+	assert.False(t, testBoard.boardInfo.blackCanCastleQueenside)
 
 	testBoard.UnapplyMove(m)
 
 	assert.Equal(t, BLACK_MASK|KING_MASK, testBoard.board[95])
 	assert.Equal(t, BLACK_MASK|ROOK_MASK, testBoard.board[91])
-	assert.True(t, testBoard.blackCanCastleQueenside)
+	assert.True(t, testBoard.boardInfo.blackCanCastleQueenside)
+}
+
+func TestFiddlingWithQueensideRooks(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+
+	testBoard.board[95] = BLACK_MASK | KING_MASK
+	testBoard.board[91] = BLACK_MASK | ROOK_MASK
+	testBoard.board[25] = WHITE_MASK | KING_MASK
+	testBoard.board[21] = WHITE_MASK | ROOK_MASK
+	testBoard.boardInfo.blackCanCastleKingside = true
+	testBoard.boardInfo.blackCanCastleQueenside = true
+	testBoard.boardInfo.whiteCanCastleKingside = true
+	testBoard.boardInfo.whiteCanCastleQueenside = true
+
+	var m1 Move = CreateMove(21, 41)
+	var m2 Move = CreateMove(91, 71)
+	var m3 Move = CreateMove(41, 21)
+	var m4 Move = CreateMove(71, 91)
+
+	testBoard.ApplyMove(m1)
+	assert.False(t, testBoard.boardInfo.whiteCanCastleQueenside)
+	testBoard.ApplyMove(m2)
+	assert.False(t, testBoard.boardInfo.blackCanCastleQueenside)
+	testBoard.ApplyMove(m3)
+	assert.False(t, testBoard.boardInfo.whiteCanCastleQueenside)
+	testBoard.ApplyMove(m4)
+	assert.False(t, testBoard.boardInfo.blackCanCastleQueenside)
+
+	testBoard.UnapplyMove(m4)
+	assert.False(t, testBoard.boardInfo.blackCanCastleQueenside)
+	testBoard.UnapplyMove(m3)
+	assert.False(t, testBoard.boardInfo.whiteCanCastleQueenside)
+	testBoard.UnapplyMove(m2)
+	assert.True(t, testBoard.boardInfo.blackCanCastleQueenside)
+	testBoard.UnapplyMove(m1)
+	assert.True(t, testBoard.boardInfo.whiteCanCastleQueenside)
 }

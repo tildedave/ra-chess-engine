@@ -139,19 +139,19 @@ func (boardState *BoardState) ToFENString() string {
 	}
 
 	var hasCastleSquare = false
-	if boardState.whiteCanCastleKingside {
+	if boardState.boardInfo.whiteCanCastleKingside {
 		s += "K"
 		hasCastleSquare = true
 	}
-	if boardState.whiteCanCastleQueenside {
+	if boardState.boardInfo.whiteCanCastleQueenside {
 		s += "Q"
 		hasCastleSquare = true
 	}
-	if boardState.blackCanCastleKingside {
+	if boardState.boardInfo.blackCanCastleKingside {
 		s += "k"
 		hasCastleSquare = true
 	}
-	if boardState.blackCanCastleQueenside {
+	if boardState.boardInfo.blackCanCastleQueenside {
 		s += "q"
 		hasCastleSquare = true
 	}
@@ -159,10 +159,10 @@ func (boardState *BoardState) ToFENString() string {
 		s += "-"
 	}
 	s += " "
-	if boardState.enPassantTargetSquare == 255 {
+	if boardState.boardInfo.enPassantTargetSquare == 0 {
 		s += "-"
 	} else {
-		s += SquareToAlgebraicString(boardState.enPassantTargetSquare)
+		s += SquareToAlgebraicString(boardState.boardInfo.enPassantTargetSquare)
 	}
 	s += " " + strconv.Itoa(boardState.halfmoveClock) + " " + strconv.Itoa(boardState.fullmoveNumber)
 
@@ -215,63 +215,55 @@ func SquareToAlgebraicString(sq uint8) string {
 
 }
 
-// https://chessprogramming.wikispaces.com/10x12+Board
-var initialBoardArray []byte = []byte{
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-	0xFF, 0x04, 0x02, 0x03, 0x05, 0x06, 0x03, 0x02, 0x04, 0xFF,
-	0xFF, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF,
-	0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-	0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-	0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-	0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-	0xFF, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0xFF,
-	0xFF, 0x84, 0x82, 0x83, 0x85, 0x86, 0x83, 0x82, 0x84, 0xFF,
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-}
-
-var emptyBoardArray []byte = []byte{
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-	0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-	0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-	0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-	0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-	0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-	0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-	0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-	0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-	0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-}
-
-type BoardState struct {
-	board                   []byte
-	whiteToMove             bool
+type BoardInfo struct {
 	whiteCanCastleKingside  bool
 	whiteCanCastleQueenside bool
 	blackCanCastleKingside  bool
 	blackCanCastleQueenside bool
 	enPassantTargetSquare   uint8
+}
+
+type BoardState struct {
+	board       []byte
+	whiteToMove bool
+	boardInfo   BoardInfo
+
 	// number of moves since last capture or pawn advance
 	halfmoveClock int
 	// starts at 1, incremented after Black moves
 	fullmoveNumber int
 
 	// Internal structures to allow unmaking moves
-	captureStack []byte
+	captureStack     byteStack
+	boardInfoHistory [MAX_MOVES]BoardInfo
+	moveIndex        int // 0-based and increases after every move
 }
 
 func CreateEmptyBoardState() BoardState {
 	var b BoardState
-	b.board = emptyBoardArray
+	b.board = []byte{
+		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	}
+
 	b.whiteToMove = true
-	b.whiteCanCastleKingside = false
-	b.whiteCanCastleQueenside = false
-	b.blackCanCastleKingside = false
-	b.blackCanCastleQueenside = false
-	b.enPassantTargetSquare = 255
+	b.boardInfo = BoardInfo{
+		whiteCanCastleKingside:  false,
+		whiteCanCastleQueenside: false,
+		blackCanCastleKingside:  false,
+		blackCanCastleQueenside: false,
+		enPassantTargetSquare:   0,
+	}
 	b.halfmoveClock = 0
 	b.fullmoveNumber = 1
 
@@ -280,13 +272,31 @@ func CreateEmptyBoardState() BoardState {
 
 func CreateInitialBoardState() BoardState {
 	var b BoardState
-	b.board = initialBoardArray
+
+	// https://chessprogramming.wikispaces.com/10x12+Board
+	b.board = []byte{
+		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+		0xFF, 0x04, 0x02, 0x03, 0x05, 0x06, 0x03, 0x02, 0x04, 0xFF,
+		0xFF, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0xFF,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
+		0xFF, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0xFF,
+		0xFF, 0x84, 0x82, 0x83, 0x85, 0x86, 0x83, 0x82, 0x84, 0xFF,
+		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	}
+
 	b.whiteToMove = true
-	b.whiteCanCastleKingside = true
-	b.whiteCanCastleQueenside = true
-	b.blackCanCastleKingside = true
-	b.blackCanCastleQueenside = true
-	b.enPassantTargetSquare = 255
+	b.boardInfo = BoardInfo{
+		whiteCanCastleKingside:  true,
+		whiteCanCastleQueenside: true,
+		blackCanCastleKingside:  true,
+		blackCanCastleQueenside: true,
+		enPassantTargetSquare:   0,
+	}
 	b.halfmoveClock = 0
 	b.fullmoveNumber = 1
 
@@ -294,53 +304,86 @@ func CreateInitialBoardState() BoardState {
 }
 
 func (boardState *BoardState) ApplyMove(move Move) {
+	boardState.boardInfoHistory[boardState.moveIndex] = boardState.boardInfo
+
 	if move.IsCapture() {
-		boardState.captureStack = append(boardState.captureStack, boardState.board[move.to])
+		boardState.captureStack.Push(boardState.board[move.to])
 	}
 
 	var p = boardState.board[move.from]
 	boardState.board[move.from] = 0x00
 	boardState.board[move.to] = p
 
-	// TODO(perf) - less if statements for the average case
+	// TODO(perf) - less if statements/work when castling is over
 	if move.IsQueensideCastle() {
 		// white
 		if boardState.whiteToMove {
 			boardState.board[21] = 0x00
 			boardState.board[24] = WHITE_MASK | ROOK_MASK
-			boardState.whiteCanCastleKingside = false
-			boardState.whiteCanCastleQueenside = false
+			boardState.boardInfo.whiteCanCastleKingside = false
+			boardState.boardInfo.whiteCanCastleQueenside = false
 		} else {
 			boardState.board[91] = 0x00
 			boardState.board[94] = BLACK_MASK | ROOK_MASK
-			boardState.blackCanCastleKingside = false
-			boardState.blackCanCastleQueenside = false
+			boardState.boardInfo.blackCanCastleKingside = false
+			boardState.boardInfo.blackCanCastleQueenside = false
 		}
 	} else if move.IsKingsideCastle() {
 		if boardState.whiteToMove {
 			boardState.board[28] = 0x00
 			boardState.board[26] = WHITE_MASK | ROOK_MASK
-			boardState.whiteCanCastleKingside = false
-			boardState.whiteCanCastleQueenside = false
+			boardState.boardInfo.whiteCanCastleKingside = false
+			boardState.boardInfo.whiteCanCastleQueenside = false
 		} else {
 			boardState.board[98] = 0x00
 			boardState.board[96] = BLACK_MASK | ROOK_MASK
-			boardState.blackCanCastleKingside = false
-			boardState.blackCanCastleQueenside = false
+			boardState.boardInfo.blackCanCastleKingside = false
+			boardState.boardInfo.blackCanCastleQueenside = false
+		}
+	} else if p&KING_MASK == KING_MASK {
+		if boardState.whiteToMove {
+			boardState.boardInfo.whiteCanCastleKingside = false
+			boardState.boardInfo.whiteCanCastleQueenside = false
+		} else {
+			boardState.boardInfo.blackCanCastleKingside = false
+			boardState.boardInfo.blackCanCastleQueenside = false
+		}
+	} else if p&ROOK_MASK == ROOK_MASK {
+		if boardState.whiteToMove {
+			if move.from == 28 {
+				boardState.boardInfo.whiteCanCastleKingside = false
+			} else if move.from == 21 {
+				boardState.boardInfo.whiteCanCastleQueenside = false
+			}
+		} else {
+			if move.from == 98 {
+				boardState.boardInfo.blackCanCastleKingside = false
+			} else if move.from == 91 {
+				boardState.boardInfo.blackCanCastleQueenside = false
+			}
 		}
 	}
 
 	boardState.whiteToMove = !boardState.whiteToMove
+	boardState.moveIndex++
+
+	if boardState.whiteToMove {
+		boardState.fullmoveNumber += 1
+	}
 }
 
 func (boardState *BoardState) UnapplyMove(move Move) {
+	boardState.whiteToMove = !boardState.whiteToMove
+	if !boardState.whiteToMove {
+		boardState.fullmoveNumber -= 1
+	}
+	boardState.moveIndex--
+	boardState.boardInfo = boardState.boardInfoHistory[boardState.moveIndex]
+
 	var p = boardState.board[move.to]
 
 	if move.IsCapture() {
-		var captureStack = boardState.captureStack
-		var capturedPiece = boardState.captureStack[len(captureStack)-1]
-		boardState.captureStack = captureStack[:len(captureStack)-1]
-
+		var capturedPiece = boardState.captureStack.Pop()
 		boardState.board[move.to] = capturedPiece
 	} else {
 		boardState.board[move.to] = 0x00
@@ -350,35 +393,27 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 
 	// TODO(perf) - less if statements for the average case
 	if move.IsQueensideCastle() {
-		// white
-		if !boardState.whiteToMove {
+		// black was to move, so we're unmaking a white move
+		if boardState.whiteToMove {
 			boardState.board[24] = 0x00
 			boardState.board[21] = WHITE_MASK | ROOK_MASK
-
-			// all of these are wrong, we have to have a stack of castla-bility
-			boardState.whiteCanCastleKingside = true
-			boardState.whiteCanCastleQueenside = true
+			boardState.boardInfo.whiteCanCastleQueenside = true
 		} else {
 			boardState.board[94] = 0x00
 			boardState.board[91] = BLACK_MASK | ROOK_MASK
-			boardState.blackCanCastleKingside = true
-			boardState.blackCanCastleQueenside = true
+			boardState.boardInfo.blackCanCastleQueenside = true
 		}
 	} else if move.IsKingsideCastle() {
-		if !boardState.whiteToMove {
+		if boardState.whiteToMove {
 			boardState.board[26] = 0x00
 			boardState.board[28] = WHITE_MASK | ROOK_MASK
-			boardState.whiteCanCastleKingside = true
-			boardState.whiteCanCastleQueenside = true
+			boardState.boardInfo.whiteCanCastleKingside = true
 		} else {
 			boardState.board[96] = 0x00
 			boardState.board[98] = BLACK_MASK | ROOK_MASK
-			boardState.blackCanCastleKingside = true
-			boardState.blackCanCastleQueenside = true
+			boardState.boardInfo.blackCanCastleKingside = true
 		}
 	}
-
-	boardState.whiteToMove = !boardState.whiteToMove
 }
 
 func main() {
