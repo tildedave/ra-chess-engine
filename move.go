@@ -13,6 +13,10 @@ const PROMOTION_MASK = 0x40 // may not be needed
 const SPECIAL1_MASK = 0x20
 const SPECIAL2_MASK = 0x10
 
+func (m Move) IsCapture() bool {
+	return m.flags&CAPTURE_MASK == CAPTURE_MASK
+}
+
 func CreateMove(from uint8, to uint8) Move {
 	var m Move
 	m.from = from

@@ -1,13 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"github.com/stretchr/testify/assert"
 	"testing"
 	"unsafe"
 )
-
-var _ = fmt.Println
 
 func TestCreateMove(t *testing.T) {
 	var m = CreateMove(31, 51)
