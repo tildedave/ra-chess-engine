@@ -17,6 +17,14 @@ func (m Move) IsCapture() bool {
 	return m.flags&CAPTURE_MASK == CAPTURE_MASK
 }
 
+func (m Move) IsQueensideCastle() bool {
+	return m.flags&(SPECIAL1_MASK|SPECIAL2_MASK) == SPECIAL1_MASK|SPECIAL2_MASK
+}
+
+func (m Move) IsKingsideCastle() bool {
+	return m.flags == SPECIAL1_MASK
+}
+
 func CreateMove(from uint8, to uint8) Move {
 	var m Move
 	m.from = from

@@ -301,6 +301,36 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	var p = boardState.board[move.from]
 	boardState.board[move.from] = 0x00
 	boardState.board[move.to] = p
+
+	// TODO(perf) - less if statements for the average case
+	if move.IsQueensideCastle() {
+		// white
+		if boardState.whiteToMove {
+			boardState.board[21] = 0x00
+			boardState.board[24] = WHITE_MASK | ROOK_MASK
+			boardState.whiteCanCastleKingside = false
+			boardState.whiteCanCastleQueenside = false
+		} else {
+			boardState.board[91] = 0x00
+			boardState.board[94] = BLACK_MASK | ROOK_MASK
+			boardState.blackCanCastleKingside = false
+			boardState.blackCanCastleQueenside = false
+		}
+	} else if move.IsKingsideCastle() {
+		if boardState.whiteToMove {
+			boardState.board[28] = 0x00
+			boardState.board[26] = WHITE_MASK | ROOK_MASK
+			boardState.whiteCanCastleKingside = false
+			boardState.whiteCanCastleQueenside = false
+		} else {
+			boardState.board[98] = 0x00
+			boardState.board[96] = BLACK_MASK | ROOK_MASK
+			boardState.blackCanCastleKingside = false
+			boardState.blackCanCastleQueenside = false
+		}
+	}
+
+	boardState.whiteToMove = !boardState.whiteToMove
 }
 
 func (boardState *BoardState) UnapplyMove(move Move) {
@@ -313,10 +343,42 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 
 		boardState.board[move.to] = capturedPiece
 	} else {
-		boardState.board[move.to] = 0x00 // this is wrong if this was a capture
+		boardState.board[move.to] = 0x00
 	}
 
 	boardState.board[move.from] = p
+
+	// TODO(perf) - less if statements for the average case
+	if move.IsQueensideCastle() {
+		// white
+		if !boardState.whiteToMove {
+			boardState.board[24] = 0x00
+			boardState.board[21] = WHITE_MASK | ROOK_MASK
+
+			// all of these are wrong, we have to have a stack of castla-bility
+			boardState.whiteCanCastleKingside = true
+			boardState.whiteCanCastleQueenside = true
+		} else {
+			boardState.board[94] = 0x00
+			boardState.board[91] = BLACK_MASK | ROOK_MASK
+			boardState.blackCanCastleKingside = true
+			boardState.blackCanCastleQueenside = true
+		}
+	} else if move.IsKingsideCastle() {
+		if !boardState.whiteToMove {
+			boardState.board[26] = 0x00
+			boardState.board[28] = WHITE_MASK | ROOK_MASK
+			boardState.whiteCanCastleKingside = true
+			boardState.whiteCanCastleQueenside = true
+		} else {
+			boardState.board[96] = 0x00
+			boardState.board[98] = BLACK_MASK | ROOK_MASK
+			boardState.blackCanCastleKingside = true
+			boardState.blackCanCastleQueenside = true
+		}
+	}
+
+	boardState.whiteToMove = !boardState.whiteToMove
 }
 
 func main() {
