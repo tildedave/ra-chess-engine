@@ -168,7 +168,6 @@ func BoardStateToFENString(boardState BoardState) string {
 		s += "-"
 	} else {
 		s += SquareToAlgebraicString(boardState.enPassantTargetSquare)
-		// TODO: need to convert a square number (10x12) to algebraic notation (yawn)
 	}
 	s += " " + strconv.Itoa(boardState.halfmoveClock) + " " + strconv.Itoa(boardState.fullmoveNumber)
 
