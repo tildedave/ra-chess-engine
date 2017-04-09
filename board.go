@@ -7,6 +7,8 @@ import (
 
 var m map[byte]byte = make(map[byte]byte)
 
+// none of these are right
+
 func isPieceBlack(p byte) bool {
 	return p&BLACK_MASK == BLACK_MASK
 }
@@ -21,7 +23,7 @@ func isSentinel(p byte) bool {
 }
 
 func isPawn(p byte) bool {
-	return p&PAWN_MASK == PAWN_MASK
+	return p == 0x81 || p == 0x01
 }
 
 func isBishop(p byte) bool {

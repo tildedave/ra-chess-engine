@@ -9,14 +9,19 @@ var _ = fmt.Println
 func GenerateMoves(boardState *BoardState) []Move {
 	// ray starts from going up, then clockwise around
 	var offsetArr [7][8]int8
+	offsetArr[2] = [8]int8{-19, -8, 12, 21, 19, 8, -12, -21}
+	offsetArr[3] = [8]int8{-11, 9, 9, 11, 0, 0, 0, 0}
+	offsetArr[4] = [8]int8{-10, 1, 10, -1, 0, 0, 0, 0}
+	offsetArr[5] = [8]int8{-10, -9, 1, 11, 10, 9, -1, -11}
 	offsetArr[6] = [8]int8{-10, -9, 1, 11, 10, 9, -1, -11}
+	slidingPieces := [7]bool{false, false, false, true, true, true, false}
 
-	var pieces []Move
+	var moves []Move
 
 	for i := byte(0); i < 8; i++ {
 		for j := byte(0); j < 8; j++ {
-			offset := RowAndColToSquare(i, j)
-			p := boardState.board[offset]
+			sq := RowAndColToSquare(i, j)
+			p := boardState.board[sq]
 			if p == EMPTY_SQUARE {
 				continue
 			}
@@ -26,23 +31,41 @@ func GenerateMoves(boardState *BoardState) []Move {
 				if !isPawn(p) {
 					// 8 possible directions to go (for the queen + king + knight)
 					// 4 directions for bishop + rook
-					// queen, bishop, and rook will continue along a "ray" until they find their own piece
+					// queen, bishop, and rook will continue along a "ray" until they find
+					// a stopping point
 					// Knight = 2, Bishop = 3, Rook = 4, Queen = 5, King = 6
 					offsets := offsetArr[p&0x0F]
 
 					for _, value := range offsets {
-						dest := uint8(int8(offset) + value)
-						destPiece := boardState.board[dest]
-
-						if destPiece == SENTINEL_MASK {
-							// can't go there
+						var dest byte = sq
+						if value == 0 {
 							continue
-						} else if destPiece == EMPTY_SQUARE {
-							pieces = append(pieces, CreateMove(offset, dest))
-						} else {
-							isDestPieceWhite := destPiece&BLACK_MASK != BLACK_MASK
-							if isWhite != isDestPieceWhite {
-								pieces = append(pieces, CreateCapture(offset, dest))
+						}
+
+						// we'll continue until we have to stop
+						for true {
+							dest = uint8(int8(dest) + value)
+							destPiece := boardState.board[dest]
+
+							if destPiece == SENTINEL_MASK {
+								// stop - end of the board
+								break
+							} else if destPiece == EMPTY_SQUARE {
+								// keep moving
+								moves = append(moves, CreateMove(sq, dest))
+							} else {
+								isDestPieceWhite := destPiece&BLACK_MASK != BLACK_MASK
+								if isWhite != isDestPieceWhite {
+									moves = append(moves, CreateCapture(sq, dest))
+								}
+
+								// stop - hit another piece or made a capture
+								break
+							}
+
+							// stop - piece type only gets one move
+							if !slidingPieces[p&0x0F] {
+								break
 							}
 						}
 					}
@@ -53,5 +76,10 @@ func GenerateMoves(boardState *BoardState) []Move {
 		}
 	}
 
-	return pieces
+	// also check for castling here.
+	// forbid if king is in check (calculating this TBD - possibly
+	// we will allow this and forbid it later)
+	// there's enemy movement to one of the castle squares
+
+	return moves
 }
