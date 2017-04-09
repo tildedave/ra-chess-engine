@@ -420,7 +420,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 
 func main() {
 	board := CreateInitialBoardState()
-	for i := 0; i < 7; i++ {
+	for i := 0; i < 6; i++ {
 		fmt.Println(Perft(&board, i))
 	}
 }
