@@ -12,6 +12,7 @@ func isPieceBlack(p byte) bool {
 }
 
 func isPieceWhite(p byte) bool {
+	// WHITE_MASK isn't a mask, gotta see if unsetting the high bit is the same
 	return p&WHITE_MASK == WHITE_MASK
 }
 
@@ -339,15 +340,15 @@ func (boardState *BoardState) ApplyMove(move Move) {
 		}
 	} else if p&ROOK_MASK == ROOK_MASK {
 		if boardState.whiteToMove {
-			if move.from == 28 {
+			if move.from == SQUARE_H1 {
 				boardState.boardInfo.whiteCanCastleKingside = false
-			} else if move.from == 21 {
+			} else if move.from == SQUARE_A1 {
 				boardState.boardInfo.whiteCanCastleQueenside = false
 			}
 		} else {
-			if move.from == 98 {
+			if move.from == SQUARE_H8 {
 				boardState.boardInfo.blackCanCastleKingside = false
-			} else if move.from == 91 {
+			} else if move.from == SQUARE_A8 {
 				boardState.boardInfo.blackCanCastleQueenside = false
 			}
 		}
