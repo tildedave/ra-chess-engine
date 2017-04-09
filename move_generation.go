@@ -115,6 +115,8 @@ func GenerateMoves(boardState *BoardState) []Move {
 							moves = append(moves, CreateCapture(sq, dest))
 						}
 					}
+
+					// TODO: pawn promotion
 				}
 			}
 		}

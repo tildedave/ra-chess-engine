@@ -419,5 +419,8 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 }
 
 func main() {
-	fmt.Println("Hello, world")
+	board := CreateInitialBoardState()
+	for i := 0; i < 7; i++ {
+		fmt.Println(Perft(&board, i))
+	}
 }
