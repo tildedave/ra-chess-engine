@@ -362,6 +362,8 @@ func (boardState *BoardState) ApplyMove(move Move) {
 		} else if move.from-move.to > 10 {
 			boardState.boardInfo.enPassantTargetSquare = move.from - 10
 		}
+	} else {
+		boardState.boardInfo.enPassantTargetSquare = 0
 	}
 
 	boardState.whiteToMove = !boardState.whiteToMove

@@ -68,7 +68,33 @@ func TestMoveGenerationFromQueen(t *testing.T) {
 
 	moves := GenerateMoves(&testBoard)
 
-	for _, move := range moves {
-		fmt.Println(MoveToString(move))
-	}
+	assert.Equal(t, 21, len(moves))
+}
+
+func TestMoveGenerationFromInitialBoard(t *testing.T) {
+	var testBoard BoardState = CreateInitialBoardState()
+
+	moves := GenerateMoves(&testBoard)
+	assert.Equal(t, 20, len(moves))
+}
+
+func TestMoveGenerationFromPawn(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.board[SQUARE_A2] = WHITE_MASK | PAWN_MASK
+	testBoard.board[SQUARE_B3] = BLACK_MASK | ROOK_MASK
+
+	moves := GenerateMoves(&testBoard)
+	assert.Equal(t, 3, len(moves))
+}
+
+func TestEnPassantCaptureFromPawn(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.board[SQUARE_A5] = BLACK_MASK | PAWN_MASK
+	testBoard.board[SQUARE_B5] = WHITE_MASK | PAWN_MASK
+	testBoard.boardInfo.enPassantTargetSquare = SQUARE_A6
+
+	moves := GenerateMoves(&testBoard)
+
+	assert.Equal(t, 2, len(moves))
+	assert.Equal(t, 1, len(filterCaptures(moves)))
 }

@@ -16,6 +16,9 @@ func GenerateMoves(boardState *BoardState) []Move {
 	offsetArr[6] = [8]int8{-10, -9, 1, 11, 10, 9, -1, -11}
 	slidingPieces := [7]bool{false, false, false, true, true, true, false}
 
+	// black is negative
+	var pawnCaptureOffsetArr = [8]int8{9, 11}
+
 	var moves []Move
 
 	for i := byte(0); i < 8; i++ {
@@ -70,7 +73,48 @@ func GenerateMoves(boardState *BoardState) []Move {
 						}
 					}
 				} else {
-					// pawn movement
+					var offset int8
+					if isWhite {
+						offset = 10
+					} else {
+						offset = -10
+					}
+
+					var dest byte = uint8(int8(sq) + offset)
+					if boardState.board[dest] == EMPTY_SQUARE {
+						// empty square
+						moves = append(moves, CreateMove(sq, dest))
+
+						if (isWhite && sq >= SQUARE_A2 && sq <= SQUARE_H2) ||
+							(!isWhite && sq >= SQUARE_A7 && sq <= SQUARE_H7) {
+							// home row for white so we can move one more
+							dest = uint8(int8(dest) + offset)
+							moves = append(moves, CreateMove(sq, dest))
+						}
+					}
+
+					for _, offset := range pawnCaptureOffsetArr {
+						if !isWhite {
+							offset = -offset
+						}
+
+						var dest byte = uint8(int8(sq) + offset)
+
+						if boardState.boardInfo.enPassantTargetSquare == dest {
+							moves = append(moves, CreateCapture(sq, dest))
+							continue
+						}
+
+						destPiece := boardState.board[dest]
+						if destPiece == SENTINEL_MASK || destPiece == EMPTY_SQUARE {
+							continue
+						}
+
+						isDestPieceWhite := destPiece&BLACK_MASK != BLACK_MASK
+						if isWhite != isDestPieceWhite {
+							moves = append(moves, CreateCapture(sq, dest))
+						}
+					}
 				}
 			}
 		}
