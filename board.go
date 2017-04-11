@@ -85,9 +85,9 @@ func pieceToString(p byte) byte {
 func (boardState *BoardState) ToString() string {
 	var s [9 * 8]byte
 
-	for i := 0; i < 8; i++ {
-		for j := 0; j < 8; j++ {
-			var p = boardState.PieceAtSquare(RowAndColToSquare(byte(i), byte(j)))
+	for i := byte(0); i < 8; i++ {
+		for j := byte(0); j < 8; j++ {
+			var p = boardState.PieceAtSquare(RowAndColToSquare(i, j))
 			s[(7-i)*9+j] = pieceToString(p)
 		}
 		s[(7-i)*9+8] = '\n'
@@ -98,10 +98,10 @@ func (boardState *BoardState) ToString() string {
 func (boardState *BoardState) ToFENString() string {
 	var s string
 
-	for i := 0; i < 8; i++ {
+	for i := byte(0); i < 8; i++ {
 		var numEmpty = 0
-		for j := 0; j < 8; j++ {
-			p := boardState.PieceAtSquare(RowAndColToSquare(byte(7-i), byte(j)))
+		for j := byte(0); j < 8; j++ {
+			p := boardState.PieceAtSquare(RowAndColToSquare(7-i, j))
 			if isSquareEmpty(p) {
 				numEmpty++
 			} else {
@@ -162,8 +162,6 @@ func (boardState *BoardState) ToFENString() string {
 }
 
 func (boardState *BoardState) PieceAtSquare(sq uint8) byte {
-	// row is 0 - 7, col is 0 - 8
-	// 10x12 board
 	return boardState.board[sq]
 }
 
@@ -215,6 +213,11 @@ type BoardInfo struct {
 	enPassantTargetSquare   uint8
 }
 
+type BoardLookupInfo struct {
+	whiteKingSquare byte
+	blackKingSquare byte
+}
+
 type BoardState struct {
 	board       []byte
 	whiteToMove bool
@@ -229,6 +232,7 @@ type BoardState struct {
 	captureStack     byteStack
 	boardInfoHistory [MAX_MOVES]BoardInfo
 	moveIndex        int // 0-based and increases after every move
+	lookupInfo       BoardLookupInfo
 }
 
 func CreateEmptyBoardState() BoardState {
@@ -258,8 +262,23 @@ func CreateEmptyBoardState() BoardState {
 	}
 	b.halfmoveClock = 0
 	b.fullmoveNumber = 1
+	generateBoardLookupInfo(&b)
 
 	return b
+}
+
+func generateBoardLookupInfo(boardState *BoardState) {
+	for i := byte(0); i < 8; i++ {
+		for j := byte(0); j < 8; j++ {
+			sq := RowAndColToSquare(i, j)
+			p := boardState.board[sq]
+			if p == BLACK_MASK|KING_MASK {
+				boardState.lookupInfo.blackKingSquare = sq
+			} else if p == WHITE_MASK|KING_MASK {
+				boardState.lookupInfo.whiteKingSquare = sq
+			}
+		}
+	}
 }
 
 func CreateInitialBoardState() BoardState {
@@ -336,9 +355,11 @@ func (boardState *BoardState) ApplyMove(move Move) {
 		if boardState.whiteToMove {
 			boardState.boardInfo.whiteCanCastleKingside = false
 			boardState.boardInfo.whiteCanCastleQueenside = false
+			boardState.lookupInfo.whiteKingSquare = move.to
 		} else {
 			boardState.boardInfo.blackCanCastleKingside = false
 			boardState.boardInfo.blackCanCastleQueenside = false
+			boardState.lookupInfo.blackKingSquare = move.from
 		}
 	} else if p&ROOK_MASK == ROOK_MASK {
 		if boardState.whiteToMove {
@@ -394,6 +415,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 	boardState.board[move.from] = p
 
 	// TODO(perf) - less if statements for the average case
+	// this could be not a big deal b/c of branch prediction
 	if move.IsQueensideCastle() {
 		// black was to move, so we're unmaking a white move
 		if boardState.whiteToMove {
@@ -414,6 +436,12 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.board[96] = 0x00
 			boardState.board[98] = BLACK_MASK | ROOK_MASK
 			boardState.boardInfo.blackCanCastleKingside = true
+		}
+	} else if p&KING_MASK == KING_MASK {
+		if boardState.whiteToMove {
+			boardState.lookupInfo.whiteKingSquare = move.from
+		} else {
+			boardState.lookupInfo.blackKingSquare = move.from
 		}
 	}
 }

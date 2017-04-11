@@ -37,15 +37,23 @@ func GenerateMoves(boardState *BoardState) []Move {
 	return moves
 }
 
+// These arrays are used for both move generation + king in check detection,
+// so we'll pull them out of function scope
+
+// ray starts from going up, then clockwise around
+var offsetArr = [7][8]int8{
+	[8]int8{0, 0, 0, 0, 0, 0, 0, 0},
+	[8]int8{0, 0, 0, 0, 0, 0, 0, 0},
+	[8]int8{-19, -8, 12, 21, 19, 8, -12, -21},
+	[8]int8{-11, 9, 9, 11, 0, 0, 0, 0},
+	[8]int8{-10, 1, 10, -1, 0, 0, 0, 0},
+	[8]int8{-10, -9, 1, 11, 10, 9, -1, -11},
+	[8]int8{-10, -9, 1, 11, 10, 9, -1, -11},
+}
+
+var slidingPieces = [7]bool{false, false, false, true, true, true, false}
+
 func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, moves []Move) []Move {
-	// ray starts from going up, then clockwise around
-	var offsetArr [7][8]int8
-	offsetArr[2] = [8]int8{-19, -8, 12, 21, 19, 8, -12, -21}
-	offsetArr[3] = [8]int8{-11, 9, 9, 11, 0, 0, 0, 0}
-	offsetArr[4] = [8]int8{-10, 1, 10, -1, 0, 0, 0, 0}
-	offsetArr[5] = [8]int8{-10, -9, 1, 11, 10, 9, -1, -11}
-	offsetArr[6] = [8]int8{-10, -9, 1, 11, 10, 9, -1, -11}
-	slidingPieces := [7]bool{false, false, false, true, true, true, false}
 
 	// 8 possible directions to go (for the queen + king + knight)
 	// 4 directions for bishop + rook
