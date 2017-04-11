@@ -10,10 +10,13 @@ func (boardState *BoardState) IsInCheck() bool {
 	isWhite := boardState.whiteToMove
 
 	var kingSq byte
+	var oppositeColorMask byte
 	if isWhite {
 		kingSq = boardState.lookupInfo.whiteKingSquare
+		oppositeColorMask = BLACK_MASK
 	} else {
 		kingSq = boardState.lookupInfo.blackKingSquare
+		oppositeColorMask = WHITE_MASK
 	}
 
 	// test bishop rays for queen or bishop
@@ -22,21 +25,25 @@ func (boardState *BoardState) IsInCheck() bool {
 	for _, pieceMask := range []byte{BISHOP_MASK, ROOK_MASK} {
 		for _, offset := range offsetArr[pieceMask] {
 			piece := followRay(boardState, kingSq, offset)
-			if piece != SENTINEL_MASK {
-				isDestPieceWhite := piece&BLACK_MASK != BLACK_MASK
-				if isWhite != isDestPieceWhite {
-					// we care about this piece, is it the piece we're looking for
-					// or a queen
-					if isQueen(piece) || piece&pieceMask == pieceMask {
-						// bam in check
-						return true
-					}
+			// TODO(perf) should be possible to combine these checks both
+			// here and in move generation w/an appropriate bit test
+			if piece != SENTINEL_MASK && piece&oppositeColorMask == oppositeColorMask {
+				// we care about this piece, is it the piece we're looking for
+				// or a queen
+				if isQueen(piece) || piece&pieceMask == pieceMask {
+					// bam in check
+					return true
 				}
 			}
 		}
 	}
 
-	// test all knight squares (dumb but mindless)
+	// test all knight squares (mindless)
+	// for _, offset := range offsetArr[KNIGHT_MASK] {
+	// 	sq := uint8(int8(kingSq) + offset)
+	// 	piece := boardState.PieceAtSquare(sq)
+
+	// }
 	// test pawn squares
 
 	return false

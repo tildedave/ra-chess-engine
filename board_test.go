@@ -11,12 +11,12 @@ var _ = fmt.Println
 func TestInitialBoard(t *testing.T) {
 	var initialBoard BoardState = CreateInitialBoardState()
 
-	assert.Equal(t, initialBoard.PieceAtSquare(RowAndColToSquare(0, 0)), byte(0x04))
-	assert.Equal(t, initialBoard.PieceAtSquare(RowAndColToSquare(0, 1)), byte(0x02))
+	assert.Equal(t, initialBoard.PieceAtSquare(RowAndColToSquare(0, 0)), WHITE_MASK|ROOK_MASK)
+	assert.Equal(t, initialBoard.PieceAtSquare(RowAndColToSquare(0, 1)), WHITE_MASK|KNIGHT_MASK)
 
 	for i := 0; i < 8; i++ {
 		piece := initialBoard.PieceAtSquare(RowAndColToSquare(1, byte(i)))
-		assert.Equal(t, piece, byte(0x01))
+		assert.Equal(t, piece, byte(WHITE_MASK|PAWN_MASK))
 		assert.True(t, isPieceWhite(piece))
 		assert.True(t, isPawn(piece))
 	}
@@ -29,7 +29,7 @@ func TestInitialBoard(t *testing.T) {
 	}
 	for i := 0; i < 8; i++ {
 		piece := initialBoard.PieceAtSquare(RowAndColToSquare(6, byte(i)))
-		assert.Equal(t, piece, byte(0x81))
+		assert.Equal(t, piece, byte(BLACK_MASK|PAWN_MASK))
 		assert.True(t, isPieceBlack(piece))
 		assert.True(t, isPawn(piece))
 	}

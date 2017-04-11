@@ -62,6 +62,13 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, m
 	// Knight = 2, Bishop = 3, Rook = 4, Queen = 5, King = 6
 	offsets := offsetArr[p&0x0F]
 
+	var captureMask byte
+	if isWhite {
+		captureMask = BLACK_MASK
+	} else {
+		captureMask = WHITE_MASK
+	}
+
 	for _, value := range offsets {
 		var dest byte = sq
 		if value == 0 {
@@ -80,8 +87,7 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, m
 				// keep moving
 				moves = append(moves, CreateMove(sq, dest))
 			} else {
-				isDestPieceWhite := destPiece&BLACK_MASK != BLACK_MASK
-				if isWhite != isDestPieceWhite {
+				if destPiece&captureMask == captureMask {
 					moves = append(moves, CreateCapture(sq, dest))
 				}
 

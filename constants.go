@@ -9,7 +9,7 @@ const ROOK_MASK byte = 0x04
 const QUEEN_MASK byte = 0x05
 const KING_MASK byte = 0x06
 const BLACK_MASK byte = 0x80
-const WHITE_MASK byte = 0x00
+const WHITE_MASK byte = 0x40
 
 const SQUARE_A1 byte = 21
 const SQUARE_B1 byte = 22
