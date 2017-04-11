@@ -310,6 +310,7 @@ func CreateInitialBoardState() BoardState {
 	}
 	b.halfmoveClock = 0
 	b.fullmoveNumber = 1
+	generateBoardLookupInfo(&b)
 
 	return b
 }
