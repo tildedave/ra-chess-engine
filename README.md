@@ -1,4 +1,4 @@
-![](https://travis-ci.org/tildedave/ra-chess-engine.svg?branch=master)
+# ra-chess-engine ![](https://travis-ci.org/tildedave/ra-chess-engine.svg?branch=master)
 
 New chess engine - Ra the sun god succeeded Apep the serpent god.
 
