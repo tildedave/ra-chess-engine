@@ -322,3 +322,19 @@ func TestFiddlingWithKingsideRooks(t *testing.T) {
 	testBoard.UnapplyMove(m1)
 	assert.True(t, testBoard.boardInfo.whiteCanCastleKingside)
 }
+
+func TestBoardFromFENString(t *testing.T) {
+	s := "r4rk1/pppb1pp1/3p3p/bN1Pn3/4P3/4PNqP/PPQ1B1P1/2KR2R1 w - - 5 17"
+	boardState, err := CreateBoardStateFromFENString(s)
+
+	assert.Nil(t, err)
+	assert.Equal(t, s, boardState.ToFENString())
+}
+
+func TestBoardWithEnPassantSquareAndCastling(t *testing.T) {
+	s := "rnbqkbnr/pp1ppppp/8/2p5/4P3/8/PPPP1PPP/RNBQKBNR w KQkq c6 0 2"
+	boardState, err := CreateBoardStateFromFENString(s)
+
+	assert.Nil(t, err)
+	assert.Equal(t, s, boardState.ToFENString())
+}

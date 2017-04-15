@@ -1,8 +1,10 @@
 package main
 
 import (
+	"errors"
 	"fmt"
 	"strconv"
+	"strings"
 )
 
 var m map[byte]byte = make(map[byte]byte)
@@ -156,7 +158,8 @@ func (boardState *BoardState) ToFENString() string {
 	} else {
 		s += SquareToAlgebraicString(boardState.boardInfo.enPassantTargetSquare)
 	}
-	s += " " + strconv.Itoa(boardState.halfmoveClock) + " " + strconv.Itoa(boardState.fullmoveNumber)
+	s += " " + strconv.FormatUint(uint64(boardState.halfmoveClock), 10)
+	s += " " + strconv.FormatUint(uint64(boardState.fullmoveNumber), 10)
 
 	return s
 }
@@ -224,9 +227,9 @@ type BoardState struct {
 	boardInfo   BoardInfo
 
 	// number of moves since last capture or pawn advance
-	halfmoveClock int
+	halfmoveClock uint
 	// starts at 1, incremented after Black moves
-	fullmoveNumber int
+	fullmoveNumber uint
 
 	// Internal structures to allow unmaking moves
 	captureStack     byteStack
@@ -447,9 +450,156 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 	}
 }
 
+func CreateBoardStateFromFENString(s string) (BoardState, error) {
+	var boardState BoardState = CreateEmptyBoardState()
+
+	// first split string into board part and non-board part
+	var splits = strings.SplitN(s, " ", 6)
+	boardStr := splits[0]
+	row := byte(7)
+
+	for _, rowStr := range strings.Split(boardStr, "/") {
+		col := byte(0)
+		for _, pStr := range strings.Split(rowStr, "") {
+			sq := RowAndColToSquare(row, col)
+			var p byte
+			switch pStr {
+			case "P":
+				p = WHITE_MASK | PAWN_MASK
+				col++
+			case "N":
+				p = WHITE_MASK | KNIGHT_MASK
+				col++
+			case "B":
+				p = WHITE_MASK | BISHOP_MASK
+				col++
+			case "R":
+				p = WHITE_MASK | ROOK_MASK
+				col++
+			case "K":
+				p = WHITE_MASK | KING_MASK
+				col++
+			case "Q":
+				p = WHITE_MASK | QUEEN_MASK
+				col++
+			case "p":
+				p = BLACK_MASK | PAWN_MASK
+				col++
+			case "n":
+				p = BLACK_MASK | KNIGHT_MASK
+				col++
+			case "b":
+				p = BLACK_MASK | BISHOP_MASK
+				col++
+			case "r":
+				p = BLACK_MASK | ROOK_MASK
+				col++
+			case "k":
+				p = BLACK_MASK | KING_MASK
+				col++
+			case "q":
+				p = BLACK_MASK | QUEEN_MASK
+				col++
+			default:
+				num, err := strconv.ParseUint(pStr, 10, 8)
+				if err != nil {
+					return boardState, errors.New("Found unknown character parsing FEN: " + pStr)
+				}
+				if num > 8 {
+					return boardState, errors.New("Invalid FEN offset: " + pStr)
+				}
+				col = col + byte(num)
+			}
+
+			boardState.board[sq] = p
+		}
+		row = row - 1
+	}
+
+	switch splits[1] {
+	case "w":
+		boardState.whiteToMove = true
+	case "b":
+		boardState.whiteToMove = false
+	default:
+		return boardState, errors.New("Invalid side-to-move specification: " + splits[1])
+	}
+
+	if splits[2] != "-" {
+		for _, castleStr := range strings.Split(splits[2], "") {
+			switch castleStr {
+			case "K":
+				boardState.boardInfo.whiteCanCastleKingside = true
+			case "Q":
+				boardState.boardInfo.whiteCanCastleQueenside = true
+			case "k":
+				boardState.boardInfo.blackCanCastleKingside = true
+			case "q":
+				boardState.boardInfo.blackCanCastleQueenside = true
+			}
+		}
+	}
+
+	// en passant target square parsing
+	if splits[3] != "-" {
+		var col byte
+		var row byte
+		for index, runeValue := range splits[3] {
+			if index == 0 {
+				switch runeValue {
+				case 'a':
+					col = byte(0)
+				case 'b':
+					col = byte(1)
+				case 'c':
+					col = byte(2)
+				case 'd':
+					col = byte(3)
+				case 'e':
+					col = byte(4)
+				case 'f':
+					col = byte(5)
+				case 'g':
+					col = byte(6)
+				case 'h':
+					col = byte(7)
+				default:
+					return boardState, errors.New("Bad en-passant target square specification: " + splits[3])
+				}
+			} else if index == 1 {
+				rowUint, err := strconv.ParseUint(string(runeValue), 10, 8)
+				if err != nil {
+					return boardState, errors.New("Bad en-passant target square specification: " + splits[3])
+				}
+				// Must subtract 1 because algebraic notation is 1-based
+				row = byte(rowUint - 1)
+			} else {
+				return boardState, errors.New("Bad en-passant target square specification: " + splits[3])
+			}
+		}
+
+		boardState.boardInfo.enPassantTargetSquare = RowAndColToSquare(row, col)
+	}
+
+	halfmoveClock, err := strconv.ParseUint(splits[4], 10, 8)
+	if err != nil {
+		return boardState, errors.New("Error parsing halfmove clock count: " + splits[4])
+	}
+
+	fullmoveNumber, err := strconv.ParseUint(splits[5], 10, 8)
+	if err != nil {
+		return boardState, errors.New("Error parsing fullmove number count: " + splits[4])
+	}
+
+	boardState.halfmoveClock = uint(halfmoveClock)
+	boardState.fullmoveNumber = uint(fullmoveNumber)
+
+	return boardState, nil
+}
+
 func main() {
-	board := CreateInitialBoardState()
 	for i := 0; i < 6; i++ {
+		board := CreateInitialBoardState()
 		fmt.Println(Perft(&board, i))
 	}
 }

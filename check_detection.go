@@ -6,12 +6,10 @@ import (
 
 var _ = fmt.Println
 
-func (boardState *BoardState) IsInCheck() bool {
-	isWhite := boardState.whiteToMove
-
+func (boardState *BoardState) IsInCheck(whiteInCheck bool) bool {
 	var kingSq byte
 	var oppositeColorMask byte
-	if isWhite {
+	if whiteInCheck {
 		kingSq = boardState.lookupInfo.whiteKingSquare
 		oppositeColorMask = BLACK_MASK
 	} else {

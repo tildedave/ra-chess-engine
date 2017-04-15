@@ -1,7 +1,7 @@
 package main
 
-func Perft(boardState *BoardState, depth int) uint {
-	var moveCount uint = 0
+func Perft(boardState *BoardState, depth int) uint64 {
+	var moveCount uint64 = 0
 	if depth == 0 {
 		return 1
 	}
@@ -10,7 +10,7 @@ func Perft(boardState *BoardState, depth int) uint {
 
 	for _, move := range moves {
 		boardState.ApplyMove(move)
-		if !boardState.IsInCheck() {
+		if !boardState.IsInCheck(!boardState.whiteToMove) {
 			moveCount += Perft(boardState, depth-1)
 		}
 		boardState.UnapplyMove(move)

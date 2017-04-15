@@ -14,7 +14,7 @@ func TestNotInCheck(t *testing.T) {
 	testBoard.board[SQUARE_A2] = WHITE_MASK | KING_MASK
 	testBoard.lookupInfo.whiteKingSquare = SQUARE_A2
 
-	assert.False(t, testBoard.IsInCheck())
+	assert.False(t, testBoard.IsInCheck(true))
 }
 
 func TestInCheckBishop(t *testing.T) {
@@ -24,7 +24,7 @@ func TestInCheckBishop(t *testing.T) {
 	testBoard.board[SQUARE_G8] = BLACK_MASK | BISHOP_MASK
 	testBoard.lookupInfo.whiteKingSquare = SQUARE_A2
 
-	assert.True(t, testBoard.IsInCheck())
+	assert.True(t, testBoard.IsInCheck(true))
 }
 
 func TestInCheckBishopAsBlack(t *testing.T) {
@@ -32,10 +32,9 @@ func TestInCheckBishopAsBlack(t *testing.T) {
 	// TODO - replace when we parse FEN into board state
 	testBoard.board[SQUARE_A2] = BLACK_MASK | KING_MASK
 	testBoard.board[SQUARE_G8] = WHITE_MASK | BISHOP_MASK
-	testBoard.whiteToMove = false
 	testBoard.lookupInfo.blackKingSquare = SQUARE_A2
 
-	assert.True(t, testBoard.IsInCheck())
+	assert.True(t, testBoard.IsInCheck(false))
 }
 
 func TestInCheckRook(t *testing.T) {
@@ -45,5 +44,5 @@ func TestInCheckRook(t *testing.T) {
 	testBoard.board[SQUARE_A8] = BLACK_MASK | ROOK_MASK
 	testBoard.lookupInfo.whiteKingSquare = SQUARE_A2
 
-	assert.True(t, testBoard.IsInCheck())
+	assert.True(t, testBoard.IsInCheck(true))
 }
