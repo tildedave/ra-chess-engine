@@ -14,10 +14,15 @@ type PerftInfo struct {
 	checks     uint
 }
 
-func Perft(boardState *BoardState, depth uint) PerftInfo {
+type PerftOptions struct {
+	checks          bool
+	moveSanityCheck bool
+}
+
+func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 	var perftInfo PerftInfo
 
-	if boardState.IsInCheck(boardState.whiteToMove) {
+	if options.checks && boardState.IsInCheck(boardState.whiteToMove) {
 		perftInfo.checks += 1
 	}
 
@@ -32,8 +37,10 @@ func Perft(boardState *BoardState, depth uint) PerftInfo {
 	promotions := uint(0)
 
 	for _, move := range moves {
-		// testMoveLegality(boardState, move)
-		// fmt.Println(MoveToString(move))
+		if options.moveSanityCheck {
+			testMoveLegality(boardState, move)
+		}
+
 		if move.IsCastle() && !boardState.TestCastleLegality(move) {
 			continue
 		}
@@ -48,7 +55,7 @@ func Perft(boardState *BoardState, depth uint) PerftInfo {
 				promotions++
 			}
 
-			info := Perft(boardState, depth-1)
+			info := Perft(boardState, depth-1, options)
 			addPerftInfo(&perftInfo, info)
 		}
 		boardState.UnapplyMove(move)
