@@ -1,5 +1,10 @@
 package main
 
+import (
+	"errors"
+	"strconv"
+)
+
 func (boardState *BoardState) ApplyMove(move Move) {
 	boardState.boardInfoHistory[boardState.moveIndex] = boardState.boardInfo
 
@@ -12,6 +17,8 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	boardState.board[move.to] = p
 
 	// TODO(perf) - less if statements/work when castling is over
+	boardState.boardInfo.enPassantTargetSquare = 0
+
 	if move.IsQueensideCastle() {
 		// white
 		if boardState.whiteToMove {
@@ -69,8 +76,6 @@ func (boardState *BoardState) ApplyMove(move Move) {
 		} else if move.from-move.to > 10 {
 			boardState.boardInfo.enPassantTargetSquare = move.from - 10
 		}
-	} else {
-		boardState.boardInfo.enPassantTargetSquare = 0
 	}
 
 	boardState.whiteToMove = !boardState.whiteToMove
@@ -79,6 +84,49 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	if boardState.whiteToMove {
 		boardState.fullmoveNumber += 1
 	}
+}
+
+func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
+	fromPiece := boardState.board[move.from]
+	toPiece := boardState.board[move.to]
+	var pieceMask byte
+	var captureMask byte
+
+	if boardState.whiteToMove {
+		pieceMask = WHITE_MASK
+		captureMask = BLACK_MASK
+	} else {
+		pieceMask = BLACK_MASK
+		captureMask = WHITE_MASK
+	}
+
+	if fromPiece == EMPTY_SQUARE {
+		return false, errors.New("From square was empty")
+	} else if fromPiece == SENTINEL_MASK {
+		return false, errors.New("From square was sentinel")
+	} else if fromPiece&pieceMask != pieceMask {
+		return false, errors.New("From square was not occupied by expected piece: " + strconv.Itoa(int(fromPiece)))
+	}
+
+	if !move.IsCapture() {
+		if toPiece != EMPTY_SQUARE {
+			return false, errors.New("To square was occupied for non-capture")
+		}
+	} else {
+		if toPiece == EMPTY_SQUARE {
+			if !(isPawn(fromPiece) && move.to == boardState.boardInfo.enPassantTargetSquare) {
+				return false, errors.New("To square was empty for capture")
+			}
+		} else if toPiece == SENTINEL_MASK {
+			return false, errors.New("To square was a sentinel")
+		} else if toPiece&captureMask != captureMask {
+			return false, errors.New("From square was not occupied by expected piece: " + strconv.Itoa(int(toPiece)))
+		}
+	}
+
+	// more smart checks
+
+	return true, nil
 }
 
 func (boardState *BoardState) UnapplyMove(move Move) {

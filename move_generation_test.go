@@ -87,6 +87,17 @@ func TestMoveGenerationFromPawn(t *testing.T) {
 	assert.Equal(t, 3, len(moves))
 }
 
+func TestMoveGenerationFromPawnDoesMoveIntoOwnPiece(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.board[SQUARE_A2] = WHITE_MASK | PAWN_MASK
+	testBoard.board[SQUARE_A4] = WHITE_MASK | ROOK_MASK
+
+	moves := GenerateMoves(&testBoard)
+	pawnMoves := filterMovesFrom(moves, SQUARE_A2)
+
+	assert.Equal(t, 1, len(pawnMoves))
+}
+
 func TestEnPassantCaptureFromPawn(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 	testBoard.board[SQUARE_A5] = BLACK_MASK | PAWN_MASK

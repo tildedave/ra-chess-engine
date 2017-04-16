@@ -467,7 +467,7 @@ func CreateBoardStateFromFENString(s string) (BoardState, error) {
 }
 
 func main() {
-	for i := 0; i < 6; i++ {
+	for i := 0; i < 5; i++ {
 		board := CreateInitialBoardState()
 		fmt.Println(Perft(&board, i))
 	}

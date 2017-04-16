@@ -1,5 +1,11 @@
 package main
 
+import (
+	"fmt"
+)
+
+var _ = fmt.Println
+
 func Perft(boardState *BoardState, depth int) uint64 {
 	var moveCount uint64 = 0
 	if depth == 0 {
@@ -9,6 +15,7 @@ func Perft(boardState *BoardState, depth int) uint64 {
 	moves := GenerateMoves(boardState)
 
 	for _, move := range moves {
+		// testMoveLegality(boardState, move)
 		boardState.ApplyMove(move)
 		if !boardState.IsInCheck(!boardState.whiteToMove) {
 			moveCount += Perft(boardState, depth-1)
@@ -17,4 +24,14 @@ func Perft(boardState *BoardState, depth int) uint64 {
 	}
 
 	return moveCount
+}
+
+func testMoveLegality(boardState *BoardState, move Move) {
+	legal, err := boardState.IsMoveLegal(move)
+	if !legal {
+		fmt.Println(err)
+		fmt.Println(boardState.ToString())
+		fmt.Println(MoveToString(move))
+		panic("Illegal move")
+	}
 }

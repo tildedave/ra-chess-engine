@@ -125,7 +125,9 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, mo
 			(!isWhite && sq >= SQUARE_A7 && sq <= SQUARE_H7) {
 			// home row for white so we can move one more
 			dest = uint8(int8(dest) + offset)
-			moves = append(moves, CreateMove(sq, dest))
+			if boardState.board[dest] == EMPTY_SQUARE {
+				moves = append(moves, CreateMove(sq, dest))
+			}
 		}
 	}
 
