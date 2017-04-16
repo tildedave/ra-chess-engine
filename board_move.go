@@ -22,27 +22,31 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	if move.IsQueensideCastle() {
 		// white
 		if boardState.whiteToMove {
-			boardState.board[21] = 0x00
-			boardState.board[24] = WHITE_MASK | ROOK_MASK
+			boardState.board[SQUARE_A1] = EMPTY_SQUARE
+			boardState.board[SQUARE_D1] = WHITE_MASK | ROOK_MASK
 			boardState.boardInfo.whiteCanCastleKingside = false
 			boardState.boardInfo.whiteCanCastleQueenside = false
+			boardState.lookupInfo.whiteKingSquare = SQUARE_C1
 		} else {
-			boardState.board[91] = 0x00
-			boardState.board[94] = BLACK_MASK | ROOK_MASK
+			boardState.board[SQUARE_A8] = EMPTY_SQUARE
+			boardState.board[SQUARE_D8] = BLACK_MASK | ROOK_MASK
 			boardState.boardInfo.blackCanCastleKingside = false
 			boardState.boardInfo.blackCanCastleQueenside = false
+			boardState.lookupInfo.whiteKingSquare = SQUARE_C8
 		}
 	} else if move.IsKingsideCastle() {
 		if boardState.whiteToMove {
-			boardState.board[28] = 0x00
-			boardState.board[26] = WHITE_MASK | ROOK_MASK
+			boardState.board[SQUARE_H1] = EMPTY_SQUARE
+			boardState.board[SQUARE_F1] = WHITE_MASK | ROOK_MASK
 			boardState.boardInfo.whiteCanCastleKingside = false
 			boardState.boardInfo.whiteCanCastleQueenside = false
+			boardState.lookupInfo.blackKingSquare = SQUARE_G1
 		} else {
-			boardState.board[98] = 0x00
-			boardState.board[96] = BLACK_MASK | ROOK_MASK
+			boardState.board[SQUARE_H8] = EMPTY_SQUARE
+			boardState.board[SQUARE_F8] = BLACK_MASK | ROOK_MASK
 			boardState.boardInfo.blackCanCastleKingside = false
 			boardState.boardInfo.blackCanCastleQueenside = false
+			boardState.lookupInfo.blackKingSquare = SQUARE_G8
 		}
 	} else if p&KING_MASK == KING_MASK {
 		if boardState.whiteToMove {
@@ -52,7 +56,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 		} else {
 			boardState.boardInfo.blackCanCastleKingside = false
 			boardState.boardInfo.blackCanCastleQueenside = false
-			boardState.lookupInfo.blackKingSquare = move.from
+			boardState.lookupInfo.blackKingSquare = move.to
 		}
 	} else if p&ROOK_MASK == ROOK_MASK {
 		if boardState.whiteToMove {
@@ -171,7 +175,9 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.board[98] = BLACK_MASK | ROOK_MASK
 			boardState.boardInfo.blackCanCastleKingside = true
 		}
-	} else if p&KING_MASK == KING_MASK {
+	}
+
+	if p&KING_MASK == KING_MASK {
 		if boardState.whiteToMove {
 			boardState.lookupInfo.whiteKingSquare = move.from
 		} else {

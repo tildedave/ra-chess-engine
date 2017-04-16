@@ -18,11 +18,15 @@ func (m Move) IsCapture() bool {
 }
 
 func (m Move) IsQueensideCastle() bool {
-	return m.flags&(SPECIAL1_MASK|SPECIAL2_MASK) == SPECIAL1_MASK|SPECIAL2_MASK
+	return m.flags == SPECIAL1_MASK|SPECIAL2_MASK
 }
 
 func (m Move) IsKingsideCastle() bool {
 	return m.flags == SPECIAL1_MASK
+}
+
+func (m Move) IsCastle() bool {
+	return m.flags&SPECIAL1_MASK == SPECIAL1_MASK
 }
 
 func (m Move) IsPromotion() bool {

@@ -34,6 +34,9 @@ func Perft(boardState *BoardState, depth uint) PerftInfo {
 	for _, move := range moves {
 		// testMoveLegality(boardState, move)
 		// fmt.Println(MoveToString(move))
+		if move.IsCastle() && !boardState.TestCastleLegality(move) {
+			continue
+		}
 		boardState.ApplyMove(move)
 
 		if !boardState.IsInCheck(!boardState.whiteToMove) {

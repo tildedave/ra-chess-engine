@@ -23,16 +23,10 @@ func GenerateMoves(boardState *BoardState) []Move {
 					moves = generatePieceMoves(boardState, p, sq, isWhite, moves)
 				} else {
 					moves = generatePawnMoves(boardState, p, sq, isWhite, moves)
-					// TODO: pawn promotion
 				}
 			}
 		}
 	}
-
-	// also check for castling here.
-	// forbid if king is in check (calculating this TBD - possibly
-	// we will allow this and forbid it later)
-	// there's enemy movement to one of the castle squares
 
 	return moves
 }
@@ -106,6 +100,37 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, m
 		}
 	}
 
+	// if piece is a king, castle logic
+	// this doesn't have the provision against 'castle through check' which
+	// we'll do later outside of move generation
+	if p&0x0F == KING_MASK {
+		if boardState.whiteToMove {
+			if boardState.boardInfo.whiteCanCastleKingside &&
+				boardState.board[SQUARE_F1] == EMPTY_SQUARE &&
+				boardState.board[SQUARE_G1] == EMPTY_SQUARE {
+				moves = append(moves, CreateKingsideCastle(sq, SQUARE_G1))
+			}
+			if boardState.boardInfo.whiteCanCastleQueenside &&
+				boardState.board[SQUARE_D1] == EMPTY_SQUARE &&
+				boardState.board[SQUARE_C1] == EMPTY_SQUARE &&
+				boardState.board[SQUARE_B1] == EMPTY_SQUARE {
+				moves = append(moves, CreateQueensideCastle(sq, SQUARE_B1))
+			}
+		} else {
+			if boardState.boardInfo.blackCanCastleKingside &&
+				boardState.board[SQUARE_F8] == EMPTY_SQUARE &&
+				boardState.board[SQUARE_G8] == EMPTY_SQUARE {
+				moves = append(moves, CreateKingsideCastle(sq, SQUARE_G8))
+			}
+			if boardState.boardInfo.blackCanCastleQueenside &&
+				boardState.board[SQUARE_D8] == EMPTY_SQUARE &&
+				boardState.board[SQUARE_C8] == EMPTY_SQUARE &&
+				boardState.board[SQUARE_B8] == EMPTY_SQUARE {
+				moves = append(moves, CreateQueensideCastle(sq, SQUARE_B8))
+			}
+		}
+	}
+
 	return moves
 }
 
@@ -157,6 +182,8 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, mo
 			moves = append(moves, CreateCapture(sq, dest))
 		}
 	}
+
+	// TODO: pawn promotion
 
 	return moves
 }
