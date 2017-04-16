@@ -471,7 +471,7 @@ func CreateBoardStateFromFENString(s string) (BoardState, error) {
 
 func main() {
 	str := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 6; i++ {
 		board, _ := CreateBoardStateFromFENString(str)
 		fmt.Println(Perft(&board, i))
 	}

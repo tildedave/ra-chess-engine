@@ -25,6 +25,10 @@ func (m Move) IsKingsideCastle() bool {
 	return m.flags == SPECIAL1_MASK
 }
 
+func (m Move) IsPromotion() bool {
+	return m.flags == PROMOTION_MASK
+}
+
 func CreateMove(from uint8, to uint8) Move {
 	var m Move
 	m.from = from
