@@ -14,7 +14,7 @@ type PerftInfo struct {
 	checks     uint
 }
 
-func Perft(boardState *BoardState, depth int) PerftInfo {
+func Perft(boardState *BoardState, depth uint) PerftInfo {
 	var perftInfo PerftInfo
 
 	if boardState.IsInCheck(boardState.whiteToMove) {
