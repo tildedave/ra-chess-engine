@@ -46,3 +46,21 @@ func TestInCheckRook(t *testing.T) {
 
 	assert.True(t, testBoard.IsInCheck(true))
 }
+
+func TestInCheckKnight(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.board[SQUARE_A2] = WHITE_MASK | KING_MASK
+	testBoard.board[SQUARE_B4] = BLACK_MASK | KNIGHT_MASK
+	testBoard.lookupInfo.whiteKingSquare = SQUARE_A2
+
+	assert.True(t, testBoard.IsInCheck(true))
+}
+
+func TestInCheckPawn(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.board[SQUARE_A2] = WHITE_MASK | KING_MASK
+	testBoard.board[SQUARE_B3] = BLACK_MASK | PAWN_MASK
+	testBoard.lookupInfo.whiteKingSquare = SQUARE_A2
+
+	assert.True(t, testBoard.IsInCheck(true))
+}

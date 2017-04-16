@@ -53,6 +53,10 @@ var offsetArr = [7][8]int8{
 
 var slidingPieces = [7]bool{false, false, false, true, true, true, false}
 
+// black is negative
+var whitePawnCaptureOffsetArr = [2]int8{9, 11}
+var blackPawnCaptureOffsetArr = [2]int8{-9, -11}
+
 func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, moves []Move) []Move {
 
 	// 8 possible directions to go (for the queen + king + knight)
@@ -106,9 +110,6 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, m
 }
 
 func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, moves []Move) []Move {
-	// black is negative
-	var pawnCaptureOffsetArr = [8]int8{9, 11}
-
 	var offset int8
 	if isWhite {
 		offset = 10
@@ -131,11 +132,14 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, mo
 		}
 	}
 
-	for _, offset := range pawnCaptureOffsetArr {
-		if !isWhite {
-			offset = -offset
-		}
+	var pawnCaptureOffsetArr [2]int8
+	if isWhite {
+		pawnCaptureOffsetArr = whitePawnCaptureOffsetArr
+	} else {
+		pawnCaptureOffsetArr = blackPawnCaptureOffsetArr
+	}
 
+	for _, offset := range pawnCaptureOffsetArr {
 		var dest byte = uint8(int8(sq) + offset)
 
 		if boardState.boardInfo.enPassantTargetSquare == dest {

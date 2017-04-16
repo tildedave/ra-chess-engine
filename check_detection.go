@@ -36,13 +36,42 @@ func (boardState *BoardState) IsInCheck(whiteInCheck bool) bool {
 		}
 	}
 
-	// test all knight squares (mindless)
-	// for _, offset := range offsetArr[KNIGHT_MASK] {
-	// 	sq := uint8(int8(kingSq) + offset)
-	// 	piece := boardState.PieceAtSquare(sq)
+	// test all knight squares
+	var knightPiece byte
+	if whiteInCheck {
+		knightPiece = BLACK_MASK | KNIGHT_MASK
+	} else {
+		knightPiece = WHITE_MASK | KNIGHT_MASK
+	}
 
-	// }
+	for _, offset := range offsetArr[KNIGHT_MASK] {
+		sq := uint8(int8(kingSq) + offset)
+		piece := boardState.PieceAtSquare(sq)
+
+		if piece == knightPiece {
+			return true
+		}
+	}
 	// test pawn squares
+	var pawnPiece byte
+	var pawnCaptureOffsetArr [2]int8
+
+	if whiteInCheck {
+		pawnPiece = BLACK_MASK | PAWN_MASK
+		pawnCaptureOffsetArr = whitePawnCaptureOffsetArr
+	} else {
+		pawnPiece = WHITE_MASK | PAWN_MASK
+		pawnCaptureOffsetArr = blackPawnCaptureOffsetArr
+	}
+
+	for _, offset := range pawnCaptureOffsetArr {
+		sq := uint8(int8(kingSq) + offset)
+		piece := boardState.PieceAtSquare(sq)
+
+		if piece == pawnPiece {
+			return true
+		}
+	}
 
 	return false
 }

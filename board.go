@@ -449,26 +449,30 @@ func CreateBoardStateFromFENString(s string) (BoardState, error) {
 		boardState.boardInfo.enPassantTargetSquare = RowAndColToSquare(row, col)
 	}
 
-	halfmoveClock, err := strconv.ParseUint(splits[4], 10, 8)
-	if err != nil {
-		return boardState, errors.New("Error parsing halfmove clock count: " + splits[4])
+	if len(splits) > 4 {
+		halfmoveClock, err := strconv.ParseUint(splits[4], 10, 8)
+		if err != nil {
+			return boardState, errors.New("Error parsing halfmove clock count: " + splits[4])
+		}
+
+		fullmoveNumber, err := strconv.ParseUint(splits[5], 10, 8)
+		if err != nil {
+			return boardState, errors.New("Error parsing fullmove number count: " + splits[4])
+		}
+
+		boardState.halfmoveClock = uint(halfmoveClock)
+		boardState.fullmoveNumber = uint(fullmoveNumber)
 	}
 
-	fullmoveNumber, err := strconv.ParseUint(splits[5], 10, 8)
-	if err != nil {
-		return boardState, errors.New("Error parsing fullmove number count: " + splits[4])
-	}
-
-	boardState.halfmoveClock = uint(halfmoveClock)
-	boardState.fullmoveNumber = uint(fullmoveNumber)
 	generateBoardLookupInfo(&boardState)
 
 	return boardState, nil
 }
 
 func main() {
+	str := "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 	for i := 0; i < 5; i++ {
-		board := CreateInitialBoardState()
+		board, _ := CreateBoardStateFromFENString(str)
 		fmt.Println(Perft(&board, i))
 	}
 }
