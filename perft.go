@@ -16,6 +16,7 @@ func Perft(boardState *BoardState, depth int) uint64 {
 
 	for _, move := range moves {
 		// testMoveLegality(boardState, move)
+		// fmt.Println(MoveToString(move))
 		boardState.ApplyMove(move)
 		if !boardState.IsInCheck(!boardState.whiteToMove) {
 			moveCount += Perft(boardState, depth-1)

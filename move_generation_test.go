@@ -71,6 +71,15 @@ func TestMoveGenerationFromQueen(t *testing.T) {
 	assert.Equal(t, 21, len(moves))
 }
 
+func TestMoveGenerationFromBishop(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.board[SQUARE_D2] = WHITE_MASK | BISHOP_MASK
+
+	moves := GenerateMoves(&testBoard)
+
+	assert.Equal(t, 9, len(moves))
+}
+
 func TestMoveGenerationFromInitialBoard(t *testing.T) {
 	var testBoard BoardState = CreateInitialBoardState()
 
