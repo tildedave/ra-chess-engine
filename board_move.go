@@ -2,8 +2,11 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 )
+
+var _ = fmt.Println
 
 func (boardState *BoardState) ApplyMove(move Move) {
 	boardState.boardInfoHistory[boardState.moveIndex] = boardState.boardInfo
@@ -32,7 +35,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.board[SQUARE_D8] = BLACK_MASK | ROOK_MASK
 			boardState.boardInfo.blackCanCastleKingside = false
 			boardState.boardInfo.blackCanCastleQueenside = false
-			boardState.lookupInfo.whiteKingSquare = SQUARE_C8
+			boardState.lookupInfo.blackKingSquare = SQUARE_C8
 		}
 	} else if move.IsKingsideCastle() {
 		if boardState.whiteToMove {
@@ -40,7 +43,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.board[SQUARE_F1] = WHITE_MASK | ROOK_MASK
 			boardState.boardInfo.whiteCanCastleKingside = false
 			boardState.boardInfo.whiteCanCastleQueenside = false
-			boardState.lookupInfo.blackKingSquare = SQUARE_G1
+			boardState.lookupInfo.whiteKingSquare = SQUARE_G1
 		} else {
 			boardState.board[SQUARE_H8] = EMPTY_SQUARE
 			boardState.board[SQUARE_F8] = BLACK_MASK | ROOK_MASK
@@ -48,37 +51,42 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.boardInfo.blackCanCastleQueenside = false
 			boardState.lookupInfo.blackKingSquare = SQUARE_G8
 		}
-	} else if p&KING_MASK == KING_MASK {
-		if boardState.whiteToMove {
-			boardState.boardInfo.whiteCanCastleKingside = false
-			boardState.boardInfo.whiteCanCastleQueenside = false
-			boardState.lookupInfo.whiteKingSquare = move.to
-		} else {
-			boardState.boardInfo.blackCanCastleKingside = false
-			boardState.boardInfo.blackCanCastleQueenside = false
-			boardState.lookupInfo.blackKingSquare = move.to
-		}
-	} else if p&ROOK_MASK == ROOK_MASK {
-		if boardState.whiteToMove {
-			if move.from == SQUARE_H1 {
+	} else {
+		switch p & 0x0F {
+		case KING_MASK:
+			if boardState.whiteToMove {
 				boardState.boardInfo.whiteCanCastleKingside = false
-			} else if move.from == SQUARE_A1 {
 				boardState.boardInfo.whiteCanCastleQueenside = false
-			}
-		} else {
-			if move.from == SQUARE_H8 {
+				boardState.lookupInfo.whiteKingSquare = move.to
+			} else {
 				boardState.boardInfo.blackCanCastleKingside = false
-			} else if move.from == SQUARE_A8 {
 				boardState.boardInfo.blackCanCastleQueenside = false
+				boardState.lookupInfo.blackKingSquare = move.to
 			}
-		}
-	} else if p&PAWN_MASK == PAWN_MASK && !move.IsCapture() {
-		if move.to > move.from {
-			if move.to-move.from > 10 {
-				boardState.boardInfo.enPassantTargetSquare = move.from + 10
+		case ROOK_MASK:
+			if boardState.whiteToMove {
+				if move.from == SQUARE_H1 {
+					boardState.boardInfo.whiteCanCastleKingside = false
+				} else if move.from == SQUARE_A1 {
+					boardState.boardInfo.whiteCanCastleQueenside = false
+				}
+			} else {
+				if move.from == SQUARE_H8 {
+					boardState.boardInfo.blackCanCastleKingside = false
+				} else if move.from == SQUARE_A8 {
+					boardState.boardInfo.blackCanCastleQueenside = false
+				}
 			}
-		} else if move.from-move.to > 10 {
-			boardState.boardInfo.enPassantTargetSquare = move.from - 10
+		case PAWN_MASK:
+			if !move.IsCapture() {
+				if move.to > move.from {
+					if move.to-move.from > 10 {
+						boardState.boardInfo.enPassantTargetSquare = move.from + 10
+					}
+				} else if move.from-move.to > 10 {
+					boardState.boardInfo.enPassantTargetSquare = move.from - 10
+				}
+			}
 		}
 	}
 
@@ -124,7 +132,7 @@ func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
 		} else if toPiece == SENTINEL_MASK {
 			return false, errors.New("To square was a sentinel")
 		} else if toPiece&captureMask != captureMask {
-			return false, errors.New("From square was not occupied by expected piece: " + strconv.Itoa(int(toPiece)))
+			return false, errors.New("To square was not occupied by piece of correct color: " + strconv.Itoa(int(toPiece)))
 		}
 	}
 

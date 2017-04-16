@@ -96,7 +96,7 @@ func TestMoveGenerationFromPawn(t *testing.T) {
 	assert.Equal(t, 3, len(moves))
 }
 
-func TestMoveGenerationFromPawnDoesMoveIntoOwnPiece(t *testing.T) {
+func TestMoveGenerationFromPawnDoesNotMoveIntoOwnPiece(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 	testBoard.board[SQUARE_A2] = WHITE_MASK | PAWN_MASK
 	testBoard.board[SQUARE_A4] = WHITE_MASK | ROOK_MASK

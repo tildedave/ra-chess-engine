@@ -8,43 +8,40 @@ import (
 
 var m map[byte]byte = make(map[byte]byte)
 
-// none of these are right
-
 func isPieceBlack(p byte) bool {
 	return p&BLACK_MASK == BLACK_MASK
 }
 
 func isPieceWhite(p byte) bool {
-	// WHITE_MASK isn't a mask, gotta see if unsetting the high bit is the same
 	return p&WHITE_MASK == WHITE_MASK
 }
 
 func isSentinel(p byte) bool {
-	return p&SENTINEL_MASK == SENTINEL_MASK
+	return p == SENTINEL_MASK
 }
 
 func isPawn(p byte) bool {
-	return p == 0x81 || p == 0x41
+	return p&0x0F == PAWN_MASK
 }
 
 func isBishop(p byte) bool {
-	return p&BISHOP_MASK == BISHOP_MASK
+	return p&0x0F == BISHOP_MASK
 }
 
 func isKnight(p byte) bool {
-	return p&KNIGHT_MASK == KNIGHT_MASK
+	return p&0x0F == KNIGHT_MASK
 }
 
 func isRook(p byte) bool {
-	return p&ROOK_MASK == ROOK_MASK
+	return p&0x0F == ROOK_MASK
 }
 
 func isQueen(p byte) bool {
-	return p&QUEEN_MASK == QUEEN_MASK
+	return p&0x0F == QUEEN_MASK
 }
 
 func isKing(p byte) bool {
-	return p&KING_MASK == KING_MASK
+	return p&0x0F == KING_MASK
 }
 
 func isSquareEmpty(p byte) bool {
@@ -93,7 +90,7 @@ func (boardState *BoardState) ToString() string {
 		}
 		s[(7-i)*9+8] = '\n'
 	}
-	return string(s[:9*8])
+	return string(s[:9*8]) + "\n" + boardState.ToFENString()
 }
 
 func (boardState *BoardState) ToFENString() string {

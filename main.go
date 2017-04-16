@@ -11,14 +11,14 @@ func main() {
 	isPerft := flag.Bool("perft", true, "Perft mode")
 	perftDepth := flag.Uint("perftdepth", 5, "Perft depth to search")
 	perftChecks := flag.Bool("countchecks", false, "Perft: count check positions (slower)")
-	perftSanityCheck := flag.Bool("sanitycheck", false, "Perft: sanity check moves (slower)")
+	perftSanityCheck := flag.Bool("sanitycheck", false, "Perft: sanity check board and moves (slower)")
 
 	flag.Parse()
 
 	if *isPerft {
 		var options PerftOptions
 		options.checks = *perftChecks
-		options.moveSanityCheck = *perftSanityCheck
+		options.sanityCheck = *perftSanityCheck
 
 		for i := uint(0); i <= *perftDepth; i++ {
 			board, err := CreateBoardStateFromFENString(*startingFen)

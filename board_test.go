@@ -39,7 +39,7 @@ func TestToString(t *testing.T) {
 	var initialBoard BoardState = CreateInitialBoardState()
 
 	var str = initialBoard.ToString()
-	assert.Equal(t, "rnbqkbnr\npppppppp\n........\n........\n........\n........\nPPPPPPPP\nRNBQKBNR\n", str)
+	assert.Equal(t, "rnbqkbnr\npppppppp\n........\n........\n........\n........\nPPPPPPPP\nRNBQKBNR\n\nrnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", str)
 }
 
 func TestToFEN(t *testing.T) {

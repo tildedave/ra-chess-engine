@@ -114,7 +114,7 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, m
 				boardState.board[SQUARE_D1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_C1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_B1] == EMPTY_SQUARE {
-				moves = append(moves, CreateQueensideCastle(sq, SQUARE_B1))
+				moves = append(moves, CreateQueensideCastle(sq, SQUARE_C1))
 			}
 		} else {
 			if boardState.boardInfo.blackCanCastleKingside &&
@@ -126,7 +126,7 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, m
 				boardState.board[SQUARE_D8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_C8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_B8] == EMPTY_SQUARE {
-				moves = append(moves, CreateQueensideCastle(sq, SQUARE_B8))
+				moves = append(moves, CreateQueensideCastle(sq, SQUARE_C8))
 			}
 		}
 	}

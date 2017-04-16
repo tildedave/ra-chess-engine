@@ -27,6 +27,17 @@ func TestApplyMove(t *testing.T) {
 	assert.Equal(t, emptyBoard.boardInfo.enPassantTargetSquare, EMPTY_SQUARE)
 }
 
+func TestApplyBlackPawnSingleMove(t *testing.T) {
+	var emptyBoard BoardState = CreateEmptyBoardState()
+	emptyBoard.board[SQUARE_A7] = BLACK_MASK | PAWN_MASK
+	emptyBoard.board[SQUARE_B6] = WHITE_MASK | ROOK_MASK
+	emptyBoard.whiteToMove = false
+
+	emptyBoard.ApplyMove(CreateCapture(SQUARE_A7, SQUARE_B6))
+
+	assert.Equal(t, emptyBoard.boardInfo.enPassantTargetSquare, uint8(0))
+}
+
 func TestApplyBlackPawnMove(t *testing.T) {
 	var emptyBoard BoardState = CreateEmptyBoardState()
 	emptyBoard.board[SQUARE_A7] = BLACK_MASK | PAWN_MASK

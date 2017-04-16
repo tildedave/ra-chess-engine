@@ -15,8 +15,8 @@ type PerftInfo struct {
 }
 
 type PerftOptions struct {
-	checks          bool
-	moveSanityCheck bool
+	checks      bool
+	sanityCheck bool
 }
 
 func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
@@ -37,7 +37,7 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 	promotions := uint(0)
 
 	for _, move := range moves {
-		if options.moveSanityCheck {
+		if options.sanityCheck {
 			testMoveLegality(boardState, move)
 		}
 
@@ -45,6 +45,17 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 			continue
 		}
 		boardState.ApplyMove(move)
+
+		if options.sanityCheck {
+			if boardState.board[boardState.lookupInfo.whiteKingSquare] != WHITE_MASK|KING_MASK {
+				fmt.Println(boardState.ToString())
+				panic("white king not at expected position")
+			}
+			if boardState.board[boardState.lookupInfo.blackKingSquare] != BLACK_MASK|KING_MASK {
+				fmt.Println(boardState.ToString())
+				panic("black king not at expected position")
+			}
+		}
 
 		if !boardState.IsInCheck(!boardState.whiteToMove) {
 			if move.IsCapture() {
