@@ -44,6 +44,7 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 		if move.IsCastle() && !boardState.TestCastleLegality(move) {
 			continue
 		}
+
 		boardState.ApplyMove(move)
 
 		if options.sanityCheck {
@@ -69,6 +70,7 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 			info := Perft(boardState, depth-1, options)
 			addPerftInfo(&perftInfo, info)
 		}
+
 		boardState.UnapplyMove(move)
 	}
 

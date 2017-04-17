@@ -107,25 +107,29 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, m
 		if boardState.whiteToMove {
 			if boardState.boardInfo.whiteCanCastleKingside &&
 				boardState.board[SQUARE_F1] == EMPTY_SQUARE &&
-				boardState.board[SQUARE_G1] == EMPTY_SQUARE {
+				boardState.board[SQUARE_G1] == EMPTY_SQUARE &&
+				boardState.board[SQUARE_H1] == WHITE_MASK|ROOK_MASK {
 				moves = append(moves, CreateKingsideCastle(sq, SQUARE_G1))
 			}
 			if boardState.boardInfo.whiteCanCastleQueenside &&
 				boardState.board[SQUARE_D1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_C1] == EMPTY_SQUARE &&
-				boardState.board[SQUARE_B1] == EMPTY_SQUARE {
+				boardState.board[SQUARE_B1] == EMPTY_SQUARE &&
+				boardState.board[SQUARE_A1] == WHITE_MASK|ROOK_MASK {
 				moves = append(moves, CreateQueensideCastle(sq, SQUARE_C1))
 			}
 		} else {
 			if boardState.boardInfo.blackCanCastleKingside &&
 				boardState.board[SQUARE_F8] == EMPTY_SQUARE &&
-				boardState.board[SQUARE_G8] == EMPTY_SQUARE {
+				boardState.board[SQUARE_G8] == EMPTY_SQUARE &&
+				boardState.board[SQUARE_H8] == BLACK_MASK|ROOK_MASK {
 				moves = append(moves, CreateKingsideCastle(sq, SQUARE_G8))
 			}
 			if boardState.boardInfo.blackCanCastleQueenside &&
 				boardState.board[SQUARE_D8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_C8] == EMPTY_SQUARE &&
-				boardState.board[SQUARE_B8] == EMPTY_SQUARE {
+				boardState.board[SQUARE_B8] == EMPTY_SQUARE &&
+				boardState.board[SQUARE_A8] == BLACK_MASK|ROOK_MASK {
 				moves = append(moves, CreateQueensideCastle(sq, SQUARE_C8))
 			}
 		}
