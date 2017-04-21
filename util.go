@@ -18,3 +18,7 @@ func (s *byteStack) Pop() byte {
 
 	return i
 }
+
+func (s *byteStack) Peek() byte {
+	return s.arr[len(s.arr)-1]
+}

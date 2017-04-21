@@ -262,6 +262,7 @@ func CreateEmptyBoardState() BoardState {
 	b.halfmoveClock = 0
 	b.fullmoveNumber = 1
 	generateBoardLookupInfo(&b)
+	// generateZobristHashInfo(&b)
 
 	return b
 }
@@ -278,6 +279,10 @@ func generateBoardLookupInfo(boardState *BoardState) {
 			}
 		}
 	}
+}
+
+func generateZobrishHashInfo(boardState *BoardState) {
+
 }
 
 func CreateInitialBoardState() BoardState {
