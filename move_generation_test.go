@@ -96,6 +96,29 @@ func TestMoveGenerationFromPawn(t *testing.T) {
 	assert.Equal(t, 3, len(moves))
 }
 
+func TestMoveGenerationFromPawnPromotion(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.board[SQUARE_A7] = WHITE_MASK | PAWN_MASK
+	testBoard.board[SQUARE_B7] = WHITE_MASK | PAWN_MASK
+	testBoard.board[SQUARE_C7] = WHITE_MASK | PAWN_MASK
+	testBoard.board[SQUARE_D7] = WHITE_MASK | PAWN_MASK
+	testBoard.board[SQUARE_E7] = WHITE_MASK | PAWN_MASK
+	testBoard.board[SQUARE_F7] = WHITE_MASK | PAWN_MASK
+	testBoard.board[SQUARE_G7] = WHITE_MASK | PAWN_MASK
+	testBoard.board[SQUARE_H7] = WHITE_MASK | PAWN_MASK
+
+	moves := GenerateMoves(&testBoard)
+	assert.Equal(t, 32, len(moves))
+}
+func TestMoveGenerationFromPawnPromotionBlack(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.board[SQUARE_A2] = BLACK_MASK | PAWN_MASK
+	testBoard.whiteToMove = false
+
+	moves := GenerateMoves(&testBoard)
+	assert.Equal(t, 4, len(moves))
+}
+
 func TestMoveGenerationFromPawnDoesNotMoveIntoOwnPiece(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 	testBoard.board[SQUARE_A2] = WHITE_MASK | PAWN_MASK

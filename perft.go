@@ -61,9 +61,11 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 		if !boardState.IsInCheck(!boardState.whiteToMove) {
 			if move.IsCapture() {
 				captures++
-			} else if move.IsKingsideCastle() || move.IsQueensideCastle() {
+			}
+			if move.IsKingsideCastle() || move.IsQueensideCastle() {
 				castles++
-			} else if move.IsPromotion() {
+			}
+			if move.IsPromotion() {
 				promotions++
 			}
 

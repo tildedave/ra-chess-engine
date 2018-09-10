@@ -30,7 +30,7 @@ func (m Move) IsCastle() bool {
 }
 
 func (m Move) IsPromotion() bool {
-	return m.flags == PROMOTION_MASK
+	return m.flags&PROMOTION_MASK == PROMOTION_MASK
 }
 
 func CreateMove(from uint8, to uint8) Move {
@@ -94,6 +94,9 @@ func MoveToString(move Move) string {
 		s += "-"
 	}
 	s += SquareToAlgebraicString(move.to)
+	if move.IsPromotion() {
+		s += "=" + string(pieceToString(move.flags|WHITE_MASK))
+	}
 
 	return s
 }
