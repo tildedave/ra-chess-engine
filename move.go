@@ -88,7 +88,7 @@ func MoveToString(move Move) string {
 
 	var s string
 	s += SquareToAlgebraicString(move.from)
-	if move.flags&CAPTURE_MASK == CAPTURE_MASK {
+	if move.IsCapture() {
 		s += "x"
 	} else {
 		s += "-"
@@ -97,6 +97,37 @@ func MoveToString(move Move) string {
 	if move.IsPromotion() {
 		s += "=" + string(pieceToString(move.flags|WHITE_MASK))
 	}
+
+	return s
+}
+
+func MoveToPrettyString(move Move, boardState BoardState) string {
+	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK {
+		if move.flags&SPECIAL2_MASK == SPECIAL2_MASK {
+			return "O-O-O"
+		}
+		return "O-O"
+	}
+
+	var p byte = boardState.board[move.from]
+	if p&0x0F == PAWN_MASK {
+		if move.IsCapture() {
+			return SquareToAlgebraicString(move.from) + "x" + SquareToAlgebraicString(move.to)
+		}
+
+		return SquareToAlgebraicString(move.to)
+	}
+
+	// TODO: handle ambiguity if there's another piece of that type that
+	// has a valid legal move here
+
+	var s string
+	s += string(pieceToString(p))
+
+	if move.IsCapture() {
+		s += "x"
+	}
+	s += SquareToAlgebraicString(move.to)
 
 	return s
 }
