@@ -20,16 +20,16 @@ func (boardState *BoardState) IsInCheck(whiteInCheck bool) bool {
 	return boardState.IsSquareUnderAttack(kingSq, oppositeColorMask)
 }
 
-func (boardState *BoardState) IsSquareUnderAttack(sq byte, mask byte) bool {
+func (boardState *BoardState) IsSquareUnderAttack(sq byte, colorMask byte) bool {
 	for _, pieceMask := range []byte{BISHOP_MASK, ROOK_MASK} {
 		for _, offset := range offsetArr[pieceMask] {
 			piece := followRay(boardState, sq, offset)
 			// TODO(perf) should be possible to combine these checks both
 			// here and in move generation w/an appropriate bit test
-			if piece != SENTINEL_MASK && piece&mask == mask {
+			if piece != SENTINEL_MASK && piece&colorMask == colorMask {
 				// we care about this piece, is it the piece we're looking for
 				// or a queen
-				if isQueen(piece) || piece&pieceMask == pieceMask {
+				if isQueen(piece) || piece == colorMask|pieceMask {
 					// bam in check
 					return true
 				}
@@ -38,7 +38,7 @@ func (boardState *BoardState) IsSquareUnderAttack(sq byte, mask byte) bool {
 	}
 
 	// test all knight squares
-	knightPiece := mask | KNIGHT_MASK
+	knightPiece := colorMask | KNIGHT_MASK
 
 	for _, offset := range offsetArr[KNIGHT_MASK] {
 		sq := uint8(int8(sq) + offset)
@@ -49,10 +49,10 @@ func (boardState *BoardState) IsSquareUnderAttack(sq byte, mask byte) bool {
 		}
 	}
 	// test pawn squares
-	pawnPiece := mask | PAWN_MASK
+	pawnPiece := colorMask | PAWN_MASK
 	var pawnCaptureOffsetArr [2]int8
 
-	if mask == BLACK_MASK {
+	if colorMask == BLACK_MASK {
 		pawnCaptureOffsetArr = whitePawnCaptureOffsetArr
 	} else {
 		pawnCaptureOffsetArr = blackPawnCaptureOffsetArr
