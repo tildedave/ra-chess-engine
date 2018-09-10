@@ -198,7 +198,5 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, mo
 		}
 	}
 
-	// TODO: pawn promotion
-
 	return moves
 }
