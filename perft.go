@@ -15,8 +15,9 @@ type PerftInfo struct {
 }
 
 type PerftOptions struct {
-	checks      bool
-	sanityCheck bool
+	checks          bool
+	sanityCheck     bool
+	perftPrintMoves bool
 }
 
 func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
@@ -58,7 +59,10 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 			}
 		}
 
+		wasValid := false
 		if !boardState.IsInCheck(!boardState.whiteToMove) {
+			wasValid = true
+
 			if move.IsCapture() {
 				captures++
 			}
@@ -74,6 +78,13 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 		}
 
 		boardState.UnapplyMove(move)
+		if depth == 1 && options.perftPrintMoves {
+			if wasValid {
+				fmt.Println(MoveToPrettyString(move, *boardState))
+			} else {
+				fmt.Println("ILLEGAL: " + MoveToPrettyString(move, *boardState))
+			}
+		}
 	}
 
 	perftInfo.captures += captures
