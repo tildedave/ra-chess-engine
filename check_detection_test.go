@@ -68,9 +68,17 @@ func TestInCheckPawn(t *testing.T) {
 func TestBlackKingDoesNotCheckWhiteKing(t *testing.T) {
 	var fen string = "r6r/1b2k1bq/8/8/7B/8/8/R3K2R b QK - 3 2"
 	testBoard, _ := CreateBoardStateFromFENString(fen)
-	var m Move = CreateCapture(SQUARE_H7, SQUARE_H4)
 
-	testBoard.ApplyMove(m)
+	testBoard.ApplyMove(CreateCapture(SQUARE_H7, SQUARE_H4))
+
+	assert.False(t, testBoard.IsInCheck(false))
+}
+
+func TestEnPassantRemovesCheck(t *testing.T) {
+	var fen string = "8/8/8/2k5/2pP4/8/B7/4K3 b - d3 5 3"
+	testBoard, _ := CreateBoardStateFromFENString(fen)
+
+	testBoard.ApplyMove(CreateCapture(SQUARE_C4, SQUARE_D3))
 
 	assert.False(t, testBoard.IsInCheck(false))
 }

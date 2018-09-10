@@ -183,7 +183,7 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, mo
 		var dest byte = uint8(int8(sq) + offset)
 
 		if boardState.boardInfo.enPassantTargetSquare == dest {
-			moves = append(moves, CreateCapture(sq, dest))
+			moves = append(moves, CreateEnPassantCapture(sq, dest))
 			continue
 		}
 

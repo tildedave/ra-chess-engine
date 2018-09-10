@@ -232,6 +232,25 @@ func TestBlackPawnPromotes(t *testing.T) {
 	assert.Equal(t, BLACK_MASK|PAWN_MASK, testBoard.board[SQUARE_D2])
 }
 
+func TestEnPassantCapture(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.board[SQUARE_A5] = WHITE_MASK | PAWN_MASK
+	testBoard.board[SQUARE_B5] = BLACK_MASK | PAWN_MASK
+	testBoard.boardInfo.enPassantTargetSquare = SQUARE_B6
+
+	var m Move = CreateEnPassantCapture(SQUARE_A5, SQUARE_B6)
+	testBoard.ApplyMove(m)
+
+	assert.Equal(t, EMPTY_SQUARE, testBoard.board[SQUARE_B5])
+	assert.Equal(t, WHITE_MASK|PAWN_MASK, testBoard.board[SQUARE_B6])
+
+	testBoard.UnapplyMove(m)
+
+	assert.Equal(t, WHITE_MASK|PAWN_MASK, testBoard.board[SQUARE_A5])
+	assert.Equal(t, BLACK_MASK|PAWN_MASK, testBoard.board[SQUARE_B5])
+	testBoard.boardInfo.enPassantTargetSquare = SQUARE_B6
+}
+
 func TestFiddlingWithQueensideRooks(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 

@@ -19,6 +19,8 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	boardState.board[move.from] = 0x00
 	boardState.board[move.to] = p
 
+	var epTargetSquare = boardState.boardInfo.enPassantTargetSquare
+
 	// TODO(perf) - less if statements/work when castling is over
 	boardState.boardInfo.enPassantTargetSquare = 0
 
@@ -86,7 +88,22 @@ func (boardState *BoardState) ApplyMove(move Move) {
 				} else if move.from-move.to > 10 {
 					boardState.boardInfo.enPassantTargetSquare = move.from - 10
 				}
+			} else if move.to == epTargetSquare {
+
+				var pos uint8
+				if boardState.whiteToMove {
+					pos = move.to - 10
+				} else {
+					pos = move.to + 10
+				}
+
+				// captureStack is wrong in this case (it has a 0 on it) so we need to fix it
+				// better to do this check now than above because EP is not common
+				boardState.captureStack.Pop()
+				boardState.captureStack.Push(boardState.board[pos])
+				boardState.board[pos] = 0x00
 			}
+
 			if move.IsPromotion() {
 				var colorMask byte
 				if boardState.whiteToMove {
@@ -96,7 +113,6 @@ func (boardState *BoardState) ApplyMove(move Move) {
 				}
 
 				boardState.board[move.to] = (move.flags & 0x0F) | colorMask
-
 			}
 		}
 	}
@@ -195,13 +211,28 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 		}
 	}
 
-	if p&KING_MASK == KING_MASK {
+	switch p & 0x0F {
+	case KING_MASK:
 		if boardState.whiteToMove {
 			boardState.lookupInfo.whiteKingSquare = move.from
 		} else {
 			boardState.lookupInfo.blackKingSquare = move.from
 		}
+	case PAWN_MASK:
+		if move.flags&0xF0 == CAPTURE_MASK|SPECIAL1_MASK {
+			var pos uint8
+			if boardState.whiteToMove {
+				pos = move.to - 10
+			} else {
+				pos = move.to + 10
+			}
+
+			boardState.board[pos] = boardState.board[move.to]
+			boardState.board[move.to] = 0x00
+			boardState.boardInfo.enPassantTargetSquare = pos
+		}
 	}
+
 	if move.IsPromotion() {
 		var mask byte
 		if boardState.whiteToMove {
