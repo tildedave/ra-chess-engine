@@ -17,10 +17,19 @@ func TestCreateCapture(t *testing.T) {
 	var m = CreateCapture(31, 51)
 
 	assert.Equal(t, Move{from: 31, to: 51, flags: 0x80}, m)
+	assert.True(t, m.IsCapture())
+}
+
+func TestCreateEnPassantCapture(t *testing.T) {
+	var m = CreateEnPassantCapture(31, 51)
+
+	assert.Equal(t, Move{from: 31, to: 51, flags: 0xA0}, m)
+	assert.True(t, m.IsCapture())
 }
 
 func TestMoveToString(t *testing.T) {
 	assert.Equal(t, "a2xa4", MoveToString(CreateCapture(SQUARE_A2, SQUARE_A4)))
+	assert.Equal(t, "a2xa4", MoveToString(CreateEnPassantCapture(SQUARE_A2, SQUARE_A4)))
 	assert.Equal(t, "a2-a4", MoveToString(CreateMove(SQUARE_A2, SQUARE_A4)))
 	assert.Equal(t, "O-O", MoveToString(CreateKingsideCastle(25, 27)))
 	assert.Equal(t, "O-O-O", MoveToString(CreateQueensideCastle(25, 23)))
@@ -34,6 +43,7 @@ func TestMoveToPrettyString(t *testing.T) {
 	boardState.board[SQUARE_G7] = BLACK_MASK | ROOK_MASK
 
 	assert.Equal(t, "a2xa4", MoveToPrettyString(CreateCapture(SQUARE_A2, SQUARE_A4), boardState))
+	assert.Equal(t, "a2xa4", MoveToPrettyString(CreateEnPassantCapture(SQUARE_A2, SQUARE_A4), boardState))
 	assert.Equal(t, "a4", MoveToPrettyString(CreateMove(SQUARE_A2, SQUARE_A4), boardState))
 	assert.Equal(t, "Nxg7", MoveToPrettyString(CreateCapture(SQUARE_F5, SQUARE_G7), boardState))
 }

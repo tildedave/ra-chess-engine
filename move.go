@@ -26,11 +26,11 @@ func (m Move) IsKingsideCastle() bool {
 }
 
 func (m Move) IsCastle() bool {
-	return m.flags&SPECIAL1_MASK == SPECIAL1_MASK
+	return m.flags&0xF0 == SPECIAL1_MASK
 }
 
 func (m Move) IsPromotion() bool {
-	return m.flags&PROMOTION_MASK == PROMOTION_MASK
+	return m.flags&0xF0 == PROMOTION_MASK
 }
 
 func CreateMove(from uint8, to uint8) Move {
@@ -46,6 +46,13 @@ func CreateCapture(from uint8, to uint8) Move {
 	m.from = from
 	m.to = to
 	m.flags |= CAPTURE_MASK
+
+	return m
+}
+
+func CreateEnPassantCapture(from uint8, to uint8) Move {
+	var m Move = CreateCapture(from, to)
+	m.flags |= SPECIAL1_MASK
 
 	return m
 }
@@ -79,7 +86,7 @@ func CreatePromotion(from uint8, to uint8, pieceMask uint8) Move {
 }
 
 func MoveToString(move Move) string {
-	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK {
+	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK && !move.IsCapture() {
 		if move.flags&SPECIAL2_MASK == SPECIAL2_MASK {
 			return "O-O-O"
 		}
@@ -102,7 +109,7 @@ func MoveToString(move Move) string {
 }
 
 func MoveToPrettyString(move Move, boardState BoardState) string {
-	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK {
+	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK && !move.IsCapture() {
 		if move.flags&SPECIAL2_MASK == SPECIAL2_MASK {
 			return "O-O-O"
 		}
