@@ -168,6 +168,10 @@ func RowAndColToSquare(row uint8, col uint8) uint8 {
 	return 20 + row*10 + 1 + col
 }
 
+func Rank(sq uint8) uint8 {
+	return (sq-1)/10 - 1
+}
+
 func SquareToAlgebraicString(sq uint8) string {
 	var row = sq / 10
 	var col = sq % 10

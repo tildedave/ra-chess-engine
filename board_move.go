@@ -87,6 +87,18 @@ func (boardState *BoardState) ApplyMove(move Move) {
 					boardState.boardInfo.enPassantTargetSquare = move.from - 10
 				}
 			}
+			if move.IsPromotion() {
+				// const PROMOTION_MASK = 0x40 // may not be needed
+				var colorMask byte
+				if boardState.whiteToMove {
+					colorMask = WHITE_MASK
+				} else {
+					colorMask = BLACK_MASK
+				}
+
+				boardState.board[move.to] = (move.flags & 0x0F) | colorMask
+
+			}
 		}
 	}
 
@@ -160,8 +172,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 
 	boardState.board[move.from] = p
 
-	// TODO(perf) - less if statements for the average case
-	// this could be not a big deal b/c of branch prediction
+	// TODO(perf) - just switch statement on the different conditions here, they are all mutually exclusive
 	if move.IsQueensideCastle() {
 		// black was to move, so we're unmaking a white move
 		if boardState.whiteToMove {
@@ -191,5 +202,14 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 		} else {
 			boardState.lookupInfo.blackKingSquare = move.from
 		}
+	}
+	if move.IsPromotion() {
+		var mask byte
+		if boardState.whiteToMove {
+			mask = WHITE_MASK
+		} else {
+			mask = BLACK_MASK
+		}
+		boardState.board[move.from] = mask | PAWN_MASK
 	}
 }

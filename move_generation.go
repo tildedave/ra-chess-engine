@@ -147,25 +147,22 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, mo
 	}
 
 	var dest byte = uint8(int8(sq) + offset)
+
 	if boardState.board[dest] == EMPTY_SQUARE {
+		var sourceRank byte = Rank(sq)
 		// promotion
-		if (isWhite && dest >= SQUARE_A8) || (!isWhite && dest <= SQUARE_H1) {
-			var mask byte
-			if isWhite {
-				mask = WHITE_MASK
-			} else {
-				mask = BLACK_MASK
-			}
-			moves = append(moves, CreatePromotion(sq, dest, mask|QUEEN_MASK))
-			moves = append(moves, CreatePromotion(sq, dest, mask|BISHOP_MASK))
-			moves = append(moves, CreatePromotion(sq, dest, mask|KNIGHT_MASK))
-			moves = append(moves, CreatePromotion(sq, dest, mask|ROOK_MASK))
+		if (isWhite && sourceRank == RANK_7) || (!isWhite && sourceRank == RANK_2) {
+			// promotions are color-maskless
+			moves = append(moves, CreatePromotion(sq, dest, QUEEN_MASK))
+			moves = append(moves, CreatePromotion(sq, dest, BISHOP_MASK))
+			moves = append(moves, CreatePromotion(sq, dest, KNIGHT_MASK))
+			moves = append(moves, CreatePromotion(sq, dest, ROOK_MASK))
 		} else {
 			// empty square
 			moves = append(moves, CreateMove(sq, dest))
 
-			if (isWhite && sq >= SQUARE_A2 && sq <= SQUARE_H2) ||
-				(!isWhite && sq >= SQUARE_A7 && sq <= SQUARE_H7) {
+			if (isWhite && sourceRank == RANK_2) ||
+				(!isWhite && sourceRank == RANK_7) {
 				// home row for white so we can move one more
 				dest = uint8(int8(dest) + offset)
 				if boardState.board[dest] == EMPTY_SQUARE {
