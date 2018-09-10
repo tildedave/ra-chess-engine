@@ -197,6 +197,41 @@ func TestApplyBlackQueensideCastle(t *testing.T) {
 	assert.True(t, testBoard.boardInfo.blackCanCastleQueenside)
 }
 
+func TestWhitePawnPromotes(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.board[SQUARE_H7] = WHITE_MASK | PAWN_MASK
+
+	var m Move = CreatePromotion(SQUARE_H7, SQUARE_H8, QUEEN_MASK)
+
+	testBoard.ApplyMove(m)
+
+	assert.Equal(t, EMPTY_SQUARE, testBoard.board[SQUARE_H7])
+	assert.Equal(t, WHITE_MASK|QUEEN_MASK, testBoard.board[SQUARE_H8])
+
+	testBoard.UnapplyMove(m)
+
+	assert.Equal(t, EMPTY_SQUARE, testBoard.board[SQUARE_H8])
+	assert.Equal(t, WHITE_MASK|PAWN_MASK, testBoard.board[SQUARE_H7])
+}
+
+func TestBlackPawnPromotes(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.board[SQUARE_D2] = BLACK_MASK | PAWN_MASK
+	testBoard.whiteToMove = false
+
+	var m Move = CreatePromotion(SQUARE_D2, SQUARE_D1, ROOK_MASK)
+
+	testBoard.ApplyMove(m)
+
+	assert.Equal(t, EMPTY_SQUARE, testBoard.board[SQUARE_D2])
+	assert.Equal(t, BLACK_MASK|ROOK_MASK, testBoard.board[SQUARE_D1])
+
+	testBoard.UnapplyMove(m)
+
+	assert.Equal(t, EMPTY_SQUARE, testBoard.board[SQUARE_D1])
+	assert.Equal(t, BLACK_MASK|PAWN_MASK, testBoard.board[SQUARE_D2])
+}
+
 func TestFiddlingWithQueensideRooks(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 

@@ -68,12 +68,12 @@ func CreateQueensideCastle(from uint8, to uint8) Move {
 	return m
 }
 
-func CreatePromotion(from uint8, to uint8, piece uint8) Move {
+func CreatePromotion(from uint8, to uint8, pieceMask uint8) Move {
 	// Piece is stored in bottom half of the promotion
 	var m Move
 	m.from = from
 	m.to = to
-	m.flags |= PROMOTION_MASK | (piece & 0x0F)
+	m.flags |= PROMOTION_MASK | pieceMask
 
 	return m
 }

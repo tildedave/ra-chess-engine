@@ -50,6 +50,17 @@ func TestToFEN(t *testing.T) {
 	assert.Equal(t, "8/8/8/8/8/8/8/8 w - - 0 1", emptyBoard.ToFENString())
 }
 
+func TestRank(t *testing.T) {
+	assert.Equal(t, RANK_1, Rank(SQUARE_A1))
+	assert.Equal(t, RANK_2, Rank(SQUARE_A2))
+	assert.Equal(t, RANK_3, Rank(SQUARE_A3))
+	assert.Equal(t, RANK_4, Rank(SQUARE_A4))
+	assert.Equal(t, RANK_5, Rank(SQUARE_A5))
+	assert.Equal(t, RANK_6, Rank(SQUARE_A6))
+	assert.Equal(t, RANK_7, Rank(SQUARE_A7))
+	assert.Equal(t, RANK_8, Rank(SQUARE_A8))
+}
+
 func TestSquareToAlgebraicString(t *testing.T) {
 	assert.Equal(t, "??", SquareToAlgebraicString(0))
 	assert.Equal(t, "??", SquareToAlgebraicString(10))

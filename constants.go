@@ -75,3 +75,12 @@ const SQUARE_E8 byte = 95
 const SQUARE_F8 byte = 96
 const SQUARE_G8 byte = 97
 const SQUARE_H8 byte = 98
+
+const RANK_1 byte = 0x01
+const RANK_2 byte = 0x02
+const RANK_3 byte = 0x03
+const RANK_4 byte = 0x04
+const RANK_5 byte = 0x05
+const RANK_6 byte = 0x06
+const RANK_7 byte = 0x07
+const RANK_8 byte = 0x08
