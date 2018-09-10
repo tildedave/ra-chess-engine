@@ -88,7 +88,6 @@ func (boardState *BoardState) ApplyMove(move Move) {
 				}
 			}
 			if move.IsPromotion() {
-				// const PROMOTION_MASK = 0x40 // may not be needed
 				var colorMask byte
 				if boardState.whiteToMove {
 					colorMask = WHITE_MASK
