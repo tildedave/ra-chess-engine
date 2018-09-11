@@ -11,7 +11,7 @@ var _ = fmt.Println
 func filterMovesFrom(moves []Move, from uint8) []Move {
 	var filteredMoves []Move
 	for _, move := range moves {
-		if move.from == SQUARE_A2 {
+		if move.from == from {
 			filteredMoves = append(filteredMoves, move)
 		}
 	}

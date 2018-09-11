@@ -49,7 +49,7 @@ func main() {
 				}
 				perftResult := Perft(&board, spec.Depth, options)
 				if perftResult.nodes != spec.Nodes {
-					fmt.Printf("NOT OK: %s (depth=%d, nodes=%d, actual nodes=%d)\n", spec.Fen, spec.Depth, spec.Nodes, perftResult.nodes)
+					fmt.Printf("NOT OK: %s (depth=%d, expected nodes=%d, actual nodes=%d)\n", spec.Fen, spec.Depth, spec.Nodes, perftResult.nodes)
 				} else {
 					fmt.Printf("OK: %s (depth=%d, nodes=%d)\n", spec.Fen, spec.Depth, spec.Nodes)
 				}
