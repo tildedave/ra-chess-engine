@@ -27,6 +27,11 @@ func TestCreateEnPassantCapture(t *testing.T) {
 	assert.True(t, m.IsCapture())
 }
 
+func TestCreateCastle(t *testing.T) {
+	assert.True(t, CreateKingsideCastle(SQUARE_E1, SQUARE_G1).IsCastle())
+	assert.True(t, CreateQueensideCastle(SQUARE_E1, SQUARE_C1).IsCastle())
+}
+
 func TestMoveToString(t *testing.T) {
 	assert.Equal(t, "a2xa4", MoveToString(CreateCapture(SQUARE_A2, SQUARE_A4)))
 	assert.Equal(t, "a2xa4", MoveToString(CreateEnPassantCapture(SQUARE_A2, SQUARE_A4)))
