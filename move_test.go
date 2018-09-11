@@ -20,6 +20,14 @@ func TestCreateCapture(t *testing.T) {
 	assert.True(t, m.IsCapture())
 }
 
+func TestCreateCapturePromotion(t *testing.T) {
+	var m = CreatePromotionCapture(SQUARE_A7, SQUARE_B8, QUEEN_MASK)
+
+	assert.Equal(t, Move{from: SQUARE_A7, to: SQUARE_B8, flags: 0xC5}, m)
+	assert.True(t, m.IsCapture())
+	assert.True(t, m.IsPromotion())
+}
+
 func TestCreateEnPassantCapture(t *testing.T) {
 	var m = CreateEnPassantCapture(31, 51)
 
