@@ -40,6 +40,7 @@ func main() {
 			var specs []PerftSpecification
 			json.Unmarshal(b, &specs)
 
+			allSuccess := true
 			for _, spec := range specs {
 				board, err := CreateBoardStateFromFENString(spec.Fen)
 				if err != nil {
@@ -50,11 +51,17 @@ func main() {
 				perftResult := Perft(&board, spec.Depth, options)
 				if perftResult.nodes != spec.Nodes {
 					fmt.Printf("NOT OK: %s (depth=%d, expected nodes=%d, actual nodes=%d)\n", spec.Fen, spec.Depth, spec.Nodes, perftResult.nodes)
+					allSuccess = false
 				} else {
 					fmt.Printf("OK: %s (depth=%d, nodes=%d)\n", spec.Fen, spec.Depth, spec.Nodes)
 				}
 			}
-			return
+
+			if allSuccess {
+				os.Exit(0)
+			} else {
+				os.Exit(1)
+			}
 		}
 
 		for i := uint(0); i <= *perftDepth; i++ {

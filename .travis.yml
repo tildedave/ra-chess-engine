@@ -5,4 +5,6 @@ go:
 install:
   - go get github.com/stretchr/testify/assert
 after_success:
-  - go build && ./ra-chess-engine
+  - go build
+  - ./ra-chess-engine -perftjson perft-test-positions.json
+  - ./ra-chess-engine -perftjson perft-starting-position.json
