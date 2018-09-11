@@ -100,18 +100,22 @@ func (boardState *BoardState) TestCastleLegality(move Move) bool {
 	if boardState.whiteToMove {
 		if move.IsKingsideCastle() {
 			// test	if F1 is being attacked
-			return !boardState.IsSquareUnderAttack(SQUARE_F1, BLACK_MASK)
+			return !boardState.IsSquareUnderAttack(SQUARE_F1, BLACK_MASK) &&
+				!boardState.IsSquareUnderAttack(SQUARE_E1, BLACK_MASK)
 		}
 
 		// test	if B1 or C1 are being attacked
 		return !boardState.IsSquareUnderAttack(SQUARE_D1, BLACK_MASK) &&
-			!boardState.IsSquareUnderAttack(SQUARE_C1, BLACK_MASK)
+			!boardState.IsSquareUnderAttack(SQUARE_C1, BLACK_MASK) &&
+			!boardState.IsSquareUnderAttack(SQUARE_E1, BLACK_MASK)
 	}
 
 	if move.IsKingsideCastle() {
-		return !boardState.IsSquareUnderAttack(SQUARE_F8, WHITE_MASK)
+		return !boardState.IsSquareUnderAttack(SQUARE_F8, WHITE_MASK) &&
+			!boardState.IsSquareUnderAttack(SQUARE_E8, WHITE_MASK)
 	}
 
 	return !boardState.IsSquareUnderAttack(SQUARE_D8, WHITE_MASK) &&
-		!boardState.IsSquareUnderAttack(SQUARE_C8, WHITE_MASK)
+		!boardState.IsSquareUnderAttack(SQUARE_C8, WHITE_MASK) &&
+		!boardState.IsSquareUnderAttack(SQUARE_E8, WHITE_MASK)
 }

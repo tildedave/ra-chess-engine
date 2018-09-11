@@ -101,8 +101,8 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, m
 	}
 
 	// if piece is a king, castle logic
-	// this doesn't have the provision against 'castle through check' which
-	// we'll do later outside of move generation
+	// this doesn't have the provision against 'castle through check' or
+	// 'castle outside of check' which we'll do later outside of move generation
 	if p&0x0F == KING_MASK {
 		if boardState.whiteToMove {
 			if boardState.boardInfo.whiteCanCastleKingside &&

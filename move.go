@@ -26,7 +26,8 @@ func (m Move) IsKingsideCastle() bool {
 }
 
 func (m Move) IsCastle() bool {
-	return m.flags&0xF0 == SPECIAL1_MASK
+	var flag = m.flags & 0xF0
+	return flag == SPECIAL1_MASK || flag == SPECIAL1_MASK|SPECIAL2_MASK
 }
 
 func (m Move) IsPromotion() bool {
