@@ -41,28 +41,38 @@ func (boardState *BoardState) IsSquareUnderAttack(sq byte, colorMask byte) bool 
 	knightPiece := colorMask | KNIGHT_MASK
 
 	for _, offset := range offsetArr[KNIGHT_MASK] {
-		sq := uint8(int8(sq) + offset)
-		piece := boardState.PieceAtSquare(sq)
+		piece := boardState.PieceAtSquare(uint8(int8(sq) + offset))
 
 		if piece == knightPiece {
 			return true
 		}
 	}
-	// test pawn squares
-	pawnPiece := colorMask | PAWN_MASK
+
 	var pawnCaptureOffsetArr [2]int8
+	var opposingKingSq uint8
 
 	if colorMask == BLACK_MASK {
 		pawnCaptureOffsetArr = whitePawnCaptureOffsetArr
+		opposingKingSq = boardState.lookupInfo.blackKingSquare
 	} else {
 		pawnCaptureOffsetArr = blackPawnCaptureOffsetArr
+		opposingKingSq = boardState.lookupInfo.whiteKingSquare
 	}
 
+	// test pawn squares
+	pawnPiece := colorMask | PAWN_MASK
+
 	for _, offset := range pawnCaptureOffsetArr {
-		sq := uint8(int8(sq) + offset)
-		piece := boardState.PieceAtSquare(sq)
+		piece := boardState.PieceAtSquare(uint8(int8(sq) + offset))
 
 		if piece == pawnPiece {
+			return true
+		}
+	}
+
+	// test all king squares
+	for _, offset := range offsetArr[KING_MASK] {
+		if uint8(int8(opposingKingSq)+offset) == sq {
 			return true
 		}
 	}

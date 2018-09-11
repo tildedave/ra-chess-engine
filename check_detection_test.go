@@ -74,6 +74,17 @@ func TestBlackKingDoesNotCheckWhiteKing(t *testing.T) {
 	assert.False(t, testBoard.IsInCheck(false))
 }
 
+func TestKingsCheckEachOther(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.board[SQUARE_A2] = WHITE_MASK | KING_MASK
+	testBoard.board[SQUARE_A3] = BLACK_MASK | KING_MASK
+	testBoard.lookupInfo.whiteKingSquare = SQUARE_A2
+	testBoard.lookupInfo.blackKingSquare = SQUARE_A3
+
+	assert.True(t, testBoard.IsInCheck(true))
+	assert.True(t, testBoard.IsInCheck(false))
+}
+
 func TestEnPassantRemovesCheck(t *testing.T) {
 	var fen string = "8/8/8/2k5/2pP4/8/B7/4K3 b - d3 5 3"
 	testBoard, _ := CreateBoardStateFromFENString(fen)
