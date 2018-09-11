@@ -194,7 +194,16 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, mo
 
 		isDestPieceWhite := destPiece&BLACK_MASK != BLACK_MASK
 		if isWhite != isDestPieceWhite {
-			moves = append(moves, CreateCapture(sq, dest))
+			var destRank byte = Rank(dest)
+			if (isWhite && destRank == RANK_8) || (!isWhite && destRank == RANK_1) {
+				// promotion time
+				moves = append(moves, CreatePromotionCapture(sq, dest, QUEEN_MASK))
+				moves = append(moves, CreatePromotionCapture(sq, dest, ROOK_MASK))
+				moves = append(moves, CreatePromotionCapture(sq, dest, BISHOP_MASK))
+				moves = append(moves, CreatePromotionCapture(sq, dest, KNIGHT_MASK))
+			} else {
+				moves = append(moves, CreateCapture(sq, dest))
+			}
 		}
 	}
 

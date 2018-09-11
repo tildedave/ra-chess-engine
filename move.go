@@ -31,7 +31,8 @@ func (m Move) IsCastle() bool {
 }
 
 func (m Move) IsPromotion() bool {
-	return m.flags&0xF0 == PROMOTION_MASK
+	var flag = m.flags & 0xF0
+	return flag == PROMOTION_MASK || flag == PROMOTION_MASK|CAPTURE_MASK
 }
 
 func CreateMove(from uint8, to uint8) Move {
@@ -47,6 +48,14 @@ func CreateCapture(from uint8, to uint8) Move {
 	m.from = from
 	m.to = to
 	m.flags |= CAPTURE_MASK
+
+	return m
+}
+
+func CreatePromotionCapture(from uint8, to uint8, pieceMask uint8) Move {
+	var m Move = CreateCapture(from, to)
+
+	m.flags |= PROMOTION_MASK | pieceMask
 
 	return m
 }
