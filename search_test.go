@@ -57,14 +57,39 @@ func TestSearchAvoidMateInOne(t *testing.T) {
 	assert.Equal(t, Move{from: SQUARE_H3, to: SQUARE_C3, flags: CAPTURE_MASK}, result.move)
 }
 
-func TestSearchPawnPromotion(t *testing.T) {
+func TestSearchWhiteForcesPawnPromotion(t *testing.T) {
 	boardState := CreateEmptyBoardState()
-	boardState.board[SQUARE_A7] = WHITE_MASK | PAWN_MASK
-	boardState.board[SQUARE_A8] = BLACK_MASK | KING_MASK
-	boardState.board[SQUARE_A6] = WHITE_MASK | KING_MASK
+	boardState.board[SQUARE_B7] = WHITE_MASK | PAWN_MASK
+	boardState.board[SQUARE_B8] = BLACK_MASK | KING_MASK
+	boardState.board[SQUARE_B5] = WHITE_MASK | KING_MASK
+
+	result := search(&boardState, 10)
+
+	assert.Equal(t, CHECKMATE_SCORE, result.value)
+	assert.Equal(t, SQUARE_B5, result.move.from)
+	assert.True(t, result.move.to == SQUARE_C6 || result.move.to == SQUARE_A6)
+}
+
+func TestSearchBlackStopsPromotion(t *testing.T) {
+	boardState := CreateEmptyBoardState()
+	boardState.board[SQUARE_D5] = WHITE_MASK | PAWN_MASK
+	boardState.board[SQUARE_D6] = BLACK_MASK | KING_MASK
+	boardState.board[SQUARE_D3] = WHITE_MASK | KING_MASK
 	generateBoardLookupInfo(&boardState)
 
 	result := search(&boardState, 10)
 
-	assert.False(t, result.move.IsCapture())
+	assert.Equal(t, PAWN_EVAL_SCORE, result.value)
+}
+
+func TestSearchWhiteForcesPromotion(t *testing.T) {
+	boardState := CreateEmptyBoardState()
+	boardState.board[SQUARE_D6] = WHITE_MASK | KING_MASK
+	boardState.board[SQUARE_D8] = BLACK_MASK | KING_MASK
+	boardState.board[SQUARE_D5] = WHITE_MASK | PAWN_MASK
+	generateBoardLookupInfo(&boardState)
+
+	result := search(&boardState, 10)
+
+	assert.Equal(t, QUEEN_EVAL_SCORE, result.value)
 }

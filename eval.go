@@ -11,7 +11,7 @@ type BoardEval struct {
 }
 
 var materialScore = [7]int{
-	0, 100, 300, 300, 500, 800, 0,
+	0, PAWN_EVAL_SCORE, KNIGHT_EVAL_SCORE, BISHOP_EVAL_SCORE, ROOK_EVAL_SCORE, QUEEN_EVAL_SCORE, 0,
 }
 
 func Eval(boardState *BoardState) BoardEval {
