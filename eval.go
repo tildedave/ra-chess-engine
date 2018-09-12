@@ -14,8 +14,6 @@ var materialScore = [7]int{
 	0, 100, 300, 300, 500, 800, 0,
 }
 
-var CHECKMATE_SCORE = 100000
-
 func Eval(boardState *BoardState) BoardEval {
 	material := 0
 	for i := byte(0); i < 8; i++ {

@@ -84,3 +84,6 @@ const RANK_5 byte = 0x05
 const RANK_6 byte = 0x06
 const RANK_7 byte = 0x07
 const RANK_8 byte = 0x08
+
+const CHECKMATE_SCORE = 100000
+const INFINITY = 10000000

@@ -22,16 +22,17 @@ type SearchResult struct {
 type SearchConfig struct {
 	depth uint
 	debug bool
+	alpha int
+	beta  int
 	move  Move
 	line  []Move
 }
 
 func search(boardState *BoardState, depth uint) SearchResult {
-	// TODO(search): alpha-beta search instead of minimax
-	return searchMinimax(boardState, SearchConfig{depth: depth, debug: false})
+	return searchAlphaBeta(boardState, SearchConfig{depth: depth, debug: false, alpha: -INFINITY, beta: INFINITY})
 }
 
-func searchMinimax(boardState *BoardState, searchConfig SearchConfig) SearchResult {
+func searchAlphaBeta(boardState *BoardState, searchConfig SearchConfig) SearchResult {
 	if searchConfig.depth == 0 {
 		return getTerminalResult(boardState, searchConfig)
 	}
@@ -53,7 +54,7 @@ func searchMinimax(boardState *BoardState, searchConfig SearchConfig) SearchResu
 			searchConfig.move = move
 
 			nodes += 1
-			result := searchMinimax(boardState, searchConfig)
+			result := searchAlphaBeta(boardState, searchConfig)
 			result.move = move
 			searchConfig.line = searchConfig.line[:len(searchConfig.line)-1]
 
@@ -65,10 +66,19 @@ func searchMinimax(boardState *BoardState, searchConfig SearchConfig) SearchResu
 					bestResult = &result
 				}
 			}
+
+			if !boardState.whiteToMove {
+				searchConfig.alpha = Max(searchConfig.alpha, bestResult.value)
+			} else {
+				searchConfig.beta = Min(searchConfig.beta, bestResult.value)
+			}
 		}
 
 		boardState.UnapplyMove(move)
 
+		if searchConfig.alpha >= searchConfig.beta {
+			break
+		}
 	}
 
 	if bestResult == nil {
