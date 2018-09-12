@@ -33,14 +33,7 @@ func search(boardState *BoardState, depth uint) SearchResult {
 
 func searchMinimax(boardState *BoardState, searchConfig SearchConfig) SearchResult {
 	if searchConfig.depth == 0 {
-		// TODO(perf): use an incremental evaluation state passed in as an argument
-
-		e := Eval(boardState)
-		return SearchResult{
-			value: e.forBoardState(boardState).value(),
-			move:  searchConfig.move,
-			line:  searchConfig.line,
-		}
+		return getTerminalResult(boardState, searchConfig)
 	}
 
 	var nodes = 0
@@ -54,7 +47,6 @@ func searchMinimax(boardState *BoardState, searchConfig SearchConfig) SearchResu
 			continue
 		}
 
-		var whiteToMove = boardState.whiteToMove
 		boardState.ApplyMove(move)
 		if !boardState.IsInCheck(!boardState.whiteToMove) {
 			searchConfig.line = append(searchConfig.line, move)
@@ -66,19 +58,10 @@ func searchMinimax(boardState *BoardState, searchConfig SearchConfig) SearchResu
 			searchConfig.line = searchConfig.line[:len(searchConfig.line)-1]
 
 			if bestResult == nil {
-				if searchConfig.debug {
-					fmt.Printf("New best move found - by default %s (depth=%d)\n", SearchResultToString(result), searchConfig.depth)
-				}
 				bestResult = &result
 			} else {
-				if searchConfig.debug {
-					fmt.Printf("%s (best=%s)\n", SearchResultToString(result), SearchResultToString(*bestResult))
-				}
-
-				if (whiteToMove && result.value > bestResult.value) || (!whiteToMove && result.value < bestResult.value) {
-					if searchConfig.debug {
-						fmt.Println("New best move found!")
-					}
+				if (!boardState.whiteToMove && result.value > bestResult.value) || // white move, maximize score
+					(boardState.whiteToMove && result.value < bestResult.value) { // black move, minimize score
 					bestResult = &result
 				}
 			}
@@ -89,29 +72,45 @@ func searchMinimax(boardState *BoardState, searchConfig SearchConfig) SearchResu
 	}
 
 	if bestResult == nil {
-		if boardState.IsInCheck(boardState.whiteToMove) {
-			score := CHECKMATE_SCORE
-			if boardState.whiteToMove {
-				score = -score
-			}
-
-			return SearchResult{
-				value: score,
-				flags: CHECKMATE_FLAG,
-				line:  searchConfig.line,
-			}
-		}
-
-		// Stalemate
-		return SearchResult{
-			value: 0,
-			flags: STALEMATE_FLAG,
-			line:  searchConfig.line,
-		}
+		return getNoLegalMoveResult(boardState, searchConfig)
 	}
 
 	bestResult.nodes += nodes
 	return *bestResult
+}
+
+func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) SearchResult {
+	// TODO(perf): use an incremental evaluation state passed in as an argument
+
+	e := Eval(boardState)
+	return SearchResult{
+		value: e.forBoardState(boardState).value(),
+		move:  searchConfig.move,
+		line:  searchConfig.line,
+	}
+}
+
+func getNoLegalMoveResult(boardState *BoardState, searchConfig SearchConfig) SearchResult {
+	if boardState.IsInCheck(boardState.whiteToMove) {
+		score := CHECKMATE_SCORE
+		if boardState.whiteToMove {
+			score = -score
+		}
+
+		return SearchResult{
+			value: score,
+			flags: CHECKMATE_FLAG,
+			line:  searchConfig.line,
+		}
+	}
+
+	// Stalemate
+	return SearchResult{
+		value: 0,
+		flags: STALEMATE_FLAG,
+		line:  searchConfig.line,
+	}
+
 }
 
 func SearchResultToString(result SearchResult) string {

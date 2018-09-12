@@ -52,9 +52,7 @@ func TestSearchAvoidMateInOne(t *testing.T) {
 	boardState.board[SQUARE_H3] = BLACK_MASK | ROOK_MASK
 
 	result := search(&boardState, 1)
-	fmt.Println(boardState.ToString())
 
 	assert.True(t, result.move.IsCapture())
 	assert.Equal(t, Move{from: SQUARE_H3, to: SQUARE_C3, flags: CAPTURE_MASK}, result.move)
-	fmt.Println(MoveToPrettyString(result.move, boardState))
 }
