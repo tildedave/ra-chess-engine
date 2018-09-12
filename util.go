@@ -23,6 +23,25 @@ func (s *byteStack) Peek() byte {
 	return s.arr[len(s.arr)-1]
 }
 
+// https://programming.guide/go/max-min-function.html
+// Not available in Go stdlib
+
+// Min returns the smaller of x or y.
+func Min(x, y int) int {
+	if x > y {
+		return y
+	}
+	return x
+}
+
+// Max returns the larger of x or y.
+func Max(x, y int) int {
+	if x < y {
+		return y
+	}
+	return x
+}
+
 // Used for tests
 
 func FlipBoardColors(boardState *BoardState) {

@@ -56,3 +56,15 @@ func TestSearchAvoidMateInOne(t *testing.T) {
 	assert.True(t, result.move.IsCapture())
 	assert.Equal(t, Move{from: SQUARE_H3, to: SQUARE_C3, flags: CAPTURE_MASK}, result.move)
 }
+
+func TestSearchPawnPromotion(t *testing.T) {
+	boardState := CreateEmptyBoardState()
+	boardState.board[SQUARE_A7] = WHITE_MASK | PAWN_MASK
+	boardState.board[SQUARE_A8] = BLACK_MASK | KING_MASK
+	boardState.board[SQUARE_A6] = WHITE_MASK | KING_MASK
+	generateBoardLookupInfo(&boardState)
+
+	result := search(&boardState, 10)
+
+	assert.False(t, result.move.IsCapture())
+}
