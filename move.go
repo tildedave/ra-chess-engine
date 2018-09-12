@@ -148,3 +148,20 @@ func MoveToPrettyString(move Move, boardState BoardState) string {
 
 	return s
 }
+
+func MoveArrayToPrettyString(moveArr []Move, boardState BoardState) string {
+	var s string
+	for i, m := range moveArr {
+		if i > 0 {
+			s += " "
+		}
+		s += MoveToPrettyString(m, boardState)
+		boardState.ApplyMove(m)
+	}
+
+	for i := len(moveArr) - 1; i >= 0; i-- {
+		boardState.UnapplyMove(moveArr[i])
+	}
+
+	return s
+}

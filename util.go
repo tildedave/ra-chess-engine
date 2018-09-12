@@ -22,3 +22,19 @@ func (s *byteStack) Pop() byte {
 func (s *byteStack) Peek() byte {
 	return s.arr[len(s.arr)-1]
 }
+
+// Used for tests
+
+func FlipBoardColors(boardState *BoardState) {
+	for i := byte(0); i < 8; i++ {
+		for j := byte(0); j < 8; j++ {
+			sq := RowAndColToSquare(i, j)
+			p := boardState.PieceAtSquare(sq)
+			if p != 0x00 && p != SENTINEL_MASK {
+				boardState.board[sq] = p ^ (WHITE_MASK | BLACK_MASK)
+			}
+		}
+	}
+
+	boardState.whiteToMove = !boardState.whiteToMove
+}

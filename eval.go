@@ -6,7 +6,6 @@ import (
 
 var _ = fmt.Println
 
-// BoardEval is from the point of view for white
 type BoardEval struct {
 	material int
 }
@@ -15,6 +14,8 @@ var materialScore = [7]int{
 	0, 100, 300, 300, 500, 800, 0,
 }
 
+var CHECKMATE_SCORE = 100000
+
 func Eval(boardState *BoardState) BoardEval {
 	material := 0
 	for i := byte(0); i < 8; i++ {
@@ -22,6 +23,9 @@ func Eval(boardState *BoardState) BoardEval {
 			p := boardState.PieceAtSquare(RowAndColToSquare(i, j))
 			if p != 0x00 && p != SENTINEL_MASK {
 				score := materialScore[p&0x0F]
+
+				// Search algorithm will invert this
+
 				if p&0xF0 == BLACK_MASK {
 					material -= score
 				} else {
@@ -32,6 +36,18 @@ func Eval(boardState *BoardState) BoardEval {
 	}
 
 	return BoardEval{material: material}
+}
+
+func (eval BoardEval) forBoardState(boardState *BoardState) BoardEval {
+	if boardState.whiteToMove {
+		return eval
+	}
+
+	return BoardEval{material: -eval.material}
+}
+
+func (eval BoardEval) value() int {
+	return eval.material
 }
 
 // TODO: incrementally update evaluation as a result of a move
