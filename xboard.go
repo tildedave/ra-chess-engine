@@ -20,9 +20,12 @@ type XboardState struct {
 }
 
 const (
-	ACTION_NOTHING = iota
-	ACTION_QUIT    = iota
-	ACTION_MOVE    = iota
+	ACTION_NOTHING   = iota
+	ACTION_QUIT      = iota
+	ACTION_HALT      = iota
+	ACTION_MOVE      = iota
+	ACTION_MOVE_NOW  = iota
+	ACTION_GAME_OVER = iota
 )
 
 func RunXboard(scanner *bufio.Scanner, output *bufio.Writer) (bool, error) {
@@ -49,9 +52,12 @@ ReadLoop:
 	return true, nil
 }
 
-var protoverRegexp = regexp.MustCompile("protover \\d")
-var variantRegexp = regexp.MustCompile("variant \\w+")
+var protoverRegexp = regexp.MustCompile("^protover \\d$")
+var variantRegexp = regexp.MustCompile("^variant \\w+$")
 var moveRegexp = regexp.MustCompile("^([abcdefgh][1-8]){2}(nbqr)?$")
+var pingRegexp = regexp.MustCompile("^ping \\d$")
+var resultRegexp = regexp.MustCompile("^result (1\\-0|0\\-1|1/2\\-1/2|\\*) {[^}]+}$")
+var fenRegexp = regexp.MustCompile("^setboard (.*)$")
 
 func ProcessXboardCommand(command string, state XboardState) (int, XboardState) {
 	var action int = ACTION_NOTHING
@@ -62,11 +68,8 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		// to put your engine into "xboard mode" if that is needed. If your engine prints a prompt to ask
 		// for user input, you must turn off the prompt and output a newline when the "xboard" command comes in.
 
-		fallthrough
-
 	case protoverRegexp.MatchString(command):
 		// TODO
-		fallthrough
 
 	case command == "accepted":
 
@@ -84,10 +87,10 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		state.boardState = &boardState
 		state.forceMode = false
 		state.randomMode = false
+		action = ACTION_HALT
 
 	case variantRegexp.MatchString(command):
-		// we don't support any of these :)
-		fallthrough
+		// we don't support any variants :)
 
 	case command == "quit":
 		// The chess engine should immediately exit. This command is used when xboard is itself exiting,
@@ -105,6 +108,7 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		// ponder, or make moves of its own.
 
 		state.forceMode = true
+		action = ACTION_HALT
 
 	case command == "go":
 		// Leave force mode and set the engine to play the color that is on move. Associate the engine's
@@ -136,6 +140,94 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		if !state.forceMode {
 			action = ACTION_MOVE
 		}
+
+	case command == "?":
+		// Move now. If your engine is thinking, it should move immediately; otherwise, the command should
+		// be ignored (treated as a no-op). It is permissible for your engine to always ignore the ? command.
+		// The only bad consequence is that xboard's Move Now menu command will do nothing.
+
+		action = ACTION_MOVE_NOW
+
+	case pingRegexp.MatchString(command):
+		// In this command, N is a decimal number. When you receive the command, reply by sending the string
+		// pong N, where N is the same number you received. Important: You must not reply to a "ping" command
+		// until you have finished executing all commands that you received before it. Pondering does not count;
+		// if you receive a ping while pondering, you should reply immediately and continue pondering. Because
+		// of the way xboard uses the ping command, if you implement the other commands in this protocol, you
+		// should never see a "ping" command when it is your move; however, if you do, you must not send the
+		// "pong" reply to xboard until after you send your move. For example, xboard may send "?" immediately
+		// followed by "ping". If you implement the "?" command, you will have moved by the time you see the
+		// subsequent ping command. Similarly, xboard may send a sequence like "force", "new", "ping". You must
+		// not send the pong response until after you have finished executing the "new" command and are ready
+		// for the new game to start.
+		//
+		// The ping command is new in protocol version 2 and will not be sent unless you enable it with the
+		// "feature" command. Its purpose is to allow several race conditions that could occur in previous
+		// versions of the protocol to be fixed, so it is highly recommended that you implement it. It is
+		// especially important in simple engines that do not ponder and do not poll for input while thinking,
+		// but it is needed in all engines.
+
+		// TODO: implement this
+
+	case command == "draw":
+		// The engine's opponent offers the engine a draw. To accept the draw, send "offer draw". To decline,
+		// ignore the offer (that is, send nothing). If you're playing on ICS, it's possible for the draw offer
+		// to have been withdrawn by the time you accept it, so don't assume the game is over because you accept
+		// a draw offer. Continue playing until xboard tells you the game is over. See also "offer draw" below.
+
+		// TODO: implement this
+
+		action = ACTION_NOTHING
+
+	case resultRegexp.MatchString(command):
+		// After the end of each game, xboard will send you a result command. You can use this command to trigger
+		// learning. RESULT is either 1-0, 0-1, 1/2-1/2, or *, indicating whether white won, black won, the game
+		// was a draw, or the game was unfinished. The COMMENT string is purely a human-readable comment; its
+		// content is unspecified and subject to change. In ICS mode, it is passed through from ICS uninterpreted.
+		// Example:
+		//
+		// result 1-0 {White mates}
+		// Here are some notes on interpreting the "result" command. Some apply only to playing on ICS ("Zippy" mode).
+		//
+		// If you won but did not just play a mate, your opponent must have resigned or forfeited. If you lost
+		// but were not just mated, you probably forfeited on time, or perhaps the operator resigned manually. If
+		// there was a draw for some nonobvious reason, perhaps your opponent called your flag when he had
+		// insufficient mating material (or vice versa), or perhaps the operator agreed to a draw manually.
+		//
+		// You will get a result command even if you already know the game ended -- for example, after you just
+		// checkmated your opponent. In fact, if you send the "RESULT {COMMENT}" command (discussed below), you will
+		// simply get the same thing fed back to you with "result" tacked in front. You might not always get a
+		// "result *" command, however. In particular, you won't get one in local chess engine mode when the user
+		// stops playing by selecting Reset, Edit Game, Exit or the like.
+
+		action = ACTION_GAME_OVER
+
+	case fenRegexp.MatchString(command):
+		// The setboard command is the new way to set up positions, beginning in protocol version 2. It is not used
+		// unless it has been selected with the feature command. Here FEN is a position in Forsythe-Edwards Notation,
+		// as defined in the PGN standard. Note that this PGN standard referred to here only applies to normal Chess;
+		// Obviously in variants that cannot be described by a FEN for normal Chess, e.g. because the board is not
+		// 8x8, other pieces then PNBRQK participate, there are holdings that need to be specified, etc., xboard will
+		// use a FEN format that is standard or suitable for that variant. In particular, in FRC or CRC, WinBoard will
+		// use Shredder-FEN or X-FEN standard, i.e. it can use the rook-file indicator letter to represent a castling
+		// right (like HAha) whenever it wants, but if it uses KQkq, this will always refer to the outermost rook on
+		// the given side.
+
+		// Illegal positions: Note that either setboard or edit can be used to send an illegal position to the engine.
+		// The user can create any position with xboard's Edit Position command (even, say, an empty board, or a board
+		// with 64 white kings and no black ones). If your engine receives a position that it considers illegal, I
+		// suggest that you send the response "tellusererror Illegal position", and then respond to any attempted move
+		// with "Illegal move" until the next new, edit, or setboard command.
+
+		action = ACTION_HALT
+
+		fenString := fenRegexp.FindStringSubmatch(command)[1]
+		boardState, err := CreateBoardStateFromFENString(fenString)
+
+		if err != nil {
+			// TODO: yell at xboard
+		}
+		state.boardState = &boardState
 	}
 
 	return action, state
