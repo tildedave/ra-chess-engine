@@ -415,43 +415,13 @@ func CreateBoardStateFromFENString(s string) (BoardState, error) {
 
 	// en passant target square parsing
 	if splits[3] != "-" {
-		var col byte
-		var row byte
-		for index, runeValue := range splits[3] {
-			if index == 0 {
-				switch runeValue {
-				case 'a':
-					col = byte(0)
-				case 'b':
-					col = byte(1)
-				case 'c':
-					col = byte(2)
-				case 'd':
-					col = byte(3)
-				case 'e':
-					col = byte(4)
-				case 'f':
-					col = byte(5)
-				case 'g':
-					col = byte(6)
-				case 'h':
-					col = byte(7)
-				default:
-					return boardState, errors.New("Bad en-passant target square specification: " + splits[3])
-				}
-			} else if index == 1 {
-				rowUint, err := strconv.ParseUint(string(runeValue), 10, 8)
-				if err != nil {
-					return boardState, errors.New("Bad en-passant target square specification: " + splits[3])
-				}
-				// Must subtract 1 because algebraic notation is 1-based
-				row = byte(rowUint - 1)
-			} else {
-				return boardState, errors.New("Bad en-passant target square specification: " + splits[3])
-			}
+		sq, err := ParseAlgebraicSquare(splits[3])
+
+		if err != nil {
+			return boardState, err
 		}
 
-		boardState.boardInfo.enPassantTargetSquare = RowAndColToSquare(row, col)
+		boardState.boardInfo.enPassantTargetSquare = sq
 	}
 
 	if len(splits) > 4 {
@@ -472,4 +442,45 @@ func CreateBoardStateFromFENString(s string) (BoardState, error) {
 	generateBoardLookupInfo(&boardState)
 
 	return boardState, nil
+}
+
+func ParseAlgebraicSquare(sq string) (uint8, error) {
+	var col byte
+	var row byte
+	for index, runeValue := range sq {
+		if index == 0 {
+			switch runeValue {
+			case 'a':
+				col = byte(0)
+			case 'b':
+				col = byte(1)
+			case 'c':
+				col = byte(2)
+			case 'd':
+				col = byte(3)
+			case 'e':
+				col = byte(4)
+			case 'f':
+				col = byte(5)
+			case 'g':
+				col = byte(6)
+			case 'h':
+				col = byte(7)
+			default:
+				return 0, errors.New("Column out of range: " + sq)
+			}
+		} else if index == 1 {
+			rowUint, err := strconv.ParseUint(string(runeValue), 10, 8)
+			if err != nil {
+				return 0, errors.New("Row out of range: " + sq)
+			}
+			// Must subtract 1 because algebraic notation is 1-based
+			row = byte(rowUint - 1)
+		} else {
+			return 0, errors.New("Algebraic square was not two characters: " + sq)
+		}
+	}
+
+	return RowAndColToSquare(row, col), nil
+
 }
