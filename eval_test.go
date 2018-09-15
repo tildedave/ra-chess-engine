@@ -17,7 +17,7 @@ func TestEvalEmptyBoard(t *testing.T) {
 
 func TestEvalPawn(t *testing.T) {
 	testBoard := CreateEmptyBoardState()
-	testBoard.board[SQUARE_A2] = WHITE_MASK | PAWN_MASK
+	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
 
 	boardEval := Eval(&testBoard)
 
@@ -26,8 +26,8 @@ func TestEvalPawn(t *testing.T) {
 
 func TestEvalPawnAgainstBishop(t *testing.T) {
 	testBoard := CreateEmptyBoardState()
-	testBoard.board[SQUARE_A2] = WHITE_MASK | PAWN_MASK
-	testBoard.board[SQUARE_A3] = BLACK_MASK | BISHOP_MASK
+	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_A3, BLACK_MASK|BISHOP_MASK)
 
 	boardEval := Eval(&testBoard)
 

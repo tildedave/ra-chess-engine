@@ -51,9 +51,9 @@ func TestMoveToString(t *testing.T) {
 func TestMoveToPrettyString(t *testing.T) {
 	var boardState BoardState = CreateEmptyBoardState()
 
-	boardState.board[SQUARE_A2] = WHITE_MASK | PAWN_MASK
-	boardState.board[SQUARE_F5] = WHITE_MASK | KNIGHT_MASK
-	boardState.board[SQUARE_G7] = BLACK_MASK | ROOK_MASK
+	boardState.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
+	boardState.SetPieceAtSquare(SQUARE_F5, WHITE_MASK|KNIGHT_MASK)
+	boardState.SetPieceAtSquare(SQUARE_G7, BLACK_MASK|ROOK_MASK)
 
 	assert.Equal(t, "a2xa4", MoveToPrettyString(CreateCapture(SQUARE_A2, SQUARE_A4), boardState))
 	assert.Equal(t, "a2xa4", MoveToPrettyString(CreateEnPassantCapture(SQUARE_A2, SQUARE_A4), boardState))

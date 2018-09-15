@@ -484,3 +484,7 @@ func ParseAlgebraicSquare(sq string) (uint8, error) {
 	return RowAndColToSquare(row, col), nil
 
 }
+
+func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
+	boardState.board[sq] = p
+}

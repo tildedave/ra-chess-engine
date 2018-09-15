@@ -26,8 +26,8 @@ func TestProcessMoveCommand(t *testing.T) {
 	action, state = ProcessXboardCommand("e2e4", state)
 
 	assert.Equal(t, ACTION_MOVE, action)
-	assert.Equal(t, uint8(0), state.boardState.board[SQUARE_E2])
-	assert.Equal(t, WHITE_MASK|PAWN_MASK, state.boardState.board[SQUARE_E4])
+	assert.Equal(t, uint8(0), state.boardState.PieceAtSquare(SQUARE_E2))
+	assert.Equal(t, WHITE_MASK|PAWN_MASK, state.boardState.PieceAtSquare(SQUARE_E4))
 }
 
 func TestProcessMoveCommandInForceMode(t *testing.T) {
@@ -39,8 +39,8 @@ func TestProcessMoveCommandInForceMode(t *testing.T) {
 	action, state = ProcessXboardCommand("g1f3", state)
 
 	assert.Equal(t, ACTION_NOTHING, action)
-	assert.Equal(t, uint8(0), state.boardState.board[SQUARE_G1])
-	assert.Equal(t, WHITE_MASK|KNIGHT_MASK, state.boardState.board[SQUARE_F3])
+	assert.Equal(t, uint8(0), state.boardState.PieceAtSquare(SQUARE_G1))
+	assert.Equal(t, WHITE_MASK|KNIGHT_MASK, state.boardState.PieceAtSquare(SQUARE_F3))
 }
 
 func TestParseXboardCommandMove(t *testing.T) {
@@ -53,8 +53,8 @@ func TestParseXboardCommandMove(t *testing.T) {
 
 func TestParseXboardCommandCapture(t *testing.T) {
 	boardState := CreateEmptyBoardState()
-	boardState.board[SQUARE_A1] = ROOK_MASK | WHITE_MASK
-	boardState.board[SQUARE_A2] = ROOK_MASK | BLACK_MASK
+	boardState.SetPieceAtSquare(SQUARE_A1, ROOK_MASK|WHITE_MASK)
+	boardState.SetPieceAtSquare(SQUARE_A2, ROOK_MASK|BLACK_MASK)
 
 	move, err := ParseXboardMove("a1a2", &boardState)
 
@@ -64,7 +64,7 @@ func TestParseXboardCommandCapture(t *testing.T) {
 
 func TestParseXboardCommandPromotion(t *testing.T) {
 	boardState := CreateEmptyBoardState()
-	boardState.board[SQUARE_H7] = PAWN_MASK | WHITE_MASK
+	boardState.SetPieceAtSquare(SQUARE_H7, PAWN_MASK|WHITE_MASK)
 
 	move, err := ParseXboardMove("h7h8q", &boardState)
 
@@ -77,8 +77,8 @@ func TestParseXboardCommandPromotion(t *testing.T) {
 
 func TestParseXboardCommandPromotionCapture(t *testing.T) {
 	boardState := CreateEmptyBoardState()
-	boardState.board[SQUARE_H7] = PAWN_MASK | WHITE_MASK
-	boardState.board[SQUARE_G8] = ROOK_MASK | BLACK_MASK
+	boardState.SetPieceAtSquare(SQUARE_H7, PAWN_MASK|WHITE_MASK)
+	boardState.SetPieceAtSquare(SQUARE_G8, ROOK_MASK|BLACK_MASK)
 
 	move, err := ParseXboardMove("h7g8r", &boardState)
 
@@ -91,8 +91,8 @@ func TestParseXboardCommandPromotionCapture(t *testing.T) {
 
 func TestParseXboardCommandKingsideCastle(t *testing.T) {
 	boardState := CreateInitialBoardState()
-	boardState.board[SQUARE_F1] = 0x00
-	boardState.board[SQUARE_G1] = 0x00
+	boardState.SetPieceAtSquare(SQUARE_F1, 0x00)
+	boardState.SetPieceAtSquare(SQUARE_G1, 0x00)
 
 	move, err := ParseXboardMove("e1g1", &boardState)
 
@@ -104,9 +104,9 @@ func TestParseXboardCommandKingsideCastle(t *testing.T) {
 
 func TestParseXboardCommandQueensideCastle(t *testing.T) {
 	boardState := CreateInitialBoardState()
-	boardState.board[SQUARE_B1] = 0x00
-	boardState.board[SQUARE_C1] = 0x00
-	boardState.board[SQUARE_D1] = 0x00
+	boardState.SetPieceAtSquare(SQUARE_B1, 0x00)
+	boardState.SetPieceAtSquare(SQUARE_C1, 0x00)
+	boardState.SetPieceAtSquare(SQUARE_D1, 0x00)
 	boardState.whiteToMove = false
 
 	move, err := ParseXboardMove("e8c8", &boardState)
@@ -119,8 +119,8 @@ func TestParseXboardCommandQueensideCastle(t *testing.T) {
 
 func TestParseXboardCommandEnPassantCapture(t *testing.T) {
 	boardState := CreateEmptyBoardState()
-	boardState.board[SQUARE_E5] = WHITE_MASK | PAWN_MASK
-	boardState.board[SQUARE_D5] = BLACK_MASK | PAWN_MASK
+	boardState.SetPieceAtSquare(SQUARE_E5, WHITE_MASK|PAWN_MASK)
+	boardState.SetPieceAtSquare(SQUARE_D5, BLACK_MASK|PAWN_MASK)
 	boardState.boardInfo.enPassantTargetSquare = SQUARE_D6
 
 	move, err := ParseXboardMove("e5d6", &boardState)
