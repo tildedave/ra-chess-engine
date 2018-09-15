@@ -163,7 +163,8 @@ func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
 		}
 	}
 
-	// more smart checks
+	// TODO: ensure side to move not in check
+	// TODO: ensure castling isn't moving through check
 
 	return true, nil
 }

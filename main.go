@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bufio"
 	"flag"
 	"fmt"
 	"os"
@@ -22,7 +23,7 @@ func main() {
 	var success bool = true
 	var err error = nil
 
-	if *isPerft || perftJsonFile != nil {
+	if *isPerft || *perftJsonFile != "" {
 		var options PerftOptions
 		options.checks = *perftChecks
 		options.sanityCheck = *perftSanityCheck
@@ -33,6 +34,12 @@ func main() {
 		} else {
 			success, err = RunPerft(*startingFen, *perftDepth, options)
 		}
+	} else {
+		// xboard mode
+		scanner := bufio.NewScanner(os.Stdin)
+		output := bufio.NewWriter(os.Stdout)
+
+		success, err = RunXboard(scanner, output)
 	}
 
 	if err != nil {

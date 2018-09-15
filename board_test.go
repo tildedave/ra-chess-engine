@@ -99,3 +99,30 @@ func TestBoardWithEnPassantSquareAndCastling(t *testing.T) {
 	assert.Nil(t, err)
 	assert.Equal(t, s, boardState.ToFENString())
 }
+
+func TestParseAlgebraicSquare(t *testing.T) {
+	var sq uint8
+	var err error
+
+	sq, err = ParseAlgebraicSquare("a1")
+
+	assert.Equal(t, SQUARE_A1, sq)
+	assert.Nil(t, err)
+
+	sq, err = ParseAlgebraicSquare("c6")
+
+	assert.Equal(t, SQUARE_C6, sq)
+	assert.Nil(t, err)
+
+	sq, err = ParseAlgebraicSquare("q1")
+
+	assert.Equal(t, uint8(0), sq)
+	assert.NotNil(t, err)
+	assert.Equal(t, "Column out of range: q1", err.Error())
+
+	sq, err = ParseAlgebraicSquare("a12")
+
+	assert.Equal(t, uint8(0), sq)
+	assert.NotNil(t, err)
+	assert.Equal(t, "Algebraic square was not two characters: a12", err.Error())
+}
