@@ -1,8 +1,16 @@
 package main
 
 import (
+	"encoding/json"
 	"fmt"
+	"io/ioutil"
 )
+
+type PerftSpecification struct {
+	Depth uint   `json:depth`
+	Nodes uint   `json:nodes`
+	Fen   string `json:fen`
+}
 
 var _ = fmt.Println
 
@@ -18,6 +26,53 @@ type PerftOptions struct {
 	checks          bool
 	sanityCheck     bool
 	perftPrintMoves bool
+	depth           uint
+}
+
+func RunPerftJson(perftJsonFile string, options PerftOptions) (bool, error) {
+	b, err := ioutil.ReadFile(perftJsonFile)
+	if err != nil {
+		panic(err)
+	}
+
+	var specs []PerftSpecification
+	json.Unmarshal(b, &specs)
+
+	allSuccess := true
+	for _, spec := range specs {
+		board, err := CreateBoardStateFromFENString(spec.Fen)
+		if err != nil {
+			fmt.Println("Unable to parse FEN " + spec.Fen + ", continuing")
+			fmt.Println(err)
+			continue
+		}
+		perftResult := Perft(&board, spec.Depth, options)
+		if perftResult.nodes != spec.Nodes {
+			fmt.Printf("NOT OK: %s (depth=%d, expected nodes=%d, actual nodes=%d)\n", spec.Fen, spec.Depth, spec.Nodes, perftResult.nodes)
+			allSuccess = false
+		} else {
+			fmt.Printf("OK: %s (depth=%d, nodes=%d)\n", spec.Fen, spec.Depth, spec.Nodes)
+		}
+	}
+
+	if allSuccess {
+		return true, nil
+	}
+
+	return false, nil
+}
+
+func RunPerft(startingFen string, depth uint, options PerftOptions) (bool, error) {
+	for i := uint(0); i <= depth; i++ {
+		board, err := CreateBoardStateFromFENString(startingFen)
+		if err == nil {
+			fmt.Println(Perft(&board, i, options))
+		} else {
+			fmt.Println(err)
+		}
+	}
+
+	return true, nil
 }
 
 func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
