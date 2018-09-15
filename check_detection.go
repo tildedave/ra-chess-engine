@@ -89,7 +89,7 @@ func followRay(boardState *BoardState, sq byte, offset int8) byte {
 	// we'll continue until we have to stop
 	for true {
 		dest = uint8(int8(dest) + offset)
-		destPiece := boardState.board[dest]
+		destPiece := boardState.PieceAtSquare(dest)
 
 		if destPiece == SENTINEL_MASK {
 			// stop - end of the board

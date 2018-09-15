@@ -169,8 +169,8 @@ func ParseXboardMove(command string, boardState *BoardState) (Move, error) {
 	isKingsideCastle := false
 	isQueensideCastle := false
 
-	fromPiece := boardState.board[from_sq]
-	destPiece := boardState.board[to_sq]
+	fromPiece := boardState.PieceAtSquare(from_sq)
+	destPiece := boardState.PieceAtSquare(to_sq)
 
 	if destPiece != 0 || boardState.boardInfo.enPassantTargetSquare == to_sq {
 		isCapture = true
