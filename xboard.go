@@ -2,8 +2,10 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"fmt"
 	"regexp"
+	"time"
 )
 
 var _ = fmt.Println
@@ -11,22 +13,37 @@ var _ = fmt.Println
 // https://www.gnu.org/software/xboard/engine-intf.html
 
 type XboardState struct {
-	boardState *BoardState
-	forceMode  bool
-	randomMode bool
+	boardState   *BoardState
+	forceMode    bool
+	post         bool
+	randomMode   bool
+	opponentName string
+	moveHistory  []Move
+	err          error
 
 	// TODO: time control per side
 	// TODO: recent sd limit
 }
 
 const (
-	ACTION_NOTHING   = iota
-	ACTION_QUIT      = iota
-	ACTION_HALT      = iota
-	ACTION_MOVE      = iota
-	ACTION_MOVE_NOW  = iota
-	ACTION_GAME_OVER = iota
+	ACTION_NOTHING        = iota
+	ACTION_QUIT           = iota
+	ACTION_HALT           = iota
+	ACTION_THINK          = iota
+	ACTION_THINK_AND_MOVE = iota
+	ACTION_MOVE_NOW       = iota
+	ACTION_WAIT           = iota
+	ACTION_GAME_OVER      = iota
+	ACTION_ERROR          = iota
 )
+
+type ThinkingOutput struct {
+	ply   uint
+	score int
+	time  float64
+	nodes uint
+	pv    string
+}
 
 func RunXboard(scanner *bufio.Scanner, output *bufio.Writer) (bool, error) {
 	var state XboardState
@@ -35,15 +52,52 @@ func RunXboard(scanner *bufio.Scanner, output *bufio.Writer) (bool, error) {
 ReadLoop:
 	for scanner.Scan() {
 		action, state = ProcessXboardCommand(scanner.Text(), state)
+		output.WriteString(fmt.Sprintf("# action=%d\n", action))
+		output.Flush()
+
 		switch action {
+		case ACTION_ERROR:
+			// send error back to engine
+
 		case ACTION_NOTHING:
+			// don't change anything we're doing now
+
+		case ACTION_WAIT:
+			// wait for opponent to move
 
 		case ACTION_QUIT:
 			break ReadLoop
 
-		case ACTION_MOVE:
-			// search the position and make a move
+		case ACTION_THINK_AND_MOVE:
+			ch := make(chan SearchResult)
+			quit := make(chan bool)
+			thinkingChan := make(chan ThinkingOutput)
+
+			go func() {
+				for thinkingOutput := range thinkingChan {
+					if state.post {
+						output.WriteString(fmt.Sprintf(
+							"%d %d %.2f %d %s\n",
+							thinkingOutput.ply,
+							thinkingOutput.score,
+							thinkingOutput.time,
+							thinkingOutput.nodes,
+							thinkingOutput.pv,
+						))
+						output.Flush()
+					}
+				}
+			}()
+			go thinkAndMakeMove(state.boardState, ch, thinkingChan, quit)
+			time.Sleep(5 * time.Second)
+			quit <- true
+			bestResult := <-ch
+
+			fmt.Println("best result!")
+			fmt.Println(bestResult)
 		}
+
+		fmt.Println("Waiting for commands...")
 	}
 	if err := scanner.Err(); err != nil {
 		fmt.Println(err)
@@ -52,12 +106,62 @@ ReadLoop:
 	return true, nil
 }
 
+func thinkAndMakeMove(boardState *BoardState, ch chan SearchResult, thinkingChan chan ThinkingOutput, quit chan bool) {
+	searchQuit := make(chan bool)
+	resultCh := make(chan SearchResult)
+
+	go func() {
+		i := 0
+		var res SearchResult
+
+		for {
+			select {
+			case resultCh <- res:
+				// result sent
+			case <-searchQuit:
+				close(resultCh)
+				close(searchQuit)
+				return
+			default:
+				res = Search(boardState, uint(i))
+				i = i + 1
+			}
+		}
+	}()
+
+	go func() {
+		startTime := time.Now().UnixNano()
+
+		var bestResult SearchResult
+		for {
+			select {
+			case bestResult = <-resultCh:
+				elapsedSeconds := float64(time.Now().UnixNano()-startTime) / float64((1.0 * time.Second).Nanoseconds())
+				thinkingChan <- ThinkingOutput{
+					ply:   bestResult.depth,
+					score: bestResult.value,
+					time:  elapsedSeconds,
+					nodes: bestResult.nodes,
+					pv:    MoveToString(bestResult.move),
+				}
+			case <-quit:
+				ch <- bestResult
+				close(ch)
+				close(thinkingChan)
+				searchQuit <- true
+				return
+			}
+		}
+	}()
+}
+
 var protoverRegexp = regexp.MustCompile("^protover \\d$")
 var variantRegexp = regexp.MustCompile("^variant \\w+$")
 var moveRegexp = regexp.MustCompile("^([abcdefgh][1-8]){2}(nbqr)?$")
 var pingRegexp = regexp.MustCompile("^ping \\d$")
 var resultRegexp = regexp.MustCompile("^result (1\\-0|0\\-1|1/2\\-1/2|\\*) {[^}]+}$")
 var fenRegexp = regexp.MustCompile("^setboard (.*)$")
+var nameRegexp = regexp.MustCompile("^name (.*)$")
 
 func ProcessXboardCommand(command string, state XboardState) (int, XboardState) {
 	var action int = ACTION_NOTHING
@@ -87,6 +191,7 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		state.boardState = &boardState
 		state.forceMode = false
 		state.randomMode = false
+		state.err = nil
 		action = ACTION_HALT
 
 	case variantRegexp.MatchString(command):
@@ -116,7 +221,7 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		// Start the engine's clock. Start thinking and eventually make a move.
 
 		state.forceMode = false
-		action = ACTION_MOVE
+		action = ACTION_THINK_AND_MOVE
 
 	case command == "playother":
 		// (This command is new in protocol version 2. It is not sent unless you enable it with the feature
@@ -125,20 +230,38 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		// not on move. Start the opponent's clock. If pondering is enabled, the engine should begin
 		// pondering. If the engine later receives a move, it should start thinking and eventually reply.
 
+		state.forceMode = false
+		action = ACTION_WAIT
+
 	case moveRegexp.MatchString(command):
+		// See below for the syntax of moves. If the move is illegal, print an error message; see the section
+		// "Commands from the engine to xboard". If the move is legal and in turn, make it. If not in force
+		// mode, stop the opponent's clock, start the engine's clock, start thinking, and eventually make a move.
+
+		if state.boardState == nil {
+			action = ACTION_ERROR
+			state.err = errors.New("Illegal move (Board was not initialized correctly")
+			break
+		}
+
 		move, err := ParseXboardMove(command, state.boardState)
 		if err != nil {
-			// TODO: yell at xboard
+			action = ACTION_ERROR
+			state.err = errors.New("Illegal move (" + err.Error() + ")")
+			break
 		}
 
 		isLegal, err := state.boardState.IsMoveLegal(move)
 		if !isLegal {
-			// TODO: yell at xboard
+			action = ACTION_ERROR
+			state.err = errors.New("Illegal move (" + err.Error() + ")")
 		}
 
 		state.boardState.ApplyMove(move)
+		state.moveHistory = append(state.moveHistory, move)
+
 		if !state.forceMode {
-			action = ACTION_MOVE
+			action = ACTION_THINK_AND_MOVE
 		}
 
 	case command == "?":
@@ -225,9 +348,74 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		boardState, err := CreateBoardStateFromFENString(fenString)
 
 		if err != nil {
-			// TODO: yell at xboard
+			state.err = errors.New("Error (" + err.Error() + ")")
+			action = ACTION_ERROR
+
+			break
 		}
 		state.boardState = &boardState
+
+	case command == "hint":
+		// If the user asks for a hint, xboard sends your engine the command "hint". Your engine should respond with
+		// "Hint: xxx", where xxx is a suggested move. If there is no move to suggest, you can ignore the hint command
+		// (that is, treat it as a no-op).
+
+	case command == "undo":
+		// If the user asks to back up one move, xboard will send you the "undo" command. xboard will not send this
+		// command without putting you in "force" mode first, so you don't have to worry about what should happen if
+		// the user asks to undo a move your engine made. (GNU Chess 4 actually switches to playing the opposite color
+		// in this case.)
+
+		idx := len(state.moveHistory) - 1
+		move := state.moveHistory[idx]
+		state.moveHistory = state.moveHistory[:idx]
+		state.boardState.UnapplyMove(move)
+
+	case command == "remove":
+		// If the user asks to retract a move, xboard will send you the "remove" command. It sends this command only
+		// when the user is on move. Your engine should undo the last two moves (one for each player) and continue
+		// playing the same color.
+
+		idx := len(state.moveHistory) - 2
+		move1 := state.moveHistory[idx]
+		move2 := state.moveHistory[idx+1]
+		state.moveHistory = state.moveHistory[:idx]
+		state.boardState.UnapplyMove(move2)
+		state.boardState.UnapplyMove(move1)
+		action = ACTION_THINK_AND_MOVE
+
+	case command == "hard":
+		// Turn on pondering (thinking on the opponent's time, also known as "permanent brain"). xboard will not make
+		// any assumption about what your default is for pondering or whether "new" affects this setting.
+
+	case command == "easy":
+		// Turn off pondering.
+
+	case command == "post":
+		// Turn on thinking/pondering output. See Thinking Output section.
+		state.post = true
+
+	case command == "nopost":
+		// Turn off thinking/pondering output.
+		state.post = false
+
+	case command == "analyze":
+		// Enter analyze mode. See Analyze Mode section.
+		action = ACTION_THINK
+
+	case nameRegexp.MatchString(command):
+		// This command informs the engine of its opponent's name. When the engine is playing on a chess server, xboard
+		// obtains the opponent's name from the server. When the engine is playing locally against a human user, xboard
+		// obtains the user's login name from the local operating system. When the engine is playing locally against
+		// another engine, xboard uses either the other engine's filename or the name that the other engine supplied in
+		// the myname option to the feature command. By default, xboard uses the name command only when the engine is
+		// playing on a chess server. Beginning in protocol version 2, you can change this with the name option to the
+		// feature command; see below.
+
+		state.opponentName = nameRegexp.FindStringSubmatch(command)[1]
+
+		// TODO: We should say hi!
+
 	}
 
 	return action, state

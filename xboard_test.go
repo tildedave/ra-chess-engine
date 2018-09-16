@@ -25,7 +25,7 @@ func TestProcessMoveCommand(t *testing.T) {
 	_, state = ProcessXboardCommand("new", state)
 	action, state = ProcessXboardCommand("e2e4", state)
 
-	assert.Equal(t, ACTION_MOVE, action)
+	assert.Equal(t, ACTION_THINK_AND_MOVE, action)
 	assert.Equal(t, uint8(0), state.boardState.PieceAtSquare(SQUARE_E2))
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, state.boardState.PieceAtSquare(SQUARE_E4))
 }
@@ -43,6 +43,53 @@ func TestProcessMoveCommandInForceMode(t *testing.T) {
 	assert.Equal(t, WHITE_MASK|KNIGHT_MASK, state.boardState.PieceAtSquare(SQUARE_F3))
 }
 
+func TestProcessInvalidFENState(t *testing.T) {
+	var state XboardState
+	var action int
+
+	action, state = ProcessXboardCommand("setboard thisisnotafenstring", state)
+	assert.Equal(t, ACTION_ERROR, action)
+	assert.NotNil(t, state.err)
+
+	action, state = ProcessXboardCommand("e2e4", state)
+	assert.Equal(t, ACTION_ERROR, action)
+	assert.NotNil(t, state.err)
+}
+
+func TestProcessUndoCommand(t *testing.T) {
+	var state XboardState
+	var action int
+
+	_, state = ProcessXboardCommand("new", state)
+	_, state = ProcessXboardCommand("force", state)
+	_, state = ProcessXboardCommand("e2e4", state)
+	_, state = ProcessXboardCommand("e5e7", state)
+	action, state = ProcessXboardCommand("undo", state)
+
+	assert.Equal(t, BLACK_MASK|PAWN_MASK, state.boardState.PieceAtSquare(SQUARE_E7))
+	assert.Equal(t, uint8(0), state.boardState.PieceAtSquare(SQUARE_E5))
+	assert.False(t, state.boardState.whiteToMove)
+	assert.Equal(t, ACTION_NOTHING, action)
+}
+
+func TestProcessRemoveCommand(t *testing.T) {
+	var state XboardState
+	var action int
+
+	_, state = ProcessXboardCommand("new", state)
+	_, state = ProcessXboardCommand("force", state)
+	_, state = ProcessXboardCommand("e2e4", state)
+	_, state = ProcessXboardCommand("e5e7", state)
+	action, state = ProcessXboardCommand("remove", state)
+
+	assert.Equal(t, BLACK_MASK|PAWN_MASK, state.boardState.PieceAtSquare(SQUARE_E7))
+	assert.Equal(t, WHITE_MASK|PAWN_MASK, state.boardState.PieceAtSquare(SQUARE_E2))
+	assert.Equal(t, uint8(0), state.boardState.PieceAtSquare(SQUARE_E5))
+	assert.Equal(t, uint8(0), state.boardState.PieceAtSquare(SQUARE_E4))
+	assert.True(t, state.boardState.whiteToMove)
+	assert.Equal(t, ACTION_THINK_AND_MOVE, action)
+}
+
 func TestProcessResultCommand(t *testing.T) {
 	var state XboardState
 	var action int
@@ -51,6 +98,16 @@ func TestProcessResultCommand(t *testing.T) {
 	action, state = ProcessXboardCommand("result 1/2-1/2 {Forgot how to play}", state)
 
 	assert.Equal(t, ACTION_GAME_OVER, action)
+}
+
+func TestProcessNameCommand(t *testing.T) {
+	var state XboardState
+	var action int
+
+	action, state = ProcessXboardCommand("name bob", state)
+
+	assert.Equal(t, ACTION_NOTHING, action)
+	assert.Equal(t, "bob", state.opponentName)
 }
 
 func TestParseXboardCommandSetboard(t *testing.T) {
