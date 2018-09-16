@@ -96,7 +96,7 @@ func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) Search
 
 	e := Eval(boardState)
 	return SearchResult{
-		value: e.forBoardState(boardState).value(),
+		value: e.value(),
 		move:  searchConfig.move,
 		line:  searchConfig.line,
 		nodes: 1,

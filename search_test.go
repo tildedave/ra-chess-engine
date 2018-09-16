@@ -94,3 +94,11 @@ func TestSearchWhiteForcesPromotion(t *testing.T) {
 
 	assert.Equal(t, QUEEN_EVAL_SCORE, result.value)
 }
+
+func TestSearchWhiteSavesKnightFromCapture(t *testing.T) {
+	boardState, _ := CreateBoardStateFromFENString("rnbqkbnr/ppp1pppp/8/8/3p4/2N5/PPPPPPPP/1RBQKBNR w Kkq - 0 3")
+
+	result := Search(&boardState, 3)
+
+	assert.Equal(t, result.move.from, SQUARE_C3)
+}
