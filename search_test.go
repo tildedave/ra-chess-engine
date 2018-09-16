@@ -42,6 +42,7 @@ func TestSearchMateInOneBlack(t *testing.T) {
 	FlipBoardColors(&boardState)
 
 	result := Search(&boardState, 2)
+
 	assert.Equal(t, -CHECKMATE_SCORE, result.value)
 	assert.Equal(t, Move{from: SQUARE_C3, to: SQUARE_C1}, result.move)
 }

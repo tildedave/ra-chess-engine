@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"regexp"
+	"strings"
 	"time"
 )
 
@@ -58,6 +59,9 @@ ReadLoop:
 		switch action {
 		case ACTION_ERROR:
 			// send error back to engine
+			output.WriteString(state.err.Error() + "\n")
+			output.Flush()
+			state.err = nil
 
 		case ACTION_NOTHING:
 			// don't change anything we're doing now
@@ -69,32 +73,31 @@ ReadLoop:
 			break ReadLoop
 
 		case ACTION_THINK_AND_MOVE:
-			ch := make(chan SearchResult)
+			sendBoardAsComment(output, state.boardState)
+
+			ch := make(chan Move)
 			quit := make(chan bool)
 			thinkingChan := make(chan ThinkingOutput)
 
 			go func() {
 				for thinkingOutput := range thinkingChan {
 					if state.post {
-						output.WriteString(fmt.Sprintf(
-							"%d %d %.2f %d %s\n",
-							thinkingOutput.ply,
-							thinkingOutput.score,
-							thinkingOutput.time,
-							thinkingOutput.nodes,
-							thinkingOutput.pv,
-						))
-						output.Flush()
+						sendThinkingOutput(output, thinkingOutput)
 					}
 				}
 			}()
-			go thinkAndMakeMove(state.boardState, ch, thinkingChan, quit)
+
+			boardState := CopyBoardState(state.boardState)
+			go thinkAndMakeMove(&boardState, ch, thinkingChan, quit)
 			time.Sleep(5 * time.Second)
 			quit <- true
-			bestResult := <-ch
+			move := <-ch
 
-			fmt.Println("best result!")
-			fmt.Println(bestResult)
+			output.WriteString(fmt.Sprintf("move %s\n", MoveToXboardString(move)))
+			output.Flush()
+
+			state.boardState.ApplyMove(move)
+			sendBoardAsComment(output, state.boardState)
 		}
 
 		fmt.Println("Waiting for commands...")
@@ -106,7 +109,27 @@ ReadLoop:
 	return true, nil
 }
 
-func thinkAndMakeMove(boardState *BoardState, ch chan SearchResult, thinkingChan chan ThinkingOutput, quit chan bool) {
+func sendBoardAsComment(output *bufio.Writer, boardState *BoardState) {
+	str := boardState.ToString()
+	for _, line := range strings.Split(str, "\n") {
+		output.WriteString(fmt.Sprintf("# %s\n", line))
+	}
+	output.Flush()
+}
+
+func sendThinkingOutput(output *bufio.Writer, thinkingOutput ThinkingOutput) {
+	output.WriteString(fmt.Sprintf(
+		"%d %d %.2f %d %s\n",
+		thinkingOutput.ply,
+		thinkingOutput.score,
+		thinkingOutput.time,
+		thinkingOutput.nodes,
+		thinkingOutput.pv,
+	))
+	output.Flush()
+}
+
+func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan ThinkingOutput, quit chan bool) {
 	searchQuit := make(chan bool)
 	resultCh := make(chan SearchResult)
 
@@ -145,7 +168,7 @@ func thinkAndMakeMove(boardState *BoardState, ch chan SearchResult, thinkingChan
 					pv:    MoveToString(bestResult.move),
 				}
 			case <-quit:
-				ch <- bestResult
+				ch <- bestResult.move
 				close(ch)
 				close(thinkingChan)
 				searchQuit <- true
@@ -216,6 +239,11 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		action = ACTION_HALT
 
 	case command == "go":
+		if state.boardState == nil {
+			action = ACTION_ERROR
+			state.err = errors.New("Error (board was not initialized)")
+			break
+		}
 		// Leave force mode and set the engine to play the color that is on move. Associate the engine's
 		// clock with the color that is on move, the opponent's clock with the color that is not on move.
 		// Start the engine's clock. Start thinking and eventually make a move.
@@ -240,7 +268,7 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 
 		if state.boardState == nil {
 			action = ACTION_ERROR
-			state.err = errors.New("Illegal move (Board was not initialized correctly")
+			state.err = errors.New("Illegal move (Board was not initialized correctly)")
 			break
 		}
 
@@ -498,4 +526,25 @@ func ParseXboardMove(command string, boardState *BoardState) (Move, error) {
 	}
 
 	return move, nil
+}
+
+func MoveToXboardString(move Move) string {
+	from := SquareToAlgebraicString(move.from)
+	to := SquareToAlgebraicString(move.from)
+	if move.IsPromotion() {
+		var piece rune
+		switch move.flags & 0x0F {
+		case ROOK_MASK:
+			piece = 'r'
+		case QUEEN_MASK:
+			piece = 'q'
+		case KNIGHT_MASK:
+			piece = 'n'
+		case BISHOP_MASK:
+			piece = 'b'
+		}
+
+		return fmt.Sprintf("%s%s%c", from, to, piece)
+	}
+	return fmt.Sprintf("%s%s", from, to)
 }
