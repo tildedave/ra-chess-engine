@@ -90,6 +90,9 @@ ReadLoop:
 		case ACTION_QUIT:
 			break ReadLoop
 
+		case ACTION_THINK:
+			// TODO: use think code but never time out
+
 		case ACTION_THINK_AND_MOVE:
 			sendBoardAsComment(output, state.boardState)
 
@@ -104,8 +107,7 @@ ReadLoop:
 				}
 			}()
 
-			boardState := CopyBoardState(state.boardState)
-			go thinkAndMakeMove(&boardState, ch, thinkingChan)
+			go thinkAndMakeMove(state.boardState, ch, thinkingChan)
 			move := <-ch
 
 			sendStringMessage(output, fmt.Sprintf("move %s\n", MoveToXboardString(move)))
@@ -168,7 +170,9 @@ func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan Th
 				close(searchQuit)
 				return
 			default:
-				res = Search(boardState, uint(i))
+				// TODO: having to copy the board state indicates a bug somewhere
+				state := CopyBoardState(boardState)
+				res = Search(&state, uint(i))
 				i = i + 1
 			}
 		}
