@@ -15,7 +15,8 @@ type SearchResult struct {
 	move  Move
 	value int
 	flags byte
-	nodes int
+	nodes uint
+	depth uint
 	line  []Move
 }
 
@@ -28,7 +29,7 @@ type SearchConfig struct {
 	line  []Move
 }
 
-func search(boardState *BoardState, depth uint) SearchResult {
+func Search(boardState *BoardState, depth uint) SearchResult {
 	return searchAlphaBeta(boardState, SearchConfig{depth: depth, debug: false, alpha: -INFINITY, beta: INFINITY})
 }
 
@@ -37,7 +38,7 @@ func searchAlphaBeta(boardState *BoardState, searchConfig SearchConfig) SearchRe
 		return getTerminalResult(boardState, searchConfig)
 	}
 
-	var nodes = 0
+	var nodes uint = 0
 
 	moves := GenerateMoves(boardState)
 	var bestResult *SearchResult = nil
@@ -86,6 +87,7 @@ func searchAlphaBeta(boardState *BoardState, searchConfig SearchConfig) SearchRe
 	}
 
 	bestResult.nodes += nodes
+	bestResult.depth += 1
 	return *bestResult
 }
 

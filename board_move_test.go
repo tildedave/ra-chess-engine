@@ -12,14 +12,15 @@ func TestApplyMove(t *testing.T) {
 	emptyBoard := CreateEmptyBoardState()
 	emptyBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
 
-	emptyBoard.ApplyMove(CreateMove(SQUARE_A2, SQUARE_A4))
+	move := CreateMove(SQUARE_A2, SQUARE_A4)
+	emptyBoard.ApplyMove(move)
 
 	assert.Equal(t, EMPTY_SQUARE, emptyBoard.PieceAtSquare(SQUARE_A2))
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, emptyBoard.PieceAtSquare(SQUARE_A4))
 	assert.False(t, emptyBoard.whiteToMove)
 	assert.Equal(t, emptyBoard.boardInfo.enPassantTargetSquare, SQUARE_A3)
 
-	emptyBoard.UnapplyMove(CreateMove(SQUARE_A2, SQUARE_A4))
+	emptyBoard.UnapplyMove(move)
 
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, emptyBoard.PieceAtSquare(SQUARE_A2))
 	assert.Equal(t, EMPTY_SQUARE, emptyBoard.PieceAtSquare(SQUARE_A4))

@@ -236,6 +236,7 @@ type BoardState struct {
 	boardInfoHistory [MAX_MOVES]BoardInfo
 	moveIndex        int // 0-based and increases after every move
 	lookupInfo       BoardLookupInfo
+	moveHistory      []Move
 }
 
 func CreateEmptyBoardState() BoardState {
