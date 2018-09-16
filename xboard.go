@@ -94,7 +94,6 @@ ReadLoop:
 			sendBoardAsComment(output, state.boardState)
 
 			ch := make(chan Move)
-			quit := make(chan bool)
 			thinkingChan := make(chan ThinkingOutput)
 
 			go func() {
@@ -106,9 +105,7 @@ ReadLoop:
 			}()
 
 			boardState := CopyBoardState(state.boardState)
-			go thinkAndMakeMove(&boardState, ch, thinkingChan, quit)
-			time.Sleep(5 * time.Second)
-			quit <- true
+			go thinkAndMakeMove(&boardState, ch, thinkingChan)
 			move := <-ch
 
 			sendStringMessage(output, fmt.Sprintf("move %s\n", MoveToXboardString(move)))
@@ -154,12 +151,12 @@ func sendThinkingOutput(output *bufio.Writer, thinkingOutput ThinkingOutput) {
 	))
 }
 
-func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan ThinkingOutput, quit chan bool) {
+func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan ThinkingOutput) {
 	searchQuit := make(chan bool)
 	resultCh := make(chan SearchResult)
 
 	go func() {
-		i := 0
+		i := 1
 		var res SearchResult
 
 		for {
@@ -181,6 +178,7 @@ func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan Th
 		startTime := time.Now().UnixNano()
 
 		var bestResult SearchResult
+	ThinkingLoop:
 		for {
 			select {
 			case bestResult = <-resultCh:
@@ -192,14 +190,21 @@ func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan Th
 					nodes: bestResult.nodes,
 					pv:    MoveToString(bestResult.move),
 				}
-			case <-quit:
-				ch <- bestResult.move
-				close(ch)
-				close(thinkingChan)
-				searchQuit <- true
-				return
+
+				if bestResult.flags == CHECKMATE_FLAG || bestResult.flags == STALEMATE_FLAG {
+					logger.Println("Best result is terminal, time to stop thinking")
+					break ThinkingLoop
+				}
+
+			case <-time.After(5 * time.Second):
+				break ThinkingLoop
 			}
 		}
+
+		ch <- bestResult.move
+		close(ch)
+		close(thinkingChan)
+		searchQuit <- true
 	}()
 }
 
