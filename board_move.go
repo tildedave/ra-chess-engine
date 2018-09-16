@@ -89,7 +89,6 @@ func (boardState *BoardState) ApplyMove(move Move) {
 					boardState.boardInfo.enPassantTargetSquare = move.from - 10
 				}
 			} else if move.to == epTargetSquare {
-
 				var pos uint8
 				if boardState.whiteToMove {
 					pos = move.to - 10
@@ -230,7 +229,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 
 			boardState.board[pos] = boardState.board[move.to]
 			boardState.board[move.to] = 0x00
-			boardState.boardInfo.enPassantTargetSquare = pos
+			boardState.boardInfo.enPassantTargetSquare = move.to
 		}
 	}
 
