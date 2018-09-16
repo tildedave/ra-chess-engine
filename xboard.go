@@ -4,12 +4,14 @@ import (
 	"bufio"
 	"errors"
 	"fmt"
+	"log"
+	"os"
 	"regexp"
 	"strings"
 	"time"
 )
 
-var _ = fmt.Println
+var logger *log.Logger = nil
 
 // https://www.gnu.org/software/xboard/engine-intf.html
 
@@ -48,10 +50,27 @@ type ThinkingOutput struct {
 
 func RunXboard(scanner *bufio.Scanner, output *bufio.Writer) (bool, error) {
 	var state XboardState
+	file, err := os.Create("/tmp/ra-chess-engine.log")
+	if err != nil {
+		panic(err)
+	}
+	logger = log.New(file, "", log.LstdFlags|log.Lshortfile)
+	logger.Println("Starting up!")
+
 	var action int = ACTION_NOTHING
+	sendPreamble(output)
+
+	defer func() {
+		if r := recover(); r != nil {
+			logger.Println("Recovered in f", r)
+		}
+	}()
 
 ReadLoop:
 	for scanner.Scan() {
+		logger.Println("Scanner awake")
+		command := scanner.Text()
+		logger.Println("Received command: " + command)
 		action, state = ProcessXboardCommand(scanner.Text(), state)
 		output.WriteString(fmt.Sprintf("# action=%d\n", action))
 		output.Flush()
@@ -93,32 +112,40 @@ ReadLoop:
 			quit <- true
 			move := <-ch
 
-			output.WriteString(fmt.Sprintf("move %s\n", MoveToXboardString(move)))
-			output.Flush()
+			sendStringMessage(output, fmt.Sprintf("move %s\n", MoveToXboardString(move)))
 
 			state.boardState.ApplyMove(move)
 			sendBoardAsComment(output, state.boardState)
 		}
 
-		fmt.Println("Waiting for commands...")
+		logger.Println("Waiting for commands...")
 	}
 	if err := scanner.Err(); err != nil {
-		fmt.Println(err)
+		logger.Println(err)
 	}
 
 	return true, nil
 }
 
-func sendBoardAsComment(output *bufio.Writer, boardState *BoardState) {
-	str := boardState.ToString()
-	for _, line := range strings.Split(str, "\n") {
-		output.WriteString(fmt.Sprintf("# %s\n", line))
-	}
+func sendPreamble(output *bufio.Writer) {
+	sendStringMessage(output, "feature myname=\"ra v0.0.1\" setboard=1 sigterm=0 sigint=0 done=1\n")
+}
+
+func sendStringMessage(output *bufio.Writer, str string) {
+	logger.Print("-> " + str)
+	output.WriteString(str)
 	output.Flush()
 }
 
+func sendBoardAsComment(output *bufio.Writer, boardState *BoardState) {
+	str := boardState.ToString()
+	for _, line := range strings.Split(str, "\n") {
+		sendStringMessage(output, "# "+line+"\n")
+	}
+}
+
 func sendThinkingOutput(output *bufio.Writer, thinkingOutput ThinkingOutput) {
-	output.WriteString(fmt.Sprintf(
+	sendStringMessage(output, fmt.Sprintf(
 		"%d %d %.2f %d %s\n",
 		thinkingOutput.ply,
 		thinkingOutput.score,
@@ -126,7 +153,6 @@ func sendThinkingOutput(output *bufio.Writer, thinkingOutput ThinkingOutput) {
 		thinkingOutput.nodes,
 		thinkingOutput.pv,
 	))
-	output.Flush()
 }
 
 func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan ThinkingOutput, quit chan bool) {
@@ -530,7 +556,7 @@ func ParseXboardMove(command string, boardState *BoardState) (Move, error) {
 
 func MoveToXboardString(move Move) string {
 	from := SquareToAlgebraicString(move.from)
-	to := SquareToAlgebraicString(move.from)
+	to := SquareToAlgebraicString(move.to)
 	if move.IsPromotion() {
 		var piece rune
 		switch move.flags & 0x0F {
