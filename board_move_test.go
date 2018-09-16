@@ -250,7 +250,27 @@ func TestEnPassantCapture(t *testing.T) {
 
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_A5))
 	assert.Equal(t, BLACK_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_B5))
-	testBoard.boardInfo.enPassantTargetSquare = SQUARE_B6
+	assert.Equal(t, SQUARE_B6, testBoard.boardInfo.enPassantTargetSquare)
+}
+
+func TestEnPassantCaptureBlack(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.SetPieceAtSquare(SQUARE_F4, WHITE_MASK|PAWN_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_E4, BLACK_MASK|PAWN_MASK)
+	testBoard.boardInfo.enPassantTargetSquare = SQUARE_F3
+	testBoard.whiteToMove = false
+
+	var m Move = CreateEnPassantCapture(SQUARE_E4, SQUARE_F3)
+	testBoard.ApplyMove(m)
+
+	assert.Equal(t, EMPTY_SQUARE, testBoard.PieceAtSquare(SQUARE_F4))
+	assert.Equal(t, BLACK_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_F3))
+
+	testBoard.UnapplyMove(m)
+
+	assert.Equal(t, WHITE_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_F4))
+	assert.Equal(t, BLACK_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_E4))
+	assert.Equal(t, SQUARE_F3, testBoard.boardInfo.enPassantTargetSquare)
 }
 
 func TestFiddlingWithQueensideRooks(t *testing.T) {
