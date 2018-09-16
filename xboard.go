@@ -194,6 +194,7 @@ func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan Th
 
 				if bestResult.flags == CHECKMATE_FLAG || bestResult.flags == STALEMATE_FLAG {
 					logger.Println("Best result is terminal, time to stop thinking")
+					logger.Println(SearchResultToString(bestResult))
 					break ThinkingLoop
 				}
 
