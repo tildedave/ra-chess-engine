@@ -54,9 +54,9 @@ func searchAlphaBeta(boardState *BoardState, searchConfig SearchConfig) SearchRe
 			searchConfig.line = append(searchConfig.line, move)
 			searchConfig.move = move
 
-			nodes += 1
 			result := searchAlphaBeta(boardState, searchConfig)
 			result.move = move
+			nodes += result.nodes
 			searchConfig.line = searchConfig.line[:len(searchConfig.line)-1]
 
 			if bestResult == nil {
@@ -86,7 +86,7 @@ func searchAlphaBeta(boardState *BoardState, searchConfig SearchConfig) SearchRe
 		return getNoLegalMoveResult(boardState, searchConfig)
 	}
 
-	bestResult.nodes += nodes
+	bestResult.nodes = nodes
 	bestResult.depth += 1
 	return *bestResult
 }
@@ -99,6 +99,7 @@ func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) Search
 		value: e.forBoardState(boardState).value(),
 		move:  searchConfig.move,
 		line:  searchConfig.line,
+		nodes: 1,
 	}
 }
 
