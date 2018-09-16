@@ -28,5 +28,30 @@
     "depth": 6,
     "nodes": 119060324,
     "fen": "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+  },
+  {
+    "depth": 1,
+    "nodes": 48,
+    "fen": "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"
+  },
+  {
+    "depth": 2,
+    "nodes": 2039,
+    "fen": "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"
+  },
+  {
+    "depth": 3,
+    "nodes": 97862,
+    "fen": "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"
+  },
+  {
+    "depth": 4,
+    "nodes": 4085603,
+    "fen": "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"
+  },
+  {
+    "depth": 5,
+    "nodes": 193690690,
+    "fen": "r3k2r/p1ppqpb1/bn2pnp1/3PN3/1p2P3/2N2Q1p/PPPBBPPP/R3K2R w KQkq -"
   }
 ]
