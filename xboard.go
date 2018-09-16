@@ -43,7 +43,7 @@ const (
 type ThinkingOutput struct {
 	ply   uint
 	score int
-	time  float64
+	time  int64
 	nodes uint
 	pv    string
 }
@@ -68,7 +68,6 @@ func RunXboard(scanner *bufio.Scanner, output *bufio.Writer) (bool, error) {
 
 ReadLoop:
 	for scanner.Scan() {
-		logger.Println("Scanner awake")
 		command := scanner.Text()
 		logger.Println("Received command: " + command)
 		action, state = ProcessXboardCommand(scanner.Text(), state)
@@ -100,7 +99,7 @@ ReadLoop:
 
 			go func() {
 				for thinkingOutput := range thinkingChan {
-					if state.post {
+					if state.post && thinkingOutput.ply > 0 {
 						sendThinkingOutput(output, thinkingOutput)
 					}
 				}
@@ -146,7 +145,7 @@ func sendBoardAsComment(output *bufio.Writer, boardState *BoardState) {
 
 func sendThinkingOutput(output *bufio.Writer, thinkingOutput ThinkingOutput) {
 	sendStringMessage(output, fmt.Sprintf(
-		"%d %d %.2f %d %s\n",
+		"%d %d %d %d %s\n",
 		thinkingOutput.ply,
 		thinkingOutput.score,
 		thinkingOutput.time,
@@ -185,7 +184,7 @@ func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan Th
 		for {
 			select {
 			case bestResult = <-resultCh:
-				elapsedSeconds := float64(time.Now().UnixNano()-startTime) / float64((1.0 * time.Second).Nanoseconds())
+				elapsedSeconds := (time.Now().UnixNano() - startTime) / (100 * time.Second).Nanoseconds()
 				thinkingChan <- ThinkingOutput{
 					ply:   bestResult.depth,
 					score: bestResult.value,
