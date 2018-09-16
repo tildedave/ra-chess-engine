@@ -236,7 +236,13 @@ type BoardState struct {
 	boardInfoHistory [MAX_MOVES]BoardInfo
 	moveIndex        int // 0-based and increases after every move
 	lookupInfo       BoardLookupInfo
-	moveHistory      []Move
+}
+
+func CopyBoardState(boardState *BoardState) BoardState {
+	state := *boardState
+	state.board = make([]byte, 120)
+	copy(state.board, boardState.board)
+	return state
 }
 
 func CreateEmptyBoardState() BoardState {
@@ -483,7 +489,6 @@ func ParseAlgebraicSquare(sq string) (uint8, error) {
 	}
 
 	return RowAndColToSquare(row, col), nil
-
 }
 
 func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
