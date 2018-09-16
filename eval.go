@@ -36,14 +36,6 @@ func Eval(boardState *BoardState) BoardEval {
 	return BoardEval{material: material}
 }
 
-func (eval BoardEval) forBoardState(boardState *BoardState) BoardEval {
-	if boardState.whiteToMove {
-		return eval
-	}
-
-	return BoardEval{material: -eval.material}
-}
-
 func (eval BoardEval) value() int {
 	return eval.material
 }
