@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"time"
 )
 
 var _ = fmt.Println
@@ -17,20 +18,26 @@ type SearchResult struct {
 	flags byte
 	nodes uint
 	depth uint
-	line  []Move
+	time  int64
 }
 
 type SearchConfig struct {
 	depth uint
-	debug bool
 	alpha int
 	beta  int
 	move  Move
-	line  []Move
 }
 
 func Search(boardState *BoardState, depth uint) SearchResult {
-	return searchAlphaBeta(boardState, SearchConfig{depth: depth, debug: false, alpha: -INFINITY, beta: INFINITY})
+	startTime := time.Now().UnixNano()
+	result := searchAlphaBeta(boardState, SearchConfig{
+		depth: depth,
+		alpha: -INFINITY,
+		beta:  INFINITY,
+	})
+	result.time = (time.Now().UnixNano() - startTime) / 10000000
+
+	return result
 }
 
 func searchAlphaBeta(boardState *BoardState, searchConfig SearchConfig) SearchResult {
@@ -51,13 +58,11 @@ func searchAlphaBeta(boardState *BoardState, searchConfig SearchConfig) SearchRe
 
 		boardState.ApplyMove(move)
 		if !boardState.IsInCheck(!boardState.whiteToMove) {
-			searchConfig.line = append(searchConfig.line, move)
 			searchConfig.move = move
 
 			result := searchAlphaBeta(boardState, searchConfig)
 			result.move = move
 			nodes += result.nodes
-			searchConfig.line = searchConfig.line[:len(searchConfig.line)-1]
 
 			if bestResult == nil {
 				bestResult = &result
@@ -98,7 +103,6 @@ func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) Search
 	return SearchResult{
 		value: e.value(),
 		move:  searchConfig.move,
-		line:  searchConfig.line,
 		nodes: 1,
 	}
 }
@@ -113,7 +117,6 @@ func getNoLegalMoveResult(boardState *BoardState, searchConfig SearchConfig) Sea
 		return SearchResult{
 			value: score,
 			flags: CHECKMATE_FLAG,
-			line:  searchConfig.line,
 		}
 	}
 
@@ -121,7 +124,6 @@ func getNoLegalMoveResult(boardState *BoardState, searchConfig SearchConfig) Sea
 	return SearchResult{
 		value: 0,
 		flags: STALEMATE_FLAG,
-		line:  searchConfig.line,
 	}
 
 }
