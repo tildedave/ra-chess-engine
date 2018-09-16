@@ -175,18 +175,15 @@ func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan Th
 	}()
 
 	go func() {
-		startTime := time.Now().UnixNano()
-
 		var bestResult SearchResult
 	ThinkingLoop:
 		for {
 			select {
 			case bestResult = <-resultCh:
-				elapsedSeconds := (time.Now().UnixNano() - startTime) / (100 * time.Second).Nanoseconds()
 				thinkingChan <- ThinkingOutput{
 					ply:   bestResult.depth,
 					score: bestResult.value,
-					time:  elapsedSeconds,
+					time:  bestResult.time,
 					nodes: bestResult.nodes,
 					pv:    MoveToString(bestResult.move),
 				}
