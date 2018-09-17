@@ -184,6 +184,8 @@ func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan Th
 		for {
 			select {
 			case bestResult = <-resultCh:
+				logger.Println("New result:")
+				logger.Println(SearchResultToString(bestResult))
 				thinkingChan <- ThinkingOutput{
 					ply:   bestResult.depth,
 					score: bestResult.value,
@@ -194,7 +196,6 @@ func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan Th
 
 				if bestResult.flags == CHECKMATE_FLAG || bestResult.flags == STALEMATE_FLAG {
 					logger.Println("Best result is terminal, time to stop thinking")
-					logger.Println(SearchResultToString(bestResult))
 					break ThinkingLoop
 				}
 
@@ -212,7 +213,7 @@ func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan Th
 
 var protoverRegexp = regexp.MustCompile("^protover \\d$")
 var variantRegexp = regexp.MustCompile("^variant \\w+$")
-var moveRegexp = regexp.MustCompile("^([abcdefgh][1-8]){2}(nbqr)?$")
+var moveRegexp = regexp.MustCompile("^([abcdefgh][1-8]){2}([nbqr])?$")
 var pingRegexp = regexp.MustCompile("^ping \\d$")
 var resultRegexp = regexp.MustCompile("^result (1\\-0|0\\-1|1/2\\-1/2|\\*) {[^}]+}$")
 var fenRegexp = regexp.MustCompile("^setboard (.*)$")
@@ -317,6 +318,7 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 			state.err = errors.New("Illegal move (" + err.Error() + ")")
 		}
 
+		logger.Printf("Applying move %s\n", MoveToString(move))
 		state.boardState.ApplyMove(move)
 		state.moveHistory = append(state.moveHistory, move)
 
