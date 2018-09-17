@@ -157,6 +157,11 @@ func TestParseXboardMovePromotion(t *testing.T) {
 	assert.Equal(t, move.flags, PROMOTION_MASK|QUEEN_MASK)
 }
 
+func TestParseXboardMoveRegexp(t *testing.T) {
+	assert.True(t, moveRegexp.MatchString("e2e1q"))
+	assert.True(t, moveRegexp.MatchString("e2e1"))
+}
+
 func TestParseXboardMovePromotionCapture(t *testing.T) {
 	boardState := CreateEmptyBoardState()
 	boardState.SetPieceAtSquare(SQUARE_H7, PAWN_MASK|WHITE_MASK)
