@@ -17,12 +17,11 @@ type SearchResult struct {
 	value int
 	flags byte
 	nodes uint
-	depth uint
 	time  int64
+	depth uint
 }
 
 type SearchConfig struct {
-	depth uint
 	alpha int
 	beta  int
 	move  Move
@@ -30,8 +29,7 @@ type SearchConfig struct {
 
 func Search(boardState *BoardState, depth uint) SearchResult {
 	startTime := time.Now().UnixNano()
-	result := searchAlphaBeta(boardState, SearchConfig{
-		depth: depth,
+	result := searchAlphaBeta(boardState, depth, SearchConfig{
 		alpha: -INFINITY,
 		beta:  INFINITY,
 	})
@@ -40,8 +38,8 @@ func Search(boardState *BoardState, depth uint) SearchResult {
 	return result
 }
 
-func searchAlphaBeta(boardState *BoardState, searchConfig SearchConfig) SearchResult {
-	if searchConfig.depth == 0 {
+func searchAlphaBeta(boardState *BoardState, depth uint, searchConfig SearchConfig) SearchResult {
+	if depth == 0 {
 		return getTerminalResult(boardState, searchConfig)
 	}
 
@@ -49,7 +47,6 @@ func searchAlphaBeta(boardState *BoardState, searchConfig SearchConfig) SearchRe
 
 	moves := GenerateMoves(boardState)
 	var bestResult *SearchResult = nil
-	searchConfig.depth -= 1
 
 	for _, move := range moves {
 		if move.IsCastle() && !boardState.TestCastleLegality(move) {
@@ -60,8 +57,14 @@ func searchAlphaBeta(boardState *BoardState, searchConfig SearchConfig) SearchRe
 		if !boardState.IsInCheck(!boardState.whiteToMove) {
 			searchConfig.move = move
 
-			result := searchAlphaBeta(boardState, searchConfig)
+			searchDepth := depth - 1
+			if move.IsCapture() || boardState.IsInCheck(boardState.whiteToMove) {
+				searchDepth += 1
+			}
+			result := searchAlphaBeta(boardState, searchDepth, searchConfig)
+
 			result.move = move
+			result.depth += 1
 			nodes += result.nodes
 
 			if bestResult == nil {
@@ -92,7 +95,6 @@ func searchAlphaBeta(boardState *BoardState, searchConfig SearchConfig) SearchRe
 	}
 
 	bestResult.nodes = nodes
-	bestResult.depth += 1
 	return *bestResult
 }
 
