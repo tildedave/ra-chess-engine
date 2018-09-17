@@ -63,10 +63,11 @@ func TestSearchWhiteForcesPawnPromotion(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_B7, WHITE_MASK|PAWN_MASK)
 	boardState.SetPieceAtSquare(SQUARE_B8, BLACK_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_B5, WHITE_MASK|KING_MASK)
+	generateBoardLookupInfo(&boardState)
 
-	result := Search(&boardState, 10)
+	result := Search(&boardState, 5)
 
-	assert.Equal(t, CHECKMATE_SCORE, result.value)
+	assert.Equal(t, QUEEN_EVAL_SCORE, result.value)
 	assert.Equal(t, SQUARE_B5, result.move.from)
 	assert.True(t, result.move.to == SQUARE_C6 || result.move.to == SQUARE_A6)
 }
@@ -78,7 +79,7 @@ func TestSearchBlackStopsPromotion(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D3, WHITE_MASK|KING_MASK)
 	generateBoardLookupInfo(&boardState)
 
-	result := Search(&boardState, 10)
+	result := Search(&boardState, 5)
 
 	assert.Equal(t, PAWN_EVAL_SCORE, result.value)
 }
@@ -90,7 +91,7 @@ func TestSearchWhiteForcesPromotion(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D5, WHITE_MASK|PAWN_MASK)
 	generateBoardLookupInfo(&boardState)
 
-	result := Search(&boardState, 10)
+	result := Search(&boardState, 5)
 
 	assert.Equal(t, QUEEN_EVAL_SCORE, result.value)
 }
