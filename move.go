@@ -118,7 +118,7 @@ func MoveToString(move Move) string {
 	return s
 }
 
-func MoveToPrettyString(move Move, boardState BoardState) string {
+func MoveToPrettyString(move Move, boardState *BoardState) string {
 	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK && !move.IsCapture() {
 		if move.flags&SPECIAL2_MASK == SPECIAL2_MASK {
 			return "O-O-O"
@@ -132,7 +132,11 @@ func MoveToPrettyString(move Move, boardState BoardState) string {
 			return SquareToAlgebraicString(move.from) + "x" + SquareToAlgebraicString(move.to)
 		}
 
-		return SquareToAlgebraicString(move.to)
+		s := SquareToAlgebraicString(move.to)
+		if move.IsPromotion() {
+			s += "=" + string(pieceToString(move.flags|WHITE_MASK))
+		}
+		return s
 	}
 
 	// TODO: handle ambiguity if there's another piece of that type that
@@ -144,12 +148,13 @@ func MoveToPrettyString(move Move, boardState BoardState) string {
 	if move.IsCapture() {
 		s += "x"
 	}
+
 	s += SquareToAlgebraicString(move.to)
 
 	return s
 }
 
-func MoveArrayToPrettyString(moveArr []Move, boardState BoardState) string {
+func MoveArrayToPrettyString(moveArr []Move, boardState *BoardState) string {
 	var s string
 	for i, m := range moveArr {
 		if i > 0 {

@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var _ = fmt.Println
@@ -23,9 +24,8 @@ func CreateMateInOneBoard() BoardState {
 func TestSearchStartingPosition(t *testing.T) {
 	boardState := CreateInitialBoardState()
 
-	result := Search(&boardState, 4)
-
-	assert.Equal(t, 0, result.value)
+	Search(&boardState, 4)
+	// should not crash - unclear what is a useful assert
 }
 
 func TestSearchMateInOne(t *testing.T) {
@@ -88,10 +88,10 @@ func TestSearchWhiteForcesPromotion(t *testing.T) {
 	boardState := CreateEmptyBoardState()
 	boardState.SetPieceAtSquare(SQUARE_D6, WHITE_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D8, BLACK_MASK|KING_MASK)
-	boardState.SetPieceAtSquare(SQUARE_D5, WHITE_MASK|PAWN_MASK)
+	boardState.SetPieceAtSquare(SQUARE_D4, WHITE_MASK|PAWN_MASK)
 	generateBoardLookupInfo(&boardState)
 
-	result := Search(&boardState, 5)
+	result := Search(&boardState, 9)
 
 	assert.Equal(t, QUEEN_EVAL_SCORE, result.value)
 }

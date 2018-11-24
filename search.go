@@ -19,6 +19,7 @@ type SearchResult struct {
 	nodes uint
 	time  int64
 	depth uint
+	pv    string
 }
 
 type SearchConfig struct {
@@ -95,6 +96,7 @@ func searchAlphaBeta(boardState *BoardState, depth uint, searchConfig SearchConf
 	}
 
 	bestResult.nodes = nodes
+	bestResult.pv = MoveToPrettyString(bestResult.move, boardState) + " " + bestResult.pv
 	return *bestResult
 }
 
@@ -106,6 +108,7 @@ func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) Search
 		value: e.value(),
 		move:  searchConfig.move,
 		nodes: 1,
+		pv:    "",
 	}
 }
 
@@ -119,6 +122,7 @@ func getNoLegalMoveResult(boardState *BoardState, searchConfig SearchConfig) Sea
 		return SearchResult{
 			value: score,
 			flags: CHECKMATE_FLAG,
+			pv:    "#",
 		}
 	}
 
@@ -126,6 +130,7 @@ func getNoLegalMoveResult(boardState *BoardState, searchConfig SearchConfig) Sea
 	return SearchResult{
 		value: 0,
 		flags: STALEMATE_FLAG,
+		pv:    "1/2-1/2",
 	}
 
 }
