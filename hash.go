@@ -10,12 +10,12 @@ var _ = fmt.Println
 type HashInfo struct {
 	// this is a sparse array - will be indexed by offset and piece type
 	content                 [255][255]uint64
+	enpassant               [255]uint64 // indexed by offset
 	whiteToMove             uint64
 	whiteCanCastleKingside  uint64
 	whiteCanCastleQueenside uint64
 	blackCanCastleKingside  uint64
 	blackCanCastleQueenside uint64
-	// do we need the en passant target square here or is it ok if they collide (?)
 }
 
 func CreateHashInfo(r *rand.Rand) HashInfo {
@@ -34,6 +34,10 @@ func CreateHashInfo(r *rand.Rand) HashInfo {
 			}
 		}
 	}
+	for i := byte(0); i < 8; i++ {
+		hashInfo.enpassant[RowAndColToSquare(3, i)] = r.Uint64()
+		hashInfo.enpassant[RowAndColToSquare(6, i)] = r.Uint64()
+	}
 	hashInfo.whiteToMove = r.Uint64()
 	hashInfo.whiteCanCastleKingside = r.Uint64()
 	hashInfo.whiteCanCastleQueenside = r.Uint64()
@@ -44,7 +48,7 @@ func CreateHashInfo(r *rand.Rand) HashInfo {
 }
 
 func (boardState *BoardState) CreateHashKey(info *HashInfo) uint64 {
-	var key uint64 = 0
+	var key uint64
 
 	if boardState.whiteToMove {
 		key ^= info.whiteToMove
@@ -67,13 +71,18 @@ func (boardState *BoardState) CreateHashKey(info *HashInfo) uint64 {
 	if boardState.boardInfo.blackCanCastleQueenside {
 		key ^= info.blackCanCastleQueenside
 	}
+	if boardState.boardInfo.enPassantTargetSquare != 0x00 {
+		key ^= info.enpassant[boardState.boardInfo.enPassantTargetSquare]
+	}
 
 	return key
 }
 
 // To be applied after a move has been made, to incrementally update the hash key.
 // For use in search
-func (boardState *BoardState) UpdateHashApplyMove(key uint64, info *HashInfo, oldBoardInfo BoardInfo, move Move) uint64 {
+func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo BoardInfo, move Move) uint64 {
+	info := boardState.hashInfo
+
 	if move.IsCapture() {
 		capturePiece := boardState.captureStack.Peek()
 		key ^= info.content[move.to][capturePiece]
@@ -82,8 +91,8 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, info *HashInfo, ol
 	movePiece := boardState.board[move.to]
 	key ^= info.content[move.from][movePiece]
 	key ^= info.content[move.to][movePiece]
+	key ^= info.whiteToMove
 
-	// if move is a castle, move work
 	if !boardState.whiteToMove {
 		if move.IsKingsideCastle() {
 			key ^= info.content[SQUARE_H1][WHITE_MASK|ROOK_MASK]
@@ -113,12 +122,20 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, info *HashInfo, ol
 		if oldBoardInfo.blackCanCastleQueenside != boardState.boardInfo.blackCanCastleQueenside {
 			key ^= info.blackCanCastleQueenside
 		}
+		if oldBoardInfo.enPassantTargetSquare != boardState.boardInfo.enPassantTargetSquare {
+			key ^= info.enpassant[oldBoardInfo.enPassantTargetSquare]
+			key ^= info.enpassant[boardState.boardInfo.enPassantTargetSquare]
+		}
 	}
 
 	return key
 }
 
-func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, info *HashInfo, oldBoardInfo BoardInfo, move Move) uint64 {
+// UpdateHashUnapplyMove gives a new hash key as a result of unapplying a move.
+// It should be called _after_ the move has been unprocessed, and the oldBoardInfo
+// should be the board info prior to the move being unprocessed.
+func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo BoardInfo, move Move) uint64 {
+	info := boardState.hashInfo
 	if move.IsCapture() {
 		// we've already put back the piece since this is done after move is unapplied
 		key ^= info.content[move.to][boardState.board[move.to]]
@@ -127,9 +144,9 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, info *HashInfo, 
 	movePiece := boardState.board[move.from]
 	key ^= info.content[move.to][movePiece]
 	key ^= info.content[move.from][movePiece]
+	key ^= info.whiteToMove
 
-	// if move is a castle, move work
-	if !boardState.whiteToMove {
+	if boardState.whiteToMove {
 		if move.IsKingsideCastle() {
 			key ^= info.content[SQUARE_H1][WHITE_MASK|ROOK_MASK]
 			key ^= info.content[SQUARE_F1][WHITE_MASK|ROOK_MASK]
@@ -157,6 +174,10 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, info *HashInfo, 
 		}
 		if oldBoardInfo.blackCanCastleQueenside != boardState.boardInfo.blackCanCastleQueenside {
 			key ^= info.blackCanCastleQueenside
+		}
+		if oldBoardInfo.enPassantTargetSquare != boardState.boardInfo.enPassantTargetSquare {
+			key ^= info.enpassant[oldBoardInfo.enPassantTargetSquare]
+			key ^= info.enpassant[boardState.boardInfo.enPassantTargetSquare]
 		}
 	}
 

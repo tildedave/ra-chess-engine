@@ -121,11 +121,14 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	}
 
 	boardState.whiteToMove = !boardState.whiteToMove
+	oldBoardInfo := boardState.boardInfoHistory[boardState.moveIndex]
 	boardState.moveIndex++
 
 	if boardState.whiteToMove {
-		boardState.fullmoveNumber += 1
+		boardState.fullmoveNumber++
 	}
+
+	boardState.hashKey = boardState.UpdateHashApplyMove(boardState.hashKey, oldBoardInfo, move)
 }
 
 func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
@@ -175,8 +178,9 @@ func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
 func (boardState *BoardState) UnapplyMove(move Move) {
 	boardState.whiteToMove = !boardState.whiteToMove
 	if !boardState.whiteToMove {
-		boardState.fullmoveNumber -= 1
+		boardState.fullmoveNumber--
 	}
+	oldBoardInfo := boardState.boardInfo
 	boardState.moveIndex--
 	boardState.boardInfo = boardState.boardInfoHistory[boardState.moveIndex]
 
@@ -250,4 +254,6 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 		}
 		boardState.board[move.from] = mask | PAWN_MASK
 	}
+
+	boardState.hashKey = boardState.UpdateHashUnapplyMove(boardState.hashKey, oldBoardInfo, move)
 }

@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var _ = fmt.Println
@@ -114,7 +115,9 @@ func TestApplyWhiteKingsideCastle(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_E1, WHITE_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_H1, WHITE_MASK|ROOK_MASK)
+	originalKey := testBoard.hashKey
 
+	testBoard.boardInfo.whiteCanCastleKingside = true
 	var m Move = CreateKingsideCastle(SQUARE_E1, SQUARE_G1)
 
 	testBoard.ApplyMove(m)
@@ -129,6 +132,7 @@ func TestApplyWhiteKingsideCastle(t *testing.T) {
 	assert.Equal(t, WHITE_MASK|KING_MASK, testBoard.PieceAtSquare(SQUARE_E1))
 	assert.Equal(t, WHITE_MASK|ROOK_MASK, testBoard.PieceAtSquare(SQUARE_H1))
 	assert.True(t, testBoard.boardInfo.whiteCanCastleKingside)
+	assert.Equal(t, testBoard.hashKey, originalKey)
 }
 
 func TestApplyBlackKingsideCastle(t *testing.T) {
