@@ -213,6 +213,8 @@ type BoardInfo struct {
 	whiteCanCastleQueenside bool
 	blackCanCastleKingside  bool
 	blackCanCastleQueenside bool
+	blackHasCastled         bool
+	whiteHasCastled         bool
 	enPassantTargetSquare   uint8
 }
 
