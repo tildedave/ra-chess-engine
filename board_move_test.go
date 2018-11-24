@@ -114,13 +114,13 @@ func TestApplyCaptureTwice(t *testing.T) {
 }
 
 func TestApplyWhiteKingsideCastle(t *testing.T) {
-	var testBoard BoardState = CreateEmptyBoardState()
+	var testBoard = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_E1, WHITE_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_H1, WHITE_MASK|ROOK_MASK)
 	originalKey := testBoard.hashKey
 
 	testBoard.boardInfo.whiteCanCastleKingside = true
-	var m Move = CreateKingsideCastle(SQUARE_E1, SQUARE_G1)
+	var m = CreateKingsideCastle(SQUARE_E1, SQUARE_G1)
 
 	testBoard.ApplyMove(m)
 
@@ -138,13 +138,13 @@ func TestApplyWhiteKingsideCastle(t *testing.T) {
 }
 
 func TestApplyBlackKingsideCastle(t *testing.T) {
-	var testBoard BoardState = CreateEmptyBoardState()
+	var testBoard = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_E8, BLACK_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_H8, BLACK_MASK|ROOK_MASK)
 	testBoard.whiteToMove = false
 	testBoard.boardInfo.blackCanCastleKingside = true
 
-	var m Move = CreateKingsideCastle(SQUARE_E8, SQUARE_G8)
+	var m = CreateKingsideCastle(SQUARE_E8, SQUARE_G8)
 
 	testBoard.ApplyMove(m)
 
@@ -162,11 +162,11 @@ func TestApplyBlackKingsideCastle(t *testing.T) {
 }
 
 func TestApplyWhiteQueensideCastle(t *testing.T) {
-	var testBoard BoardState = CreateEmptyBoardState()
+	var testBoard = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_E1, WHITE_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A1, WHITE_MASK|ROOK_MASK)
 
-	var m Move = CreateQueensideCastle(SQUARE_E1, SQUARE_C1)
+	var m = CreateQueensideCastle(SQUARE_E1, SQUARE_C1)
 
 	testBoard.ApplyMove(m)
 
@@ -183,13 +183,13 @@ func TestApplyWhiteQueensideCastle(t *testing.T) {
 }
 
 func TestApplyBlackQueensideCastle(t *testing.T) {
-	var testBoard BoardState = CreateEmptyBoardState()
+	var testBoard = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_E8, BLACK_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A8, BLACK_MASK|ROOK_MASK)
 	testBoard.whiteToMove = false
 	testBoard.boardInfo.blackCanCastleQueenside = true
 
-	var m Move = CreateQueensideCastle(SQUARE_E8, SQUARE_C8)
+	var m = CreateQueensideCastle(SQUARE_E8, SQUARE_C8)
 
 	testBoard.ApplyMove(m)
 
@@ -206,10 +206,11 @@ func TestApplyBlackQueensideCastle(t *testing.T) {
 }
 
 func TestWhitePawnPromotes(t *testing.T) {
-	var testBoard BoardState = CreateEmptyBoardState()
+	var testBoard = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_H7, WHITE_MASK|PAWN_MASK)
+	originalKey := testBoard.hashKey
 
-	var m Move = CreatePromotion(SQUARE_H7, SQUARE_H8, QUEEN_MASK)
+	var m = CreatePromotion(SQUARE_H7, SQUARE_H8, QUEEN_MASK)
 
 	testBoard.ApplyMove(m)
 
@@ -220,14 +221,16 @@ func TestWhitePawnPromotes(t *testing.T) {
 
 	assert.Equal(t, EMPTY_SQUARE, testBoard.PieceAtSquare(SQUARE_H8))
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_H7))
+	assert.Equal(t, originalKey, testBoard.hashKey)
 }
 
 func TestBlackPawnPromotes(t *testing.T) {
-	var testBoard BoardState = CreateEmptyBoardState()
+	var testBoard = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_D2, BLACK_MASK|PAWN_MASK)
 	testBoard.whiteToMove = false
+	originalKey := testBoard.hashKey
 
-	var m Move = CreatePromotion(SQUARE_D2, SQUARE_D1, ROOK_MASK)
+	var m = CreatePromotion(SQUARE_D2, SQUARE_D1, ROOK_MASK)
 
 	testBoard.ApplyMove(m)
 
@@ -238,17 +241,18 @@ func TestBlackPawnPromotes(t *testing.T) {
 
 	assert.Equal(t, EMPTY_SQUARE, testBoard.PieceAtSquare(SQUARE_D1))
 	assert.Equal(t, BLACK_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_D2))
+	assert.Equal(t, originalKey, testBoard.hashKey)
 }
 
 func TestEnPassantCapture(t *testing.T) {
-	var testBoard BoardState = CreateEmptyBoardState()
+	var testBoard = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_A5, WHITE_MASK|PAWN_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_B5, BLACK_MASK|PAWN_MASK)
 	testBoard.boardInfo.enPassantTargetSquare = SQUARE_B6
 	generateZobrishHashInfo(&testBoard)
 	originalKey := testBoard.hashKey
 
-	var m Move = CreateEnPassantCapture(SQUARE_A5, SQUARE_B6)
+	var m = CreateEnPassantCapture(SQUARE_A5, SQUARE_B6)
 	testBoard.ApplyMove(m)
 
 	assert.Equal(t, EMPTY_SQUARE, testBoard.PieceAtSquare(SQUARE_B5))
@@ -263,13 +267,15 @@ func TestEnPassantCapture(t *testing.T) {
 }
 
 func TestEnPassantCaptureBlack(t *testing.T) {
-	var testBoard BoardState = CreateEmptyBoardState()
+	var testBoard = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_F4, WHITE_MASK|PAWN_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_E4, BLACK_MASK|PAWN_MASK)
 	testBoard.boardInfo.enPassantTargetSquare = SQUARE_F3
 	testBoard.whiteToMove = false
+	generateZobrishHashInfo(&testBoard)
+	originalKey := testBoard.hashKey
 
-	var m Move = CreateEnPassantCapture(SQUARE_E4, SQUARE_F3)
+	var m = CreateEnPassantCapture(SQUARE_E4, SQUARE_F3)
 	testBoard.ApplyMove(m)
 
 	assert.Equal(t, EMPTY_SQUARE, testBoard.PieceAtSquare(SQUARE_F4))
@@ -280,10 +286,11 @@ func TestEnPassantCaptureBlack(t *testing.T) {
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_F4))
 	assert.Equal(t, BLACK_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_E4))
 	assert.Equal(t, SQUARE_F3, testBoard.boardInfo.enPassantTargetSquare)
+	assert.Equal(t, originalKey, testBoard.hashKey)
 }
 
 func TestFiddlingWithQueensideRooks(t *testing.T) {
-	var testBoard BoardState = CreateEmptyBoardState()
+	var testBoard = CreateEmptyBoardState()
 
 	testBoard.SetPieceAtSquare(SQUARE_E8, BLACK_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A8, BLACK_MASK|ROOK_MASK)
@@ -294,10 +301,10 @@ func TestFiddlingWithQueensideRooks(t *testing.T) {
 	testBoard.boardInfo.whiteCanCastleKingside = true
 	testBoard.boardInfo.whiteCanCastleQueenside = true
 
-	var m1 Move = CreateMove(SQUARE_A1, SQUARE_A3)
-	var m2 Move = CreateMove(SQUARE_A8, SQUARE_A6)
-	var m3 Move = CreateMove(SQUARE_A3, SQUARE_A1)
-	var m4 Move = CreateMove(SQUARE_A6, SQUARE_A8)
+	var m1 = CreateMove(SQUARE_A1, SQUARE_A3)
+	var m2 = CreateMove(SQUARE_A8, SQUARE_A6)
+	var m3 = CreateMove(SQUARE_A3, SQUARE_A1)
+	var m4 = CreateMove(SQUARE_A6, SQUARE_A8)
 
 	testBoard.ApplyMove(m1)
 	assert.False(t, testBoard.boardInfo.whiteCanCastleQueenside)
@@ -319,7 +326,7 @@ func TestFiddlingWithQueensideRooks(t *testing.T) {
 }
 
 func TestFiddlingWithKingsideRooks(t *testing.T) {
-	var testBoard BoardState = CreateEmptyBoardState()
+	var testBoard = CreateEmptyBoardState()
 
 	testBoard.SetPieceAtSquare(SQUARE_E8, BLACK_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_H8, BLACK_MASK|ROOK_MASK)
@@ -330,10 +337,10 @@ func TestFiddlingWithKingsideRooks(t *testing.T) {
 	testBoard.boardInfo.whiteCanCastleKingside = true
 	testBoard.boardInfo.whiteCanCastleQueenside = true
 
-	var m1 Move = CreateMove(SQUARE_H1, SQUARE_H3)
-	var m2 Move = CreateMove(SQUARE_H8, SQUARE_H6)
-	var m3 Move = CreateMove(SQUARE_H3, SQUARE_H1)
-	var m4 Move = CreateMove(SQUARE_H6, SQUARE_H8)
+	var m1 = CreateMove(SQUARE_H1, SQUARE_H3)
+	var m2 = CreateMove(SQUARE_H8, SQUARE_H6)
+	var m3 = CreateMove(SQUARE_H3, SQUARE_H1)
+	var m4 = CreateMove(SQUARE_H6, SQUARE_H8)
 
 	testBoard.ApplyMove(m1)
 	assert.False(t, testBoard.boardInfo.whiteCanCastleKingside)
