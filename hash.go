@@ -38,6 +38,8 @@ func CreateHashInfo(r *rand.Rand) HashInfo {
 		hashInfo.enpassant[RowAndColToSquare(3, i)] = r.Uint64()
 		hashInfo.enpassant[RowAndColToSquare(6, i)] = r.Uint64()
 	}
+	// target square 0 is used for a 'clear' EP target
+	hashInfo.enpassant[0] = r.Uint64()
 	hashInfo.whiteToMove = r.Uint64()
 	hashInfo.whiteCanCastleKingside = r.Uint64()
 	hashInfo.whiteCanCastleQueenside = r.Uint64()
@@ -85,7 +87,18 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo Board
 
 	if move.IsCapture() {
 		capturePiece := boardState.captureStack.Peek()
-		key ^= info.content[move.to][capturePiece]
+
+		if move.IsEnPassantCapture() {
+			var pos uint8
+			if !boardState.whiteToMove {
+				pos = move.to - 10
+			} else {
+				pos = move.to + 10
+			}
+			key ^= info.content[pos][capturePiece]
+		} else {
+			key ^= info.content[move.to][capturePiece]
+		}
 	}
 
 	movePiece := boardState.board[move.to]
@@ -122,10 +135,10 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo Board
 		if oldBoardInfo.blackCanCastleQueenside != boardState.boardInfo.blackCanCastleQueenside {
 			key ^= info.blackCanCastleQueenside
 		}
-		if oldBoardInfo.enPassantTargetSquare != boardState.boardInfo.enPassantTargetSquare {
-			key ^= info.enpassant[oldBoardInfo.enPassantTargetSquare]
-			key ^= info.enpassant[boardState.boardInfo.enPassantTargetSquare]
-		}
+	}
+	if oldBoardInfo.enPassantTargetSquare != boardState.boardInfo.enPassantTargetSquare {
+		key ^= info.enpassant[oldBoardInfo.enPassantTargetSquare]
+		key ^= info.enpassant[boardState.boardInfo.enPassantTargetSquare]
 	}
 
 	return key
@@ -138,7 +151,18 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo Boa
 	info := boardState.hashInfo
 	if move.IsCapture() {
 		// we've already put back the piece since this is done after move is unapplied
-		key ^= info.content[move.to][boardState.board[move.to]]
+
+		if move.IsEnPassantCapture() {
+			var pos uint8
+			if boardState.whiteToMove {
+				pos = move.to - 10
+			} else {
+				pos = move.to + 10
+			}
+			key ^= info.content[pos][boardState.board[pos]]
+		} else {
+			key ^= info.content[move.to][boardState.board[move.to]]
+		}
 	}
 
 	movePiece := boardState.board[move.from]
@@ -175,10 +199,10 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo Boa
 		if oldBoardInfo.blackCanCastleQueenside != boardState.boardInfo.blackCanCastleQueenside {
 			key ^= info.blackCanCastleQueenside
 		}
-		if oldBoardInfo.enPassantTargetSquare != boardState.boardInfo.enPassantTargetSquare {
-			key ^= info.enpassant[oldBoardInfo.enPassantTargetSquare]
-			key ^= info.enpassant[boardState.boardInfo.enPassantTargetSquare]
-		}
+	}
+	if oldBoardInfo.enPassantTargetSquare != boardState.boardInfo.enPassantTargetSquare {
+		key ^= info.enpassant[oldBoardInfo.enPassantTargetSquare]
+		key ^= info.enpassant[boardState.boardInfo.enPassantTargetSquare]
 	}
 
 	return key

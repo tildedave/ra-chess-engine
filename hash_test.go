@@ -17,6 +17,6 @@ func TestGenerateZobristHash(t *testing.T) {
 
 	key := b.CreateHashKey(&h)
 
-	var expectedKey uint64 = 10674149984763701137
+	var expectedKey uint64 = 0x2b07719fcf903b72
 	assert.Equal(t, key, expectedKey)
 }

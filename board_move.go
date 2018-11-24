@@ -231,7 +231,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.lookupInfo.blackKingSquare = move.from
 		}
 	case PAWN_MASK:
-		if move.flags&0xF0 == CAPTURE_MASK|SPECIAL1_MASK {
+		if move.IsEnPassantCapture() {
 			var pos uint8
 			if boardState.whiteToMove {
 				pos = move.to - 10
