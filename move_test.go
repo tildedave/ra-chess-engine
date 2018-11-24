@@ -19,6 +19,7 @@ func TestCreateCapture(t *testing.T) {
 
 	assert.Equal(t, Move{from: 31, to: 51, flags: 0x80}, m)
 	assert.True(t, m.IsCapture())
+	assert.False(t, m.IsEnPassantCapture())
 }
 
 func TestCreateCapturePromotion(t *testing.T) {
@@ -34,6 +35,7 @@ func TestCreateEnPassantCapture(t *testing.T) {
 
 	assert.Equal(t, Move{from: 31, to: 51, flags: 0xA0}, m)
 	assert.True(t, m.IsCapture())
+	assert.True(t, m.IsEnPassantCapture())
 }
 
 func TestCreateCastle(t *testing.T) {

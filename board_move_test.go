@@ -64,6 +64,7 @@ func TestApplyCapture(t *testing.T) {
 	testBoard := CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_B3, BLACK_MASK|ROOK_MASK)
+	originalKey := testBoard.hashKey
 
 	m := CreateCapture(SQUARE_A2, SQUARE_B3)
 	testBoard.ApplyMove(m)
@@ -75,6 +76,7 @@ func TestApplyCapture(t *testing.T) {
 
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_A2))
 	assert.Equal(t, BLACK_MASK|ROOK_MASK, testBoard.PieceAtSquare(SQUARE_B3))
+	assert.Equal(t, originalKey, testBoard.hashKey)
 }
 
 func TestApplyCaptureTwice(t *testing.T) {
@@ -243,6 +245,8 @@ func TestEnPassantCapture(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_A5, WHITE_MASK|PAWN_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_B5, BLACK_MASK|PAWN_MASK)
 	testBoard.boardInfo.enPassantTargetSquare = SQUARE_B6
+	generateZobrishHashInfo(&testBoard)
+	originalKey := testBoard.hashKey
 
 	var m Move = CreateEnPassantCapture(SQUARE_A5, SQUARE_B6)
 	testBoard.ApplyMove(m)
@@ -255,6 +259,7 @@ func TestEnPassantCapture(t *testing.T) {
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_A5))
 	assert.Equal(t, BLACK_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_B5))
 	assert.Equal(t, SQUARE_B6, testBoard.boardInfo.enPassantTargetSquare)
+	assert.Equal(t, originalKey, testBoard.hashKey)
 }
 
 func TestEnPassantCaptureBlack(t *testing.T) {

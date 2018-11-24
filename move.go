@@ -35,6 +35,10 @@ func (m Move) IsPromotion() bool {
 	return flag == PROMOTION_MASK || flag == PROMOTION_MASK|CAPTURE_MASK
 }
 
+func (m Move) IsEnPassantCapture() bool {
+	var flag = m.flags & 0xF0
+	return flag == CAPTURE_MASK|SPECIAL1_MASK
+}
 func CreateMove(from uint8, to uint8) Move {
 	var m Move
 	m.from = from
