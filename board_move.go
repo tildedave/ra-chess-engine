@@ -32,12 +32,14 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.boardInfo.whiteCanCastleKingside = false
 			boardState.boardInfo.whiteCanCastleQueenside = false
 			boardState.lookupInfo.whiteKingSquare = SQUARE_C1
+			boardState.boardInfo.whiteHasCastled = true
 		} else {
 			boardState.board[SQUARE_A8] = EMPTY_SQUARE
 			boardState.board[SQUARE_D8] = BLACK_MASK | ROOK_MASK
 			boardState.boardInfo.blackCanCastleKingside = false
 			boardState.boardInfo.blackCanCastleQueenside = false
 			boardState.lookupInfo.blackKingSquare = SQUARE_C8
+			boardState.boardInfo.blackHasCastled = true
 		}
 	} else if move.IsKingsideCastle() {
 		if boardState.whiteToMove {
@@ -46,12 +48,14 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.boardInfo.whiteCanCastleKingside = false
 			boardState.boardInfo.whiteCanCastleQueenside = false
 			boardState.lookupInfo.whiteKingSquare = SQUARE_G1
+			boardState.boardInfo.whiteHasCastled = true
 		} else {
 			boardState.board[SQUARE_H8] = EMPTY_SQUARE
 			boardState.board[SQUARE_F8] = BLACK_MASK | ROOK_MASK
 			boardState.boardInfo.blackCanCastleKingside = false
 			boardState.boardInfo.blackCanCastleQueenside = false
 			boardState.lookupInfo.blackKingSquare = SQUARE_G8
+			boardState.boardInfo.blackHasCastled = true
 		}
 	} else {
 		switch p & 0x0F {
@@ -194,20 +198,24 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.board[24] = 0x00
 			boardState.board[21] = WHITE_MASK | ROOK_MASK
 			boardState.boardInfo.whiteCanCastleQueenside = true
+			boardState.boardInfo.whiteHasCastled = false
 		} else {
 			boardState.board[94] = 0x00
 			boardState.board[91] = BLACK_MASK | ROOK_MASK
 			boardState.boardInfo.blackCanCastleQueenside = true
+			boardState.boardInfo.blackHasCastled = false
 		}
 	} else if move.IsKingsideCastle() {
 		if boardState.whiteToMove {
 			boardState.board[26] = 0x00
 			boardState.board[28] = WHITE_MASK | ROOK_MASK
 			boardState.boardInfo.whiteCanCastleKingside = true
+			boardState.boardInfo.whiteHasCastled = false
 		} else {
 			boardState.board[96] = 0x00
 			boardState.board[98] = BLACK_MASK | ROOK_MASK
 			boardState.boardInfo.blackCanCastleKingside = true
+			boardState.boardInfo.blackHasCastled = false
 		}
 	}
 
