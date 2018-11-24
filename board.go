@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"math/rand"
 	"strconv"
 	"strings"
 )
@@ -233,11 +234,16 @@ type BoardState struct {
 	// starts at 1, incremented after Black moves
 	fullmoveNumber uint
 
+	hashKey uint64
+
 	// Internal structures to allow unmaking moves
 	captureStack     byteStack
 	boardInfoHistory [MAX_MOVES]BoardInfo
 	moveIndex        int // 0-based and increases after every move
 	lookupInfo       BoardLookupInfo
+
+	// Zobrist hash indices
+	hashInfo *HashInfo
 }
 
 func CopyBoardState(boardState *BoardState) BoardState {
@@ -275,7 +281,7 @@ func CreateEmptyBoardState() BoardState {
 	b.halfmoveClock = 0
 	b.fullmoveNumber = 1
 	generateBoardLookupInfo(&b)
-	// generateZobristHashInfo(&b)
+	generateZobrishHashInfo(&b)
 
 	return b
 }
@@ -295,7 +301,12 @@ func generateBoardLookupInfo(boardState *BoardState) {
 }
 
 func generateZobrishHashInfo(boardState *BoardState) {
-
+	r := rand.New(rand.NewSource(0))
+	hashInfo := CreateHashInfo(r)
+	boardState.hashInfo = &hashInfo
+	// this factoring is dumb since we need to keep the hash
+	// info around to progressively change the hash key
+	boardState.hashKey = boardState.CreateHashKey(&hashInfo)
 }
 
 func CreateInitialBoardState() BoardState {
@@ -328,6 +339,7 @@ func CreateInitialBoardState() BoardState {
 	b.halfmoveClock = 0
 	b.fullmoveNumber = 1
 	generateBoardLookupInfo(&b)
+	generateZobrishHashInfo(&b)
 
 	return b
 }
@@ -495,4 +507,5 @@ func ParseAlgebraicSquare(sq string) (uint8, error) {
 
 func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 	boardState.board[sq] = p
+	generateZobrishHashInfo(boardState)
 }

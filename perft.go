@@ -93,8 +93,10 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 	promotions := uint(0)
 
 	for _, move := range moves {
+		var originalHashKey uint64
 		if options.sanityCheck {
 			testMoveLegality(boardState, move)
+			originalHashKey = boardState.hashKey
 		}
 
 		if move.IsCastle() && !boardState.TestCastleLegality(move) {
@@ -139,6 +141,15 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 			} else {
 				fmt.Println("ILLEGAL: " + MoveToPrettyString(move, boardState))
 			}
+		}
+		if options.sanityCheck {
+			if boardState.hashKey != originalHashKey {
+				fmt.Printf("Unapplying move did not restore original hash key: %s (%d vs %d)\n",
+					MoveToPrettyString(move, boardState),
+					boardState.hashKey,
+					originalHashKey)
+			}
+
 		}
 	}
 

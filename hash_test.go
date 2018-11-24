@@ -2,9 +2,10 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"math/rand"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var _ = fmt.Println
@@ -15,6 +16,7 @@ func TestGenerateZobristHash(t *testing.T) {
 	b := CreateInitialBoardState()
 
 	key := b.CreateHashKey(&h)
-	fmt.Println(key)
-	assert.True(t, true)
+
+	var expectedKey uint64 = 10674149984763701137
+	assert.Equal(t, key, expectedKey)
 }

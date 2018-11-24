@@ -24,8 +24,10 @@ func CreateMateInOneBoard() BoardState {
 func TestSearchStartingPosition(t *testing.T) {
 	boardState := CreateInitialBoardState()
 
+	originalKey := boardState.hashKey
 	Search(&boardState, 4)
-	// should not crash - unclear what is a useful assert
+
+	assert.Equal(t, originalKey, boardState.hashKey)
 }
 
 func TestSearchMateInOne(t *testing.T) {
@@ -102,4 +104,11 @@ func TestSearchWhiteSavesKnightFromCapture(t *testing.T) {
 	result := Search(&boardState, 3)
 
 	assert.Equal(t, result.move.from, SQUARE_C3)
+}
+
+func TestDoesNotHangCheckmate(t *testing.T) {
+	boardState, _ := CreateBoardStateFromFENString("5rk1/B3bppp/8/6P1/b1p1pP2/2P5/Pr4P1/R3K1NR w KQ - 0 24")
+
+	result := Search(&boardState, 3)
+	fmt.Println(SearchResultToString(result))
 }
