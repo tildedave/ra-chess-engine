@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var _ = fmt.Println
@@ -123,12 +124,14 @@ func TestApplyWhiteKingsideCastle(t *testing.T) {
 	assert.Equal(t, WHITE_MASK|KING_MASK, testBoard.PieceAtSquare(SQUARE_G1))
 	assert.Equal(t, WHITE_MASK|ROOK_MASK, testBoard.PieceAtSquare(SQUARE_F1))
 	assert.False(t, testBoard.boardInfo.whiteCanCastleKingside)
+	assert.False(t, testBoard.boardInfo.whiteCanCastleQueenside)
 
 	testBoard.UnapplyMove(m)
 
 	assert.Equal(t, WHITE_MASK|KING_MASK, testBoard.PieceAtSquare(SQUARE_E1))
 	assert.Equal(t, WHITE_MASK|ROOK_MASK, testBoard.PieceAtSquare(SQUARE_H1))
 	assert.True(t, testBoard.boardInfo.whiteCanCastleKingside)
+	assert.True(t, testBoard.boardInfo.whiteCanCastleQueenside)
 }
 
 func TestApplyBlackKingsideCastle(t *testing.T) {
@@ -147,12 +150,14 @@ func TestApplyBlackKingsideCastle(t *testing.T) {
 	assert.Equal(t, BLACK_MASK|KING_MASK, testBoard.PieceAtSquare(SQUARE_G8))
 	assert.Equal(t, BLACK_MASK|ROOK_MASK, testBoard.PieceAtSquare(SQUARE_F8))
 	assert.False(t, testBoard.boardInfo.blackCanCastleKingside)
+	assert.False(t, testBoard.boardInfo.blackCanCastleQueenside)
 
 	testBoard.UnapplyMove(m)
 
 	assert.Equal(t, BLACK_MASK|KING_MASK, testBoard.PieceAtSquare(SQUARE_E8))
 	assert.Equal(t, BLACK_MASK|ROOK_MASK, testBoard.PieceAtSquare(SQUARE_H8))
 	assert.True(t, testBoard.boardInfo.blackCanCastleKingside)
+	assert.True(t, testBoard.boardInfo.blackCanCastleQueenside)
 }
 
 func TestApplyWhiteQueensideCastle(t *testing.T) {
@@ -168,12 +173,14 @@ func TestApplyWhiteQueensideCastle(t *testing.T) {
 	assert.Equal(t, WHITE_MASK|KING_MASK, testBoard.PieceAtSquare(SQUARE_C1))
 	assert.Equal(t, WHITE_MASK|ROOK_MASK, testBoard.PieceAtSquare(SQUARE_D1))
 	assert.False(t, testBoard.boardInfo.whiteCanCastleQueenside)
+	assert.False(t, testBoard.boardInfo.whiteCanCastleKingside)
 
 	testBoard.UnapplyMove(m)
 
 	assert.Equal(t, WHITE_MASK|KING_MASK, testBoard.PieceAtSquare(SQUARE_E1))
 	assert.Equal(t, WHITE_MASK|ROOK_MASK, testBoard.PieceAtSquare(SQUARE_A1))
 	assert.True(t, testBoard.boardInfo.whiteCanCastleQueenside)
+	assert.True(t, testBoard.boardInfo.whiteCanCastleKingside)
 }
 
 func TestApplyBlackQueensideCastle(t *testing.T) {
