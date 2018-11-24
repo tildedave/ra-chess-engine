@@ -56,10 +56,6 @@ func TestEvalStartingPositionCenterControl(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_E4, WHITE_MASK|PAWN_MASK)
 	boardEval := Eval(&testBoard)
 
-	fmt.Println("hi there")
-	fmt.Println(boardEval)
-	fmt.Println("--")
-
 	assert.Equal(t, boardEval.material, 0)
 }
 

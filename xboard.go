@@ -191,7 +191,7 @@ func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan Th
 					score: bestResult.value,
 					time:  bestResult.time,
 					nodes: bestResult.nodes,
-					pv:    MoveToString(bestResult.move),
+					pv:    bestResult.pv,
 				}
 
 				if bestResult.flags == CHECKMATE_FLAG || bestResult.flags == STALEMATE_FLAG {
@@ -220,7 +220,7 @@ var fenRegexp = regexp.MustCompile("^setboard (.*)$")
 var nameRegexp = regexp.MustCompile("^name (.*)$")
 
 func ProcessXboardCommand(command string, state XboardState) (int, XboardState) {
-	var action int = ACTION_NOTHING
+	var action = ACTION_NOTHING
 	switch {
 
 	case command == "xboard":

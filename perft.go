@@ -135,9 +135,9 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 		boardState.UnapplyMove(move)
 		if depth == 1 && options.perftPrintMoves {
 			if wasValid {
-				fmt.Println(MoveToPrettyString(move, *boardState))
+				fmt.Println(MoveToPrettyString(move, boardState))
 			} else {
-				fmt.Println("ILLEGAL: " + MoveToPrettyString(move, *boardState))
+				fmt.Println("ILLEGAL: " + MoveToPrettyString(move, boardState))
 			}
 		}
 	}

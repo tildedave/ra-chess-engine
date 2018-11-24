@@ -1,9 +1,10 @@
 package main
 
 import (
-	"github.com/stretchr/testify/assert"
 	"testing"
 	"unsafe"
+
+	"github.com/stretchr/testify/assert"
 )
 
 func TestCreateMove(t *testing.T) {
@@ -55,8 +56,8 @@ func TestMoveToPrettyString(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_F5, WHITE_MASK|KNIGHT_MASK)
 	boardState.SetPieceAtSquare(SQUARE_G7, BLACK_MASK|ROOK_MASK)
 
-	assert.Equal(t, "a2xa4", MoveToPrettyString(CreateCapture(SQUARE_A2, SQUARE_A4), boardState))
-	assert.Equal(t, "a2xa4", MoveToPrettyString(CreateEnPassantCapture(SQUARE_A2, SQUARE_A4), boardState))
-	assert.Equal(t, "a4", MoveToPrettyString(CreateMove(SQUARE_A2, SQUARE_A4), boardState))
-	assert.Equal(t, "Nxg7", MoveToPrettyString(CreateCapture(SQUARE_F5, SQUARE_G7), boardState))
+	assert.Equal(t, "a2xa4", MoveToPrettyString(CreateCapture(SQUARE_A2, SQUARE_A4), &boardState))
+	assert.Equal(t, "a2xa4", MoveToPrettyString(CreateEnPassantCapture(SQUARE_A2, SQUARE_A4), &boardState))
+	assert.Equal(t, "a4", MoveToPrettyString(CreateMove(SQUARE_A2, SQUARE_A4), &boardState))
+	assert.Equal(t, "Nxg7", MoveToPrettyString(CreateCapture(SQUARE_F5, SQUARE_G7), &boardState))
 }
