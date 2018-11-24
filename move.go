@@ -39,6 +39,12 @@ func (m Move) IsEnPassantCapture() bool {
 	var flag = m.flags & 0xF0
 	return flag == CAPTURE_MASK|SPECIAL1_MASK
 }
+
+// GetPromotionPiece returns the piece that the promotion move will be returned to (colorless).
+func (m Move) GetPromotionPiece() uint8 {
+	return m.flags & 0x0F
+}
+
 func CreateMove(from uint8, to uint8) Move {
 	var m Move
 	m.from = from

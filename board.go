@@ -81,6 +81,14 @@ func pieceToString(p byte) byte {
 	return '-'
 }
 
+func whiteToMoveToColorMask(whiteToMove bool) uint8 {
+	if whiteToMove {
+		return WHITE_MASK
+	}
+
+	return BLACK_MASK
+}
+
 func (boardState *BoardState) ToString() string {
 	var s [9 * 8]byte
 
@@ -505,6 +513,7 @@ func ParseAlgebraicSquare(sq string) (uint8, error) {
 	return RowAndColToSquare(row, col), nil
 }
 
+// SetPieceAtSquare should only be used for testing.
 func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 	boardState.board[sq] = p
 	generateZobrishHashInfo(boardState)

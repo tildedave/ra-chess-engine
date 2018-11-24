@@ -101,9 +101,21 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo Board
 		}
 	}
 
-	movePiece := boardState.board[move.to]
-	key ^= info.content[move.from][movePiece]
-	key ^= info.content[move.to][movePiece]
+	var toPiece uint8
+	var fromPiece uint8
+
+	if move.IsPromotion() {
+		colorMask := whiteToMoveToColorMask(!boardState.whiteToMove)
+		pieceMask := move.GetPromotionPiece()
+		toPiece = colorMask | pieceMask
+		fromPiece = colorMask | PAWN_MASK
+	} else {
+		toPiece = boardState.board[move.to]
+		fromPiece = toPiece
+	}
+
+	key ^= info.content[move.to][toPiece]
+	key ^= info.content[move.from][fromPiece]
 	key ^= info.whiteToMove
 
 	if !boardState.whiteToMove {
@@ -151,7 +163,6 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo Boa
 	info := boardState.hashInfo
 	if move.IsCapture() {
 		// we've already put back the piece since this is done after move is unapplied
-
 		if move.IsEnPassantCapture() {
 			var pos uint8
 			if boardState.whiteToMove {
@@ -165,9 +176,21 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo Boa
 		}
 	}
 
-	movePiece := boardState.board[move.from]
-	key ^= info.content[move.to][movePiece]
-	key ^= info.content[move.from][movePiece]
+	var toPiece uint8
+	var fromPiece uint8
+
+	if move.IsPromotion() {
+		colorMask := whiteToMoveToColorMask(boardState.whiteToMove)
+		pieceMask := move.GetPromotionPiece()
+		toPiece = colorMask | pieceMask
+		fromPiece = colorMask | PAWN_MASK
+	} else {
+		toPiece = boardState.board[move.from]
+		fromPiece = toPiece
+	}
+
+	key ^= info.content[move.to][toPiece]
+	key ^= info.content[move.from][fromPiece]
 	key ^= info.whiteToMove
 
 	if boardState.whiteToMove {
@@ -200,6 +223,7 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo Boa
 			key ^= info.blackCanCastleQueenside
 		}
 	}
+
 	if oldBoardInfo.enPassantTargetSquare != boardState.boardInfo.enPassantTargetSquare {
 		key ^= info.enpassant[oldBoardInfo.enPassantTargetSquare]
 		key ^= info.enpassant[boardState.boardInfo.enPassantTargetSquare]

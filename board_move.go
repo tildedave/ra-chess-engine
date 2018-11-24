@@ -108,14 +108,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			}
 
 			if move.IsPromotion() {
-				var colorMask byte
-				if boardState.whiteToMove {
-					colorMask = WHITE_MASK
-				} else {
-					colorMask = BLACK_MASK
-				}
-
-				boardState.board[move.to] = (move.flags & 0x0F) | colorMask
+				boardState.board[move.to] = move.GetPromotionPiece() | whiteToMoveToColorMask(boardState.whiteToMove)
 			}
 		}
 	}
