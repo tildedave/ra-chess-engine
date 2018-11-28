@@ -21,6 +21,9 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 	scanner := bufio.NewScanner(file)
 	defer file.Close()
 
+	successPositions := 0
+	totalPositions := 0
+
 	for scanner.Scan() {
 		line := strings.Split(scanner.Text(), ";")
 		fenWithMove, nameWithID := line[0], line[1]
@@ -47,7 +50,7 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 
 		ch := make(chan Move)
 		thinkingChan := make(chan ThinkingOutput)
-		output := bufio.NewWriter(os.Stdout)
+		output := bufio.NewWriter(os.Stderr)
 
 		go func() {
 			for thinkingOutput := range thinkingChan {
@@ -59,8 +62,25 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 
 		go thinkAndChooseMove(&boardState, options.thinkingtimeMs, ch, thinkingChan)
 		move := <-ch
-		fmt.Printf("[%s] expected=%s result=%s\n", name, bestMove, MoveToPrettyString(move, &boardState))
+
+		prettyMove := MoveToPrettyString(move, &boardState)
+
+		var res string
+		totalPositions++
+		if strings.HasPrefix(bestMove, prettyMove) {
+			res = "\033[1;32mOK\033[0m"
+			successPositions++
+		} else {
+			res = "\033[1;31mFAIL\033[0m"
+		}
+		fmt.Printf("[%s - %s] expected=%s result=%s\n", name, res, bestMove, prettyMove)
 	}
 
-	return true, nil
+	fmt.Printf("Complete.  %d/%d positions correct (%.2f%%)\n", successPositions, totalPositions,
+		float64(successPositions)/float64(totalPositions))
+	if totalPositions == successPositions {
+		return true, nil
+	} else {
+		return false, nil
+	}
 }
