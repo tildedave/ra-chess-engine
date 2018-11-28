@@ -153,7 +153,7 @@ func MoveToPrettyString(move Move, boardState *BoardState) string {
 	// has a valid legal move here
 
 	var s string
-	s += string(pieceToString(p))
+	s += string(pieceToString((p & 0x0F) | WHITE_MASK))
 
 	if move.IsCapture() {
 		s += "x"

@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"log"
-	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -50,13 +49,6 @@ type ThinkingOutput struct {
 
 func RunXboard(scanner *bufio.Scanner, output *bufio.Writer) (bool, error) {
 	var state XboardState
-	file, err := os.Create("/tmp/ra-chess-engine.log")
-	if err != nil {
-		panic(err)
-	}
-	logger = log.New(file, "", log.LstdFlags|log.Lshortfile)
-	logger.Println("Starting up!")
-
 	var action int = ACTION_NOTHING
 	sendPreamble(output)
 
@@ -107,7 +99,7 @@ ReadLoop:
 				}
 			}()
 
-			go thinkAndMakeMove(state.boardState, ch, thinkingChan)
+			go thinkAndChooseMove(state.boardState, 5000, ch, thinkingChan)
 			move := <-ch
 
 			sendStringMessage(output, fmt.Sprintf("move %s\n", MoveToXboardString(move)))
@@ -153,7 +145,7 @@ func sendThinkingOutput(output *bufio.Writer, thinkingOutput ThinkingOutput) {
 	))
 }
 
-func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan ThinkingOutput) {
+func thinkAndChooseMove(boardState *BoardState, thinkingTimeMs uint, ch chan Move, thinkingChan chan ThinkingOutput) {
 	searchQuit := make(chan bool)
 	resultCh := make(chan SearchResult)
 
@@ -199,7 +191,7 @@ func thinkAndMakeMove(boardState *BoardState, ch chan Move, thinkingChan chan Th
 					break ThinkingLoop
 				}
 
-			case <-time.After(5 * time.Second):
+			case <-time.After(time.Duration(thinkingTimeMs) * time.Millisecond):
 				break ThinkingLoop
 			}
 		}

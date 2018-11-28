@@ -252,6 +252,9 @@ type BoardState struct {
 
 	// Zobrist hash indices
 	hashInfo *HashInfo
+
+	// Best Move
+	bestMove string
 }
 
 func CopyBoardState(boardState *BoardState) BoardState {
