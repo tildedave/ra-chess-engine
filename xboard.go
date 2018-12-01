@@ -99,7 +99,7 @@ ReadLoop:
 				}
 			}()
 
-			go thinkAndChooseMove(state.boardState, 5000, ch, thinkingChan)
+			go thinkAndChooseMove(state.boardState, 5000, ExternalSearchConfig{}, ch, thinkingChan)
 			move := <-ch
 
 			sendStringMessage(output, fmt.Sprintf("move %s\n", MoveToXboardString(move)))
@@ -145,7 +145,13 @@ func sendThinkingOutput(output *bufio.Writer, thinkingOutput ThinkingOutput) {
 	))
 }
 
-func thinkAndChooseMove(boardState *BoardState, thinkingTimeMs uint, ch chan Move, thinkingChan chan ThinkingOutput) {
+func thinkAndChooseMove(
+	boardState *BoardState,
+	thinkingTimeMs uint,
+	config ExternalSearchConfig,
+	ch chan Move,
+	thinkingChan chan ThinkingOutput,
+) {
 	searchQuit := make(chan bool)
 	resultCh := make(chan SearchResult)
 
@@ -164,7 +170,7 @@ func thinkAndChooseMove(boardState *BoardState, thinkingTimeMs uint, ch chan Mov
 			default:
 				// TODO: having to copy the board state indicates a bug somewhere
 				state := CopyBoardState(boardState)
-				res = Search(&state, uint(i))
+				res = SearchWithConfig(&state, uint(i), config)
 				i = i + 1
 			}
 		}

@@ -31,6 +31,7 @@ func main() {
 	tacticsEpdFile := flag.String("tacticsepd", "", "Tactics file in EPD format")
 	tacticsThinkingTime := flag.Uint("tacticsthinkingtime", 500, "Time to think per position (ms)")
 	tacticsRegex := flag.String("tacticsregex", "", "Run only tactics matching the given id")
+	tacticsDebug := flag.Bool("tacticsdebug", false, "Output more information during tactics")
 
 	flag.Parse()
 
@@ -52,7 +53,8 @@ func main() {
 	} else if *isTactics || *tacticsEpdFile != "" {
 		var options TacticsOptions
 		options.thinkingtimeMs = *tacticsThinkingTime
-		options.tacticsregex = *tacticsRegex
+		options.tacticsRegex = *tacticsRegex
+		options.tacticsDebug = *tacticsDebug
 
 		success, err = RunTacticsFile(*tacticsEpdFile, options)
 	} else {
