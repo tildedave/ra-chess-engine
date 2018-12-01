@@ -42,8 +42,8 @@ func Max(x, y int) int {
 	return x
 }
 
-// Used for tests
-
+// FlipBoardColors switches all white/black pieces and resets the piece to move.
+// Used for the tests.
 func FlipBoardColors(boardState *BoardState) {
 	for i := byte(0); i < 8; i++ {
 		for j := byte(0); j < 8; j++ {
@@ -56,4 +56,5 @@ func FlipBoardColors(boardState *BoardState) {
 	}
 
 	boardState.whiteToMove = !boardState.whiteToMove
+	generateBoardLookupInfo(boardState)
 }
