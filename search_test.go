@@ -13,7 +13,7 @@ var _ = fmt.Println
 func CreateMateInOneBoard() BoardState {
 	boardState := CreateEmptyBoardState()
 	boardState.SetPieceAtSquare(SQUARE_A1, BLACK_MASK|KING_MASK)
-	boardState.SetPieceAtSquare(SQUARE_C3, WHITE_MASK|QUEEN_MASK)
+	boardState.SetPieceAtSquare(SQUARE_D5, WHITE_MASK|QUEEN_MASK)
 	boardState.SetPieceAtSquare(SQUARE_B4, WHITE_MASK|KNIGHT_MASK)
 	boardState.SetPieceAtSquare(SQUARE_H8, WHITE_MASK|KING_MASK)
 	generateBoardLookupInfo(&boardState)
@@ -36,7 +36,7 @@ func TestSearchMateInOne(t *testing.T) {
 	result := Search(&boardState, 2)
 
 	assert.Equal(t, CHECKMATE_SCORE, result.value)
-	assert.Equal(t, Move{from: SQUARE_C3, to: SQUARE_C1}, result.move)
+	assert.Equal(t, Move{from: SQUARE_D5, to: SQUARE_A2}, result.move)
 }
 
 func TestSearchMateInOneBlack(t *testing.T) {
@@ -46,18 +46,18 @@ func TestSearchMateInOneBlack(t *testing.T) {
 	result := Search(&boardState, 2)
 
 	assert.Equal(t, -CHECKMATE_SCORE, result.value)
-	assert.Equal(t, Move{from: SQUARE_C3, to: SQUARE_C1}, result.move)
+	assert.Equal(t, Move{from: SQUARE_D5, to: SQUARE_A2}, result.move)
 }
 
 func TestSearchAvoidMateInOne(t *testing.T) {
 	boardState := CreateMateInOneBoard()
 	boardState.whiteToMove = false
-	boardState.SetPieceAtSquare(SQUARE_H3, BLACK_MASK|ROOK_MASK)
+	boardState.SetPieceAtSquare(SQUARE_F5, BLACK_MASK|ROOK_MASK)
 
 	result := Search(&boardState, 1)
 
 	assert.True(t, result.move.IsCapture())
-	assert.Equal(t, Move{from: SQUARE_H3, to: SQUARE_C3, flags: CAPTURE_MASK}, result.move)
+	assert.Equal(t, Move{from: SQUARE_F5, to: SQUARE_D5, flags: CAPTURE_MASK}, result.move)
 }
 
 func TestSearchWhiteForcesPawnPromotion(t *testing.T) {
