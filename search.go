@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"sort"
 	"time"
 )
 
@@ -23,16 +24,27 @@ type SearchResult struct {
 }
 
 type SearchConfig struct {
-	alpha int
-	beta  int
-	move  Move
+	alpha   int
+	beta    int
+	move    Move
+	isDebug bool
+}
+
+type ExternalSearchConfig struct {
+	isDebug bool
 }
 
 func Search(boardState *BoardState, depth uint) SearchResult {
+	return SearchWithConfig(boardState, depth, ExternalSearchConfig{})
+}
+
+func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchConfig) SearchResult {
 	startTime := time.Now().UnixNano()
+
 	result := searchAlphaBeta(boardState, depth, SearchConfig{
-		alpha: -INFINITY,
-		beta:  INFINITY,
+		alpha:   -INFINITY,
+		beta:    INFINITY,
+		isDebug: config.isDebug,
 	})
 	result.time = (time.Now().UnixNano() - startTime) / 10000000
 
@@ -44,11 +56,18 @@ func searchAlphaBeta(boardState *BoardState, depth uint, searchConfig SearchConf
 		return getTerminalResult(boardState, searchConfig)
 	}
 
-	var nodes uint = 0
+	var nodes uint
 
 	moves := GenerateMoves(boardState)
-	var bestResult *SearchResult = nil
+	var bestResult *SearchResult
 
+	// [Ordering] prioritize captures first
+	// Future: hash move (transposition table), killer move
+	sort.Slice(moves, func(i int, j int) bool {
+		return (moves[i].flags & 0xC0) > (moves[j].flags & 0xC0)
+	})
+
+	isDebug := searchConfig.isDebug
 	for _, move := range moves {
 		if move.IsCastle() && !boardState.TestCastleLegality(move) {
 			continue
@@ -57,15 +76,17 @@ func searchAlphaBeta(boardState *BoardState, depth uint, searchConfig SearchConf
 		boardState.ApplyMove(move)
 		if !boardState.IsInCheck(!boardState.whiteToMove) {
 			searchConfig.move = move
+			searchConfig.isDebug = false
 
 			searchDepth := depth - 1
 			if move.IsCapture() || boardState.IsInCheck(boardState.whiteToMove) {
-				searchDepth += 1
+				searchDepth++
 			}
+
 			result := searchAlphaBeta(boardState, searchDepth, searchConfig)
 
 			result.move = move
-			result.depth += 1
+			result.depth++
 			nodes += result.nodes
 
 			if bestResult == nil {
@@ -75,6 +96,10 @@ func searchAlphaBeta(boardState *BoardState, depth uint, searchConfig SearchConf
 					(boardState.whiteToMove && result.value < bestResult.value) { // black move, minimize score
 					bestResult = &result
 				}
+			}
+
+			if isDebug {
+				fmt.Printf("[%d; %s] result=%d\n", depth, MoveToString(move), result.value)
 			}
 
 			if !boardState.whiteToMove {

@@ -10,7 +10,8 @@ import (
 
 type TacticsOptions struct {
 	thinkingtimeMs uint
-	tacticsregex   string
+	tacticsRegex   string
+	tacticsDebug   bool
 }
 
 func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
@@ -32,8 +33,8 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 		arr2 := strings.Split(nameWithID, "id")
 		name := strings.Trim(arr2[1], " \"")
 
-		if options.tacticsregex != "" {
-			res, err := regexp.MatchString(options.tacticsregex, name)
+		if options.tacticsRegex != "" {
+			res, err := regexp.MatchString(options.tacticsRegex, name)
 			if err != nil {
 				return false, err
 			}
@@ -52,6 +53,9 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 		thinkingChan := make(chan ThinkingOutput)
 		output := bufio.NewWriter(os.Stderr)
 
+		output.Write([]byte(boardState.ToString()))
+		output.WriteRune('\n')
+
 		go func() {
 			for thinkingOutput := range thinkingChan {
 				if thinkingOutput.ply > 0 {
@@ -60,14 +64,17 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 			}
 		}()
 
-		go thinkAndChooseMove(&boardState, options.thinkingtimeMs, ch, thinkingChan)
+		config := ExternalSearchConfig{}
+		config.isDebug = options.tacticsDebug
+
+		go thinkAndChooseMove(&boardState, options.thinkingtimeMs, config, ch, thinkingChan)
 		move := <-ch
 
 		prettyMove := MoveToPrettyString(move, &boardState)
 
 		var res string
 		totalPositions++
-		if strings.HasPrefix(bestMove, prettyMove) {
+		if strings.Contains(bestMove, prettyMove) {
 			res = "\033[1;32mOK\033[0m"
 			successPositions++
 		} else {
@@ -77,7 +84,7 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 	}
 
 	fmt.Printf("Complete.  %d/%d positions correct (%.2f%%)\n", successPositions, totalPositions,
-		float64(successPositions)/float64(totalPositions))
+		100.0*float64(successPositions)/float64(totalPositions))
 	if totalPositions == successPositions {
 		return true, nil
 	} else {
