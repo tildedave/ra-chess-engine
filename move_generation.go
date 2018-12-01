@@ -6,8 +6,23 @@ import (
 
 var _ = fmt.Println
 
-func GenerateMoves(boardState *BoardState) []Move {
-	var moves []Move
+type MoveListing struct {
+	moves      []Move
+	captures   []Move
+	promotions []Move
+}
+
+func createMoveListing() MoveListing {
+	listing := MoveListing{}
+	listing.moves = make([]Move, 0)
+	listing.captures = make([]Move, 0)
+	listing.promotions = make([]Move, 0)
+
+	return listing
+}
+
+func GenerateMoveListing(boardState *BoardState) MoveListing {
+	listing := createMoveListing()
 
 	for i := byte(0); i < 8; i++ {
 		for j := byte(0); j < 8; j++ {
@@ -20,13 +35,29 @@ func GenerateMoves(boardState *BoardState) []Move {
 			isWhite := p&BLACK_MASK != BLACK_MASK
 			if isWhite == boardState.whiteToMove {
 				if !isPawn(p) {
-					moves = generatePieceMoves(boardState, p, sq, isWhite, moves)
+					generatePieceMoves(boardState, p, sq, isWhite, &listing)
 				} else {
-					moves = generatePawnMoves(boardState, p, sq, isWhite, moves)
+					generatePawnMoves(boardState, p, sq, isWhite, &listing)
 				}
 			}
 		}
 	}
+
+	return listing
+}
+
+func GenerateMoves(boardState *BoardState) []Move {
+	listing := GenerateMoveListing(boardState)
+
+	l1 := len(listing.promotions)
+	l2 := len(listing.captures)
+	l3 := len(listing.moves)
+
+	var moves = make([]Move, l1+l2+l3)
+	var i int
+	i += copy(moves[i:], listing.promotions)
+	i += copy(moves[i:], listing.captures)
+	i += copy(moves[i:], listing.moves)
 
 	return moves
 }
@@ -51,7 +82,7 @@ var slidingPieces = [7]bool{false, false, false, true, true, true, false}
 var whitePawnCaptureOffsetArr = [2]int8{9, 11}
 var blackPawnCaptureOffsetArr = [2]int8{-9, -11}
 
-func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, moves []Move) []Move {
+func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, listing *MoveListing) {
 
 	// 8 possible directions to go (for the queen + king + knight)
 	// 4 directions for bishop + rook
@@ -83,10 +114,10 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, m
 				break
 			} else if destPiece == EMPTY_SQUARE {
 				// keep moving
-				moves = append(moves, CreateMove(sq, dest))
+				listing.moves = append(listing.moves, CreateMove(sq, dest))
 			} else {
 				if destPiece&captureMask == captureMask {
-					moves = append(moves, CreateCapture(sq, dest))
+					listing.captures = append(listing.captures, CreateCapture(sq, dest))
 				}
 
 				// stop - hit another piece or made a capture
@@ -109,36 +140,34 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, m
 				boardState.board[SQUARE_F1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_G1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_H1] == WHITE_MASK|ROOK_MASK {
-				moves = append(moves, CreateKingsideCastle(sq, SQUARE_G1))
+				listing.moves = append(listing.moves, CreateKingsideCastle(sq, SQUARE_G1))
 			}
 			if boardState.boardInfo.whiteCanCastleQueenside &&
 				boardState.board[SQUARE_D1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_C1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_B1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_A1] == WHITE_MASK|ROOK_MASK {
-				moves = append(moves, CreateQueensideCastle(sq, SQUARE_C1))
+				listing.moves = append(listing.moves, CreateQueensideCastle(sq, SQUARE_C1))
 			}
 		} else {
 			if boardState.boardInfo.blackCanCastleKingside &&
 				boardState.board[SQUARE_F8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_G8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_H8] == BLACK_MASK|ROOK_MASK {
-				moves = append(moves, CreateKingsideCastle(sq, SQUARE_G8))
+				listing.moves = append(listing.moves, CreateKingsideCastle(sq, SQUARE_G8))
 			}
 			if boardState.boardInfo.blackCanCastleQueenside &&
 				boardState.board[SQUARE_D8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_C8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_B8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_A8] == BLACK_MASK|ROOK_MASK {
-				moves = append(moves, CreateQueensideCastle(sq, SQUARE_C8))
+				listing.moves = append(listing.moves, CreateQueensideCastle(sq, SQUARE_C8))
 			}
 		}
 	}
-
-	return moves
 }
 
-func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, moves []Move) []Move {
+func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, listing *MoveListing) {
 	var offset int8
 	if isWhite {
 		offset = 10
@@ -153,20 +182,20 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, mo
 		// promotion
 		if (isWhite && sourceRank == RANK_7) || (!isWhite && sourceRank == RANK_2) {
 			// promotions are color-maskless
-			moves = append(moves, CreatePromotion(sq, dest, QUEEN_MASK))
-			moves = append(moves, CreatePromotion(sq, dest, BISHOP_MASK))
-			moves = append(moves, CreatePromotion(sq, dest, KNIGHT_MASK))
-			moves = append(moves, CreatePromotion(sq, dest, ROOK_MASK))
+			listing.promotions = append(listing.promotions, CreatePromotion(sq, dest, QUEEN_MASK))
+			listing.promotions = append(listing.promotions, CreatePromotion(sq, dest, BISHOP_MASK))
+			listing.promotions = append(listing.promotions, CreatePromotion(sq, dest, KNIGHT_MASK))
+			listing.promotions = append(listing.promotions, CreatePromotion(sq, dest, ROOK_MASK))
 		} else {
 			// empty square
-			moves = append(moves, CreateMove(sq, dest))
+			listing.moves = append(listing.moves, CreateMove(sq, dest))
 
 			if (isWhite && sourceRank == RANK_2) ||
 				(!isWhite && sourceRank == RANK_7) {
 				// home row for white so we can move one more
 				dest = uint8(int8(dest) + offset)
 				if boardState.board[dest] == EMPTY_SQUARE {
-					moves = append(moves, CreateMove(sq, dest))
+					listing.moves = append(listing.moves, CreateMove(sq, dest))
 				}
 			}
 		}
@@ -183,7 +212,7 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, mo
 		var dest byte = uint8(int8(sq) + offset)
 
 		if boardState.boardInfo.enPassantTargetSquare == dest {
-			moves = append(moves, CreateEnPassantCapture(sq, dest))
+			listing.captures = append(listing.captures, CreateEnPassantCapture(sq, dest))
 			continue
 		}
 
@@ -197,15 +226,13 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, mo
 			var destRank byte = Rank(dest)
 			if (isWhite && destRank == RANK_8) || (!isWhite && destRank == RANK_1) {
 				// promotion time
-				moves = append(moves, CreatePromotionCapture(sq, dest, QUEEN_MASK))
-				moves = append(moves, CreatePromotionCapture(sq, dest, ROOK_MASK))
-				moves = append(moves, CreatePromotionCapture(sq, dest, BISHOP_MASK))
-				moves = append(moves, CreatePromotionCapture(sq, dest, KNIGHT_MASK))
+				listing.promotions = append(listing.promotions, CreatePromotionCapture(sq, dest, QUEEN_MASK))
+				listing.promotions = append(listing.promotions, CreatePromotionCapture(sq, dest, ROOK_MASK))
+				listing.promotions = append(listing.promotions, CreatePromotionCapture(sq, dest, BISHOP_MASK))
+				listing.promotions = append(listing.promotions, CreatePromotionCapture(sq, dest, KNIGHT_MASK))
 			} else {
-				moves = append(moves, CreateCapture(sq, dest))
+				listing.captures = append(listing.captures, CreateCapture(sq, dest))
 			}
 		}
 	}
-
-	return moves
 }
