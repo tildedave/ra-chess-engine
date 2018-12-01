@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"sort"
 	"time"
 )
 
@@ -58,61 +57,57 @@ func searchAlphaBeta(boardState *BoardState, depth uint, searchConfig SearchConf
 
 	var nodes uint
 
-	moves := GenerateMoves(boardState)
+	listing := GenerateMoveListing(boardState)
 	var bestResult *SearchResult
 
-	// [Ordering] prioritize captures first
-	// Future: hash move (transposition table), killer move
-	sort.Slice(moves, func(i int, j int) bool {
-		return (moves[i].flags & 0xC0) > (moves[j].flags & 0xC0)
-	})
-
 	isDebug := searchConfig.isDebug
-	for _, move := range moves {
-		if move.IsCastle() && !boardState.TestCastleLegality(move) {
-			continue
-		}
-
-		boardState.ApplyMove(move)
-		if !boardState.IsInCheck(!boardState.whiteToMove) {
-			searchConfig.move = move
-			searchConfig.isDebug = false
-
-			searchDepth := depth - 1
-			if move.IsCapture() || boardState.IsInCheck(boardState.whiteToMove) {
-				searchDepth++
+	for _, moveList := range [][]Move{listing.promotions, listing.captures, listing.moves} {
+		for _, move := range moveList {
+			if move.IsCastle() && !boardState.TestCastleLegality(move) {
+				continue
 			}
 
-			result := searchAlphaBeta(boardState, searchDepth, searchConfig)
+			boardState.ApplyMove(move)
+			if !boardState.IsInCheck(!boardState.whiteToMove) {
+				searchConfig.move = move
+				searchConfig.isDebug = false
 
-			result.move = move
-			result.depth++
-			nodes += result.nodes
+				searchDepth := depth - 1
+				if move.IsCapture() || boardState.IsInCheck(boardState.whiteToMove) {
+					searchDepth++
+				}
 
-			if bestResult == nil {
-				bestResult = &result
-			} else {
-				if (!boardState.whiteToMove && result.value > bestResult.value) || // white move, maximize score
-					(boardState.whiteToMove && result.value < bestResult.value) { // black move, minimize score
+				result := searchAlphaBeta(boardState, searchDepth, searchConfig)
+
+				result.move = move
+				result.depth++
+				nodes += result.nodes
+
+				if bestResult == nil {
 					bestResult = &result
+				} else {
+					if (!boardState.whiteToMove && result.value > bestResult.value) || // white move, maximize score
+						(boardState.whiteToMove && result.value < bestResult.value) { // black move, minimize score
+						bestResult = &result
+					}
+				}
+
+				if isDebug {
+					fmt.Printf("[%d; %s] result=%d\n", depth, MoveToString(move), result.value)
+				}
+
+				if !boardState.whiteToMove {
+					searchConfig.alpha = Max(searchConfig.alpha, bestResult.value)
+				} else {
+					searchConfig.beta = Min(searchConfig.beta, bestResult.value)
 				}
 			}
 
-			if isDebug {
-				fmt.Printf("[%d; %s] result=%d\n", depth, MoveToString(move), result.value)
+			boardState.UnapplyMove(move)
+
+			if searchConfig.alpha >= searchConfig.beta {
+				break
 			}
-
-			if !boardState.whiteToMove {
-				searchConfig.alpha = Max(searchConfig.alpha, bestResult.value)
-			} else {
-				searchConfig.beta = Min(searchConfig.beta, bestResult.value)
-			}
-		}
-
-		boardState.UnapplyMove(move)
-
-		if searchConfig.alpha >= searchConfig.beta {
-			break
 		}
 	}
 
