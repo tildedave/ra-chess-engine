@@ -139,7 +139,7 @@ func MoveToPrettyString(move Move, boardState *BoardState) string {
 	var p byte = boardState.board[move.from]
 	if p&0x0F == PAWN_MASK {
 		if move.IsCapture() {
-			return SquareToAlgebraicString(move.from) + "x" + SquareToAlgebraicString(move.to)
+			return ColumnToAlgebraicNotation(move.from%10) + "x" + SquareToAlgebraicString(move.to)
 		}
 
 		s := SquareToAlgebraicString(move.to)

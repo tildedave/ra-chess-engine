@@ -181,6 +181,29 @@ func Rank(sq uint8) uint8 {
 	return (sq-1)/10 - 1
 }
 
+func ColumnToAlgebraicNotation(col uint8) string {
+	switch col {
+	case 1:
+		return "a"
+	case 2:
+		return "b"
+	case 3:
+		return "c"
+	case 4:
+		return "d"
+	case 5:
+		return "e"
+	case 6:
+		return "f"
+	case 7:
+		return "g"
+	case 8:
+		return "h"
+	default:
+		return ""
+	}
+}
+
 func SquareToAlgebraicString(sq uint8) string {
 	var row = sq / 10
 	var col = sq % 10
@@ -194,27 +217,7 @@ func SquareToAlgebraicString(sq uint8) string {
 
 	// No need to offset this as board is 1-indexed
 	var rowStr = strconv.Itoa(int(row - 1))
-	switch col {
-	case 1:
-		return "a" + rowStr
-	case 2:
-		return "b" + rowStr
-	case 3:
-		return "c" + rowStr
-	case 4:
-		return "d" + rowStr
-	case 5:
-		return "e" + rowStr
-	case 6:
-		return "f" + rowStr
-	case 7:
-		return "g" + rowStr
-	case 8:
-		return "h" + rowStr
-	default:
-	}
-	return "-"
-
+	return ColumnToAlgebraicNotation(col) + rowStr
 }
 
 type BoardInfo struct {

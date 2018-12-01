@@ -23,10 +23,11 @@ type SearchResult struct {
 }
 
 type SearchConfig struct {
-	alpha   int
-	beta    int
-	move    Move
-	isDebug bool
+	alpha         int
+	beta          int
+	move          Move
+	isDebug       bool
+	startingDepth uint
 }
 
 type ExternalSearchConfig struct {
@@ -41,9 +42,10 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 	startTime := time.Now().UnixNano()
 
 	result := searchAlphaBeta(boardState, depth, SearchConfig{
-		alpha:   -INFINITY,
-		beta:    INFINITY,
-		isDebug: config.isDebug,
+		alpha:         -INFINITY,
+		beta:          INFINITY,
+		isDebug:       config.isDebug,
+		startingDepth: depth,
 	})
 	result.time = (time.Now().UnixNano() - startTime) / 10000000
 
@@ -112,7 +114,7 @@ func searchAlphaBeta(boardState *BoardState, depth uint, searchConfig SearchConf
 	}
 
 	if bestResult == nil {
-		return getNoLegalMoveResult(boardState, searchConfig)
+		return getNoLegalMoveResult(boardState, depth, searchConfig)
 	}
 
 	bestResult.nodes = nodes
@@ -132,9 +134,11 @@ func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) Search
 	}
 }
 
-func getNoLegalMoveResult(boardState *BoardState, searchConfig SearchConfig) SearchResult {
+func getNoLegalMoveResult(boardState *BoardState, depth uint, searchConfig SearchConfig) SearchResult {
 	if boardState.IsInCheck(boardState.whiteToMove) {
-		score := CHECKMATE_SCORE
+		// moves to mate = startingDepth - depth
+		movesToMate := searchConfig.startingDepth - depth
+		score := CHECKMATE_SCORE - int(movesToMate)
 		if boardState.whiteToMove {
 			score = -score
 		}
