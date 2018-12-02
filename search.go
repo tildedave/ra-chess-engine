@@ -41,7 +41,7 @@ func Search(boardState *BoardState, depth uint) SearchResult {
 func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchConfig) SearchResult {
 	startTime := time.Now().UnixNano()
 
-	result := searchAlphaBeta(boardState, depth, SearchConfig{
+	result := searchAlphaBeta(boardState, depth, 0, SearchConfig{
 		alpha:         -INFINITY,
 		beta:          INFINITY,
 		isDebug:       config.isDebug,
@@ -52,7 +52,7 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 	return result
 }
 
-func searchAlphaBeta(boardState *BoardState, depth uint, searchConfig SearchConfig) SearchResult {
+func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, searchConfig SearchConfig) SearchResult {
 	if depth == 0 {
 		return getTerminalResult(boardState, searchConfig)
 	}
@@ -61,7 +61,6 @@ func searchAlphaBeta(boardState *BoardState, depth uint, searchConfig SearchConf
 
 	entry := ProbeTranspositionTable(boardState)
 	if entry != nil && entry.depth >= depth {
-		// What's going on with the score here
 		return *entry.result
 	}
 
@@ -86,7 +85,7 @@ func searchAlphaBeta(boardState *BoardState, depth uint, searchConfig SearchConf
 					searchDepth++
 				}
 
-				result := searchAlphaBeta(boardState, searchDepth, searchConfig)
+				result := searchAlphaBeta(boardState, searchDepth, currentDepth+1, searchConfig)
 
 				result.move = move
 				result.depth++
