@@ -354,6 +354,7 @@ func CreateInitialBoardState() BoardState {
 	b.fullmoveNumber = 1
 	generateBoardLookupInfo(&b)
 	generateZobrishHashInfo(&b)
+	generateTranspositionTable(&b)
 
 	return b
 }

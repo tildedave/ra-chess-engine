@@ -93,7 +93,7 @@ func TestSearchWhiteForcesPromotion(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D4, WHITE_MASK|PAWN_MASK)
 	generateBoardLookupInfo(&boardState)
 
-	result := Search(&boardState, 9)
+	result := Search(&boardState, 12)
 
 	assert.Equal(t, QUEEN_EVAL_SCORE, result.value)
 }
