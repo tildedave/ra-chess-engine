@@ -93,7 +93,7 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 	promotions := uint(0)
 
 	for _, move := range moves {
-		var originalHashKey uint64
+		var originalHashKey uint32
 		if options.sanityCheck {
 			testMoveLegality(boardState, move)
 			originalHashKey = boardState.hashKey

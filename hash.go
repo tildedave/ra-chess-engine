@@ -9,13 +9,13 @@ var _ = fmt.Println
 
 type HashInfo struct {
 	// this is a sparse array - will be indexed by offset and piece type
-	content                 [255][255]uint64
-	enpassant               [255]uint64 // indexed by offset
-	whiteToMove             uint64
-	whiteCanCastleKingside  uint64
-	whiteCanCastleQueenside uint64
-	blackCanCastleKingside  uint64
-	blackCanCastleQueenside uint64
+	content                 [255][255]uint32
+	enpassant               [255]uint32 // indexed by offset
+	whiteToMove             uint32
+	whiteCanCastleKingside  uint32
+	whiteCanCastleQueenside uint32
+	blackCanCastleKingside  uint32
+	blackCanCastleQueenside uint32
 }
 
 func CreateHashInfo(r *rand.Rand) HashInfo {
@@ -25,32 +25,32 @@ func CreateHashInfo(r *rand.Rand) HashInfo {
 		for j := byte(0); j < 8; j++ {
 			sq := RowAndColToSquare(i, j)
 			for _, m := range []byte{WHITE_MASK, BLACK_MASK} {
-				hashInfo.content[sq][m|PAWN_MASK] = r.Uint64()
-				hashInfo.content[sq][m|KNIGHT_MASK] = r.Uint64()
-				hashInfo.content[sq][m|BISHOP_MASK] = r.Uint64()
-				hashInfo.content[sq][m|ROOK_MASK] = r.Uint64()
-				hashInfo.content[sq][m|QUEEN_MASK] = r.Uint64()
-				hashInfo.content[sq][m|KING_MASK] = r.Uint64()
+				hashInfo.content[sq][m|PAWN_MASK] = r.Uint32()
+				hashInfo.content[sq][m|KNIGHT_MASK] = r.Uint32()
+				hashInfo.content[sq][m|BISHOP_MASK] = r.Uint32()
+				hashInfo.content[sq][m|ROOK_MASK] = r.Uint32()
+				hashInfo.content[sq][m|QUEEN_MASK] = r.Uint32()
+				hashInfo.content[sq][m|KING_MASK] = r.Uint32()
 			}
 		}
 	}
 	for i := byte(0); i < 8; i++ {
-		hashInfo.enpassant[RowAndColToSquare(3, i)] = r.Uint64()
-		hashInfo.enpassant[RowAndColToSquare(6, i)] = r.Uint64()
+		hashInfo.enpassant[RowAndColToSquare(3, i)] = r.Uint32()
+		hashInfo.enpassant[RowAndColToSquare(6, i)] = r.Uint32()
 	}
 	// target square 0 is used for a 'clear' EP target
-	hashInfo.enpassant[0] = r.Uint64()
-	hashInfo.whiteToMove = r.Uint64()
-	hashInfo.whiteCanCastleKingside = r.Uint64()
-	hashInfo.whiteCanCastleQueenside = r.Uint64()
-	hashInfo.blackCanCastleKingside = r.Uint64()
-	hashInfo.blackCanCastleQueenside = r.Uint64()
+	hashInfo.enpassant[0] = r.Uint32()
+	hashInfo.whiteToMove = r.Uint32()
+	hashInfo.whiteCanCastleKingside = r.Uint32()
+	hashInfo.whiteCanCastleQueenside = r.Uint32()
+	hashInfo.blackCanCastleKingside = r.Uint32()
+	hashInfo.blackCanCastleQueenside = r.Uint32()
 
 	return hashInfo
 }
 
-func (boardState *BoardState) CreateHashKey(info *HashInfo) uint64 {
-	var key uint64
+func (boardState *BoardState) CreateHashKey(info *HashInfo) uint32 {
+	var key uint32
 
 	if boardState.whiteToMove {
 		key ^= info.whiteToMove
@@ -82,7 +82,7 @@ func (boardState *BoardState) CreateHashKey(info *HashInfo) uint64 {
 
 // To be applied after a move has been made, to incrementally update the hash key.
 // For use in search
-func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo BoardInfo, move Move) uint64 {
+func (boardState *BoardState) UpdateHashApplyMove(key uint32, oldBoardInfo BoardInfo, move Move) uint32 {
 	info := boardState.hashInfo
 
 	if move.IsCapture() {
@@ -159,7 +159,7 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo Board
 // UpdateHashUnapplyMove gives a new hash key as a result of unapplying a move.
 // It should be called _after_ the move has been unprocessed, and the oldBoardInfo
 // should be the board info prior to the move being unprocessed.
-func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo BoardInfo, move Move) uint64 {
+func (boardState *BoardState) UpdateHashUnapplyMove(key uint32, oldBoardInfo BoardInfo, move Move) uint32 {
 	info := boardState.hashInfo
 	if move.IsCapture() {
 		// we've already put back the piece since this is done after move is unapplied

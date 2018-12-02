@@ -40,7 +40,7 @@ var materialScore = [7]int{
 	0, PAWN_EVAL_SCORE, KNIGHT_EVAL_SCORE, BISHOP_EVAL_SCORE, ROOK_EVAL_SCORE, QUEEN_EVAL_SCORE, 0,
 }
 
-func Eval(boardState *BoardState) BoardEval {
+func Eval(boardState *BoardState) (BoardEval, bool) {
 	material := 0
 	boardPhase := PHASE_OPENING
 	if boardState.fullmoveNumber > 8 {
@@ -49,6 +49,9 @@ func Eval(boardState *BoardState) BoardEval {
 
 	blackMaterial := 0
 	whiteMaterial := 0
+	blackHasPawns := false
+	whiteHasPawns := false
+	hasMatingMaterial := true
 
 	for i := byte(0); i < 8; i++ {
 		for j := byte(0); j < 8; j++ {
@@ -64,6 +67,12 @@ func Eval(boardState *BoardState) BoardEval {
 					} else {
 						whiteMaterial += score
 					}
+				} else {
+					if isBlack {
+						blackHasPawns = true
+					} else {
+						whiteHasPawns = true
+					}
 				}
 				if isBlack {
 					material -= score
@@ -72,6 +81,11 @@ func Eval(boardState *BoardState) BoardEval {
 				}
 			}
 		}
+	}
+
+	// This isn't correct, bitboards will make this easier
+	if !blackHasPawns && !whiteHasPawns && blackMaterial <= KNIGHT_EVAL_SCORE && whiteMaterial <= KNIGHT_EVAL_SCORE {
+		hasMatingMaterial = false
 	}
 
 	if blackMaterial < ENDGAME_MATERIAL_THRESHOLD && whiteMaterial < ENDGAME_MATERIAL_THRESHOLD {
@@ -161,7 +175,7 @@ func Eval(boardState *BoardState) BoardEval {
 		material:      material,
 		kingPosition:  kingPosition,
 		centerControl: centerControl,
-	}
+	}, hasMatingMaterial
 }
 
 func (eval BoardEval) value() int {
