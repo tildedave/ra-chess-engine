@@ -263,6 +263,7 @@ func CopyBoardState(boardState *BoardState) BoardState {
 	state := *boardState
 	state.board = make([]byte, 120)
 	copy(state.board, boardState.board)
+	generateTranspositionTable(&state)
 	return state
 }
 
