@@ -57,12 +57,19 @@ func searchAlphaBeta(boardState *BoardState, depth uint, searchConfig SearchConf
 		return getTerminalResult(boardState, searchConfig)
 	}
 
+	isDebug := searchConfig.isDebug
+
+	entry := ProbeTranspositionTable(boardState)
+	if entry != nil && entry.depth >= depth {
+		// What's going on with the score here
+		return *entry.result
+	}
+
 	var nodes uint
 
 	listing := GenerateMoveListing(boardState)
 	var bestResult *SearchResult
 
-	isDebug := searchConfig.isDebug
 	for _, moveList := range [][]Move{listing.promotions, listing.captures, listing.moves} {
 		for _, move := range moveList {
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
@@ -114,18 +121,29 @@ func searchAlphaBeta(boardState *BoardState, depth uint, searchConfig SearchConf
 	}
 
 	if bestResult == nil {
-		return getNoLegalMoveResult(boardState, depth, searchConfig)
+		result := getNoLegalMoveResult(boardState, depth, searchConfig)
+		bestResult = &result
 	}
 
 	bestResult.nodes = nodes
 	bestResult.pv = MoveToPrettyString(bestResult.move, boardState) + " " + bestResult.pv
+	StoreTranspositionTable(boardState, bestResult, depth)
+
 	return *bestResult
 }
 
 func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) SearchResult {
 	// TODO(perf): use an incremental evaluation state passed in as an argument
 
-	e := Eval(boardState)
+	e, hasMatingMaterial := Eval(boardState)
+	if !hasMatingMaterial {
+		return SearchResult{
+			value: 0,
+			flags: STALEMATE_FLAG,
+			pv:    "1/2-1/2 (Insufficient mating material)",
+		}
+	}
+
 	return SearchResult{
 		value: e.value(),
 		move:  searchConfig.move,
