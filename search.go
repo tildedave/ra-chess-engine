@@ -60,8 +60,17 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 	isDebug := searchConfig.isDebug
 
 	entry := ProbeTranspositionTable(boardState)
-	if entry != nil && entry.depth >= depth {
-		return *entry.result
+	var hashMove = make([]Move, 0)
+	if entry != nil {
+		if entry.depth >= depth {
+			return *entry.result
+		}
+
+		move := entry.result.move
+		isLegal, err := boardState.IsMoveLegal(move)
+		if err == nil && isLegal {
+			hashMove = append(hashMove, move)
+		}
 	}
 
 	var nodes uint
@@ -69,7 +78,7 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 	listing := GenerateMoveListing(boardState)
 	var bestResult *SearchResult
 
-	for _, moveList := range [][]Move{listing.promotions, listing.captures, listing.moves} {
+	for _, moveList := range [][]Move{hashMove, listing.promotions, listing.captures, listing.moves} {
 		for _, move := range moveList {
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
 				continue
