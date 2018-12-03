@@ -237,6 +237,7 @@ type BoardLookupInfo struct {
 
 type BoardState struct {
 	board       []byte
+	bitboards   Bitboards
 	whiteToMove bool
 	boardInfo   BoardInfo
 
@@ -325,39 +326,12 @@ func generateZobrishHashInfo(boardState *BoardState) {
 }
 
 func CreateInitialBoardState() BoardState {
-	var b BoardState
-
-	// https://chessprogramming.wikispaces.com/10x12+Board
-	b.board = []byte{
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0x44, 0x42, 0x43, 0x45, 0x46, 0x43, 0x42, 0x44, 0xFF,
-		0xFF, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0x41, 0xFF,
-		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-		0xFF, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0x81, 0xFF,
-		0xFF, 0x84, 0x82, 0x83, 0x85, 0x86, 0x83, 0x82, 0x84, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+	boardState, err := CreateBoardStateFromFENString("rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1")
+	if err != nil {
+		panic(err)
 	}
 
-	b.whiteToMove = true
-	b.boardInfo = BoardInfo{
-		whiteCanCastleKingside:  true,
-		whiteCanCastleQueenside: true,
-		blackCanCastleKingside:  true,
-		blackCanCastleQueenside: true,
-		enPassantTargetSquare:   0,
-	}
-	b.halfmoveClock = 0
-	b.fullmoveNumber = 1
-	generateBoardLookupInfo(&b)
-	generateZobrishHashInfo(&b)
-	generateTranspositionTable(&b)
-
-	return b
+	return boardState
 }
 
 func CreateBoardStateFromFENString(s string) (BoardState, error) {
@@ -421,7 +395,9 @@ func CreateBoardStateFromFENString(s string) (BoardState, error) {
 				col = col + byte(num)
 			}
 
-			boardState.board[sq] = p
+			if p != 0 {
+				boardState.SetPieceAtSquare(sq, p)
+			}
 		}
 		row = row - 1
 	}
@@ -521,8 +497,17 @@ func ParseAlgebraicSquare(sq string) (uint8, error) {
 	return RowAndColToSquare(row, col), nil
 }
 
-// SetPieceAtSquare should only be used for testing.
+// SetPieceAtSquare should only be used in non-performance critical places.
 func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 	boardState.board[sq] = p
-	generateZobrishHashInfo(boardState)
+	var colorOffset int
+	switch p & 0xF0 {
+	case WHITE_MASK:
+		colorOffset = WHITE_OFFSET
+	case BLACK_MASK:
+		colorOffset = BLACK_OFFSET
+	}
+	pieceOffset := p & 0x0F
+	boardState.bitboards.color[colorOffset] = SetBitboard(boardState.bitboards.color[colorOffset], sq)
+	boardState.bitboards.piece[pieceOffset] = SetBitboard(boardState.bitboards.piece[pieceOffset], sq)
 }
