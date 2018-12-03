@@ -10,6 +10,8 @@ const QUEEN_MASK byte = 0x05
 const KING_MASK byte = 0x06
 const BLACK_MASK byte = 0x80
 const WHITE_MASK byte = 0x40
+const WHITE_OFFSET int = 0
+const BLACK_OFFSET int = 1
 
 const SQUARE_A1 byte = 21
 const SQUARE_B1 byte = 22
