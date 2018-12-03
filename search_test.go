@@ -7,8 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-var _ = fmt.Println
-
 // Checkmate is Queen C3 to C1
 func CreateMateInOneBoard() BoardState {
 	boardState := CreateEmptyBoardState()
@@ -101,7 +99,7 @@ func TestSearchWhiteForcesPromotion(t *testing.T) {
 func TestSearchWhiteSavesKnightFromCapture(t *testing.T) {
 	boardState, _ := CreateBoardStateFromFENString("rnbqkbnr/ppp1pppp/8/8/3p4/2N5/PPPPPPPP/1RBQKBNR w Kkq - 0 3")
 
-	result := Search(&boardState, 3)
+	result := Search(&boardState, 2)
 
 	assert.Equal(t, result.move.from, SQUARE_C3)
 }
@@ -109,6 +107,6 @@ func TestSearchWhiteSavesKnightFromCapture(t *testing.T) {
 func TestDoesNotHangCheckmate(t *testing.T) {
 	boardState, _ := CreateBoardStateFromFENString("5rk1/B3bppp/8/6P1/b1p1pP2/2P5/Pr4P1/R3K1NR w KQ - 0 24")
 
-	result := Search(&boardState, 3)
+	result := Search(&boardState, 2)
 	fmt.Println(SearchResultToString(result))
 }
