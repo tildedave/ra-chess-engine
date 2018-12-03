@@ -29,6 +29,7 @@ func main() {
 	perftPrintMoves := flag.Bool("printmoves", false, "Perft: print all generates moves at final depth")
 	isTactics := flag.Bool("tactics", false, "Tactics mode")
 	tacticsEpdFile := flag.String("tacticsepd", "", "Tactics file in EPD format")
+	tacticsFen := flag.String("tacticsfen", "", "Tactics position in FEN format")
 	tacticsThinkingTime := flag.Uint("tacticsthinkingtime", 500, "Time to think per position (ms)")
 	tacticsRegex := flag.String("tacticsregex", "", "Run only tactics matching the given id")
 	tacticsDebug := flag.Bool("tacticsdebug", false, "Output more information during tactics")
@@ -50,13 +51,20 @@ func main() {
 		} else {
 			success, err = RunPerft(*startingFen, *perftDepth, options)
 		}
-	} else if *isTactics || *tacticsEpdFile != "" {
+	} else if *isTactics || *tacticsEpdFile != "" || *tacticsFen != "" {
 		var options TacticsOptions
 		options.thinkingtimeMs = *tacticsThinkingTime
 		options.tacticsRegex = *tacticsRegex
 		options.tacticsDebug = *tacticsDebug
 
-		success, err = RunTacticsFile(*tacticsEpdFile, options)
+		if *tacticsEpdFile != "" {
+			success, err = RunTacticsFile(*tacticsEpdFile, options)
+		} else if *tacticsFen != "" {
+			prettyMove, err := RunTacticsFen(*tacticsFen, options)
+			if err != nil {
+				fmt.Printf("Move: %s\n", prettyMove)
+			}
+		}
 	} else {
 		// xboard mode
 		scanner := bufio.NewScanner(os.Stdin)

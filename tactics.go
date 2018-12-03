@@ -43,34 +43,10 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 			}
 		}
 
-		boardState, err := CreateBoardStateFromFENString(fen)
-
+		prettyMove, err := RunTacticsFen(fen, options)
 		if err != nil {
 			return false, err
 		}
-
-		ch := make(chan Move)
-		thinkingChan := make(chan ThinkingOutput)
-		output := bufio.NewWriter(os.Stderr)
-
-		output.Write([]byte(boardState.ToString()))
-		output.WriteRune('\n')
-
-		go func() {
-			for thinkingOutput := range thinkingChan {
-				if thinkingOutput.ply > 0 {
-					sendThinkingOutput(output, thinkingOutput)
-				}
-			}
-		}()
-
-		config := ExternalSearchConfig{}
-		config.isDebug = options.tacticsDebug
-
-		go thinkAndChooseMove(&boardState, options.thinkingtimeMs, config, ch, thinkingChan)
-		move := <-ch
-
-		prettyMove := MoveToPrettyString(move, &boardState)
 
 		var res string
 		totalPositions++
@@ -87,7 +63,38 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 		100.0*float64(successPositions)/float64(totalPositions))
 	if totalPositions == successPositions {
 		return true, nil
-	} else {
-		return false, nil
 	}
+
+	return false, nil
+}
+
+func RunTacticsFen(fen string, options TacticsOptions) (string, error) {
+	boardState, err := CreateBoardStateFromFENString(fen)
+
+	if err != nil {
+		return "", err
+	}
+
+	ch := make(chan Move)
+	thinkingChan := make(chan ThinkingOutput)
+	output := bufio.NewWriter(os.Stderr)
+
+	output.Write([]byte(boardState.ToString()))
+	output.WriteRune('\n')
+
+	go func() {
+		for thinkingOutput := range thinkingChan {
+			if thinkingOutput.ply > 0 {
+				sendThinkingOutput(output, thinkingOutput)
+			}
+		}
+	}()
+
+	config := ExternalSearchConfig{}
+	config.isDebug = options.tacticsDebug
+
+	go thinkAndChooseMove(&boardState, options.thinkingtimeMs, config, ch, thinkingChan)
+	move := <-ch
+
+	return MoveToPrettyString(move, &boardState), nil
 }
