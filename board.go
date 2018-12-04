@@ -508,6 +508,7 @@ func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 		colorOffset = BLACK_OFFSET
 	}
 	pieceOffset := p & 0x0F
-	boardState.bitboards.color[colorOffset] = SetBitboard(boardState.bitboards.color[colorOffset], sq)
-	boardState.bitboards.piece[pieceOffset] = SetBitboard(boardState.bitboards.piece[pieceOffset], sq)
+	bbSq := legacySquareToBitboardSquare(sq)
+	boardState.bitboards.color[colorOffset] = SetBitboard(boardState.bitboards.color[colorOffset], bbSq)
+	boardState.bitboards.piece[pieceOffset] = SetBitboard(boardState.bitboards.piece[pieceOffset], bbSq)
 }
