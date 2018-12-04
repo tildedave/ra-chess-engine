@@ -34,6 +34,7 @@ func main() {
 	tacticsThinkingTime := flag.Uint("tacticsthinkingtime", 500, "Time to think per position (ms)")
 	tacticsRegex := flag.String("tacticsregex", "", "Run only tactics matching the given id")
 	tacticsDebug := flag.Bool("tacticsdebug", false, "Output more information during tactics")
+	isMagic := flag.Bool("magic", false, "Generate magic bitboard constants")
 
 	flag.Parse()
 
@@ -70,6 +71,9 @@ func main() {
 				fmt.Printf("Move: %s\n", prettyMove)
 			}
 		}
+	} else if *isMagic {
+		fmt.Println("generate some magic bitboards")
+		GenerateMagicBitboards()
 	} else {
 		// xboard mode
 		scanner := bufio.NewScanner(os.Stdin)
