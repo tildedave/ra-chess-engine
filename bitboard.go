@@ -35,18 +35,18 @@ func IsBitboardSet(bitboard uint64, sq byte) bool {
 func BitboardToString(bitboard uint64) string {
 	var s [9 * 8]byte
 
-	for i := byte(0); i < 8; i++ {
-		for j := byte(0); j < 8; j++ {
-			var sq = i*8 + j
+	for row := byte(0); row < 8; row++ {
+		for col := byte(0); col < 8; col++ {
+			var sq = row*8 + col
 			var r byte
 			if IsBitboardSet(bitboard, sq) {
 				r = 'x'
 			} else {
 				r = '.'
 			}
-			s[(7-i)*9+j] = r
+			s[(7-row)*9+col] = r
 		}
-		s[(7-i)*9+8] = '\n'
+		s[(7-row)*9+8] = '\n'
 	}
 	return string(s[:9*8]) + "\n"
 }

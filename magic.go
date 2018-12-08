@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/bits"
 )
 
 const (
@@ -16,69 +15,123 @@ const (
 	SOUTH_WEST = iota
 )
 
-func CreateRay(col byte, row byte, direction int) uint64 {
-	var bitboard uint64
-	first := false
-	for row >= 0 && col >= 0 && row <= 8 && col <= 8 {
-		if !first {
-			bitboard = SetBitboard(bitboard, row*8+col)
-		}
+func FollowRay(bitboard uint64, col byte, row byte, direction int, distance int) uint64 {
+	for distance > 0 {
 		switch direction {
 		case NORTH:
 			row++
 		case SOUTH:
 			row--
 		case WEST:
-			col++
-		case EAST:
 			col--
+		case EAST:
+			col++
 		case NORTH_EAST:
 			row++
-			col--
+			col++
 		case NORTH_WEST:
 			row++
-			col++
+			col--
 		case SOUTH_EAST:
 			row--
-			col--
+			col++
 		case SOUTH_WEST:
 			row--
-			col++
+			col--
 		}
-	}
 
-	fmt.Println(BitboardToString(bitboard))
+		if distance%2 == 1 {
+			bitboard = SetBitboard(bitboard, row*8+col)
+		}
+		distance = distance >> 1
+	}
 
 	return bitboard
 }
 
-func AllCombinations(bitboard uint64) []uint64 {
-	// flip every bit in this board
-	if bitboard == 0 {
-		return []uint64{}
+func RookMask(sq byte) uint64 {
+	col := sq % 8
+	row := sq / 8
+
+	var bitboard uint64
+	// extra bounds check on the negative values is to prevent overflows
+	for wcol := col - 1; wcol > 0 && wcol < 8; wcol-- {
+		bitboard = SetBitboard(bitboard, row*8+wcol)
+	}
+	for ecol := col + 1; ecol < 7; ecol++ {
+		bitboard = SetBitboard(bitboard, row*8+ecol)
+	}
+	for nrow := row + 1; nrow < 7; nrow++ {
+		bitboard = SetBitboard(bitboard, nrow*8+col)
+	}
+	for srow := row - 1; srow > 0 && srow < 8; srow-- {
+		bitboard = SetBitboard(bitboard, srow*8+col)
 	}
 
-	combinations := make([]uint64, 0)
-	firstSet := bits.LeadingZeros64(bitboard)
-	fmt.Println(firstSet)
-	rbb := bitboard & (BITBOARD_ALL_ONES ^ (1 << uint(firstSet)))
-	fmt.Println(BitboardToString(bitboard))
-	fmt.Println(BitboardToString(rbb))
-	recursiveCombinations := AllCombinations(rbb)
-	combinations = append(combinations, recursiveCombinations...)
-	for i := range recursiveCombinations {
-		combinations = append(combinations, recursiveCombinations[i]|(1<<uint(firstSet)))
-	}
+	return bitboard
+}
 
-	return combinations
+func BishopMask(sq byte) uint64 {
+	col := sq % 8
+	row := sq / 8
+
+	var bitboard uint64
+	for wcol, nrow := col-1, row+1; wcol > 0 && wcol < 8 && nrow < 7; wcol, nrow = wcol-1, nrow+1 {
+		bitboard = SetBitboard(bitboard, nrow*8+wcol)
+	}
+	for ecol, nrow := col+1, row+1; ecol < 7 && nrow < 7; ecol, nrow = ecol+1, nrow+1 {
+		bitboard = SetBitboard(bitboard, nrow*8+ecol)
+	}
+	for wcol, srow := col-1, row-1; wcol > 0 && wcol < 8 && srow > 0 && srow < 8; wcol, srow = wcol-1, srow-1 {
+		bitboard = SetBitboard(bitboard, srow*8+wcol)
+	}
+	for ecol, srow := col+1, row-1; ecol < 7 && srow > 0 && srow < 8; ecol, srow = ecol+1, srow-1 {
+		bitboard = SetBitboard(bitboard, srow*8+ecol)
+	}
+	// for ecol := col + 1; ecol < 7; ecol++ {
+	// 	bitboard = SetBitboard(bitboard, row*8+ecol)
+	// }
+	// for nrow := row + 1; nrow < 7; nrow++ {
+	// 	bitboard = SetBitboard(bitboard, nrow*8+col)
+	// }
+	// for srow := row - 1; srow > 0 && srow < 8; srow-- {
+	// 	bitboard = SetBitboard(bitboard, srow*8+col)
+	// }
+
+	return bitboard
 }
 
 func GenerateMagicBitboards() {
 	for col := byte(0); col < 8; col++ {
 		for row := byte(0); row < 8; row++ {
-			for _, b := range AllCombinations(CreateRay(row, col, NORTH)) {
-				fmt.Println(BitboardToString(b))
+			fmt.Printf("Current sq: %d\n", col+row*8)
+			above := 8 - int(row) - 1
+			below := int(row)
+			west := col
+			east := 8 - int(col) - 1
+			fmt.Printf("above: %d, below: %d, west: %d, east: %d\n", above, below, west, east)
+			for i := 0; i < 1<<uint(above); i++ {
+				for j := 0; j < 1<<uint(below); j++ {
+					for k := 0; k < 1<<uint(west); k++ {
+						for l := 0; l < 1<<uint(east); l++ {
+							var bitboard uint64
+							bitboard = FollowRay(bitboard, col, row, NORTH, i)
+							bitboard = FollowRay(bitboard, col, row, SOUTH, j)
+							bitboard = FollowRay(bitboard, col, row, WEST, k)
+							bitboard = FollowRay(bitboard, col, row, EAST, l)
+							fmt.Println(BitboardToString(bitboard))
+						}
+					}
+				}
 			}
+			// for i := 0; i < row -
+			// b := FollowRay(row, col, NORTH)
+			// combos := AllCombinations()
+			// fmt.Println("combos")
+			// fmt.Println(len(combos))
+			// for _, b := range combos {
+			// 	fmt.Println(BitboardToString(b))
+			// }
 			// // go in all four directions
 			// for down := 0; int(row)-down >= 0; down++ {
 			// 	for up := 0; int(row)+up < 8; up++ {
