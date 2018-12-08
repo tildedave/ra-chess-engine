@@ -71,6 +71,43 @@ func RookMask(sq byte) uint64 {
 	return bitboard
 }
 
+func RookMoveBoard(sq byte, occupancies uint64) uint64 {
+	col := sq % 8
+	row := sq / 8
+
+	var bitboard uint64
+	for wcol := col - 1; wcol > 0 && wcol < 8; wcol-- {
+		sq := row*8 + wcol
+		if IsBitboardSet(occupancies, sq) {
+			break
+		}
+		bitboard = SetBitboard(bitboard, sq)
+	}
+	for ecol := col + 1; ecol < 7; ecol++ {
+		sq := row*8 + ecol
+		if IsBitboardSet(occupancies, sq) {
+			break
+		}
+		bitboard = SetBitboard(bitboard, sq)
+	}
+	for nrow := row + 1; nrow < 7; nrow++ {
+		sq := nrow*8 + col
+		if IsBitboardSet(occupancies, sq) {
+			break
+		}
+		bitboard = SetBitboard(bitboard, sq)
+	}
+	for srow := row - 1; srow > 0 && srow < 8; srow-- {
+		sq := srow*8 + col
+		if IsBitboardSet(occupancies, sq) {
+			break
+		}
+		bitboard = SetBitboard(bitboard, sq)
+	}
+
+	return bitboard
+}
+
 func BishopMask(sq byte) uint64 {
 	col := sq % 8
 	row := sq / 8
@@ -88,20 +125,51 @@ func BishopMask(sq byte) uint64 {
 	for ecol, srow := col+1, row-1; ecol < 7 && srow > 0 && srow < 8; ecol, srow = ecol+1, srow-1 {
 		bitboard = SetBitboard(bitboard, srow*8+ecol)
 	}
-	// for ecol := col + 1; ecol < 7; ecol++ {
-	// 	bitboard = SetBitboard(bitboard, row*8+ecol)
-	// }
-	// for nrow := row + 1; nrow < 7; nrow++ {
-	// 	bitboard = SetBitboard(bitboard, nrow*8+col)
-	// }
-	// for srow := row - 1; srow > 0 && srow < 8; srow-- {
-	// 	bitboard = SetBitboard(bitboard, srow*8+col)
-	// }
+
+	return bitboard
+}
+
+func BishopMoveBoard(sq byte, occupancies uint64) uint64 {
+	col := sq % 8
+	row := sq / 8
+
+	var bitboard uint64
+	for wcol, nrow := col-1, row+1; wcol > 0 && wcol < 8 && nrow < 7; wcol, nrow = wcol-1, nrow+1 {
+		sq := nrow*8 + wcol
+		if IsBitboardSet(occupancies, sq) {
+			break
+		}
+		bitboard = SetBitboard(bitboard, nrow*8+wcol)
+	}
+	for ecol, nrow := col+1, row+1; ecol < 7 && nrow < 7; ecol, nrow = ecol+1, nrow+1 {
+		sq := nrow*8 + ecol
+		if IsBitboardSet(occupancies, sq) {
+			break
+		}
+		bitboard = SetBitboard(bitboard, sq)
+	}
+	for wcol, srow := col-1, row-1; wcol > 0 && wcol < 8 && srow > 0 && srow < 8; wcol, srow = wcol-1, srow-1 {
+		sq := srow*8 + wcol
+		if IsBitboardSet(occupancies, sq) {
+			break
+		}
+		bitboard = SetBitboard(bitboard, sq)
+	}
+	for ecol, srow := col+1, row-1; ecol < 7 && srow > 0 && srow < 8; ecol, srow = ecol+1, srow-1 {
+		sq := srow*8 + ecol
+		if IsBitboardSet(occupancies, sq) {
+			break
+		}
+
+		bitboard = SetBitboard(bitboard, sq)
+	}
 
 	return bitboard
 }
 
 func GenerateMagicBitboards() {
+	// generate all occupancies
+
 	for col := byte(0); col < 8; col++ {
 		for row := byte(0); row < 8; row++ {
 			fmt.Printf("Current sq: %d\n", col+row*8)
