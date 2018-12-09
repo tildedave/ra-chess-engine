@@ -386,7 +386,7 @@ func GenerateRookSlidingMoves(sq byte, magic Magic, moves map[uint16][]Move) {
 	occupancies := GenerateRookOccupancies(sq, true)
 	for _, occupancy := range occupancies {
 		key := hashKey(occupancy, magic)
-		moves[key] = createMovesFromBoard(sq, RookMoveBoard(sq, occupancy))
+		moves[key] = CreateMovesFromBitboard(sq, RookMoveBoard(sq, occupancy))
 	}
 }
 
@@ -394,22 +394,12 @@ func GenerateBishopSlidingMoves(sq byte, magic Magic, moves map[uint16][]Move) {
 	occupancies := GenerateBishopOccupancies(sq, true)
 	for _, occupancy := range occupancies {
 		key := hashKey(occupancy, magic)
-		moves[key] = createMovesFromBoard(sq, BishopMoveBoard(sq, occupancy))
+		moves[key] = CreateMovesFromBitboard(sq, BishopMoveBoard(sq, occupancy))
 	}
 }
 
 func hashKey(occupancy uint64, magic Magic) uint16 {
 	return uint16(((occupancy & magic.Mask) * magic.Magic) >> (64 - magic.Bits))
-}
-
-func createMovesFromBoard(sq byte, moveBoard uint64) []Move {
-	moves := make([]Move, 0)
-	for destSq := byte(0); destSq < 64; destSq++ {
-		if IsBitboardSet(moveBoard, destSq) {
-			moves = append(moves, CreateMove(sq, destSq))
-		}
-	}
-	return moves
 }
 
 func outputMagicFile(magics map[byte]Magic, filename string) error {

@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"math/bits"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -512,4 +513,16 @@ func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 	bbSq := legacySquareToBitboardSquare(sq)
 	boardState.bitboards.color[colorOffset] = SetBitboard(boardState.bitboards.color[colorOffset], bbSq)
 	boardState.bitboards.piece[pieceOffset] = SetBitboard(boardState.bitboards.piece[pieceOffset], bbSq)
+}
+
+// CreateMovesFromBitboard transforms a bitboard and a square to a slice of moves.
+func CreateMovesFromBitboard(sq byte, moveBoard uint64) []Move {
+	moves := make([]Move, 0)
+	for moveBoard != 0 {
+		destSq := byte(bits.TrailingZeros64(moveBoard))
+		moveBoard ^= 1 << destSq
+		moves = append(moves, CreateMove(sq, destSq))
+	}
+
+	return moves
 }

@@ -154,3 +154,16 @@ func TestCreateMoveBitboards(t *testing.T) {
 	assert.Equal(t, uint64(0x80800000), moveBitboards.pawnMoves[WHITE_OFFSET][BB_SQUARE_H2])
 	assert.Equal(t, uint64(0x400000), moveBitboards.pawnAttacks[WHITE_OFFSET][BB_SQUARE_H2])
 }
+
+func TestCreateMovesFromBitboard(t *testing.T) {
+	var bitboard uint64
+	bitboard = SetBitboard(bitboard, BB_SQUARE_A5)
+	bitboard = SetBitboard(bitboard, BB_SQUARE_B3)
+	bitboard = SetBitboard(bitboard, BB_SQUARE_D4)
+
+	moves := CreateMovesFromBitboard(BB_SQUARE_D3, bitboard)
+	assert.Len(t, moves, 3)
+	assertMovePresent(t, moves, BB_SQUARE_D3, BB_SQUARE_A5)
+	assertMovePresent(t, moves, BB_SQUARE_D3, BB_SQUARE_B3)
+	assertMovePresent(t, moves, BB_SQUARE_D3, BB_SQUARE_D4)
+}
