@@ -197,20 +197,19 @@ func GenerateRookOccupancies(sq byte) []uint64 {
 	return occupancies
 }
 
+type CollisionEntry struct {
+	set       bool
+	moveBoard uint64
+}
+
 func GenerateRookMagic(sq byte, r *rand.Rand) (uint64, int) {
-	// 1) choose magic number
 	// 2) generate blocker mask, bits count is the # of things we shift the result by
 	// 3) generate list of all occupancies
-
-	// for each occupancy, multiply by candidate and bit shift.  this gives a result
-	// if not yet set, set it to the move board
-	//
 
 	blockerMask := RookMask(sq)
 	numBits := bits.OnesCount64(blockerMask)
 	occupancies := GenerateRookOccupancies(sq)
 
-	defaultBoard := ^uint64(0)
 	total := 0
 
 	occupancyMoves := make(map[uint64]uint64)
@@ -218,35 +217,35 @@ func GenerateRookMagic(sq byte, r *rand.Rand) (uint64, int) {
 		occupancyMoves[occupancy] = RookMoveBoard(sq, occupancy)
 	}
 
-	for {
-		collisionMap := make(map[uint]uint64)
-		for i := uint(0); i < 1<<uint(numBits); i++ {
-			collisionMap[i] = defaultBoard
-		}
+	var candidate uint64
 
-		candidate := r.Uint64() & r.Uint64() & r.Uint64()
+TrialAndError:
+	for {
+		// try candidates until one of them is
+		collisionMap := make(map[uint]CollisionEntry)
+		// overly bias zeros in the candidate - trick from https://github.com/goutham/magic-bits
+		candidate = r.Uint64() & r.Uint64() & r.Uint64()
 		total++
 
 		collision := false
 		for _, occupancy := range occupancies {
-			// result is occupancy * candidate << (64 - numBits)
 			hashKey := uint((occupancy * candidate) >> uint(64-numBits))
 			moveBoard := occupancyMoves[occupancy]
-			if collisionMap[hashKey] == defaultBoard {
-				collisionMap[hashKey] = moveBoard
-			} else {
-				otherMoveBoard := collisionMap[hashKey]
-				if moveBoard != otherMoveBoard {
-					collision = true
-					break
-				}
+
+			if !collisionMap[hashKey].set {
+				collisionMap[hashKey] = CollisionEntry{moveBoard: moveBoard, set: true}
+			} else if collisionMap[hashKey].moveBoard != moveBoard {
+				collision = true
+				break
 			}
 		}
 
 		if !collision {
-			return candidate, total
+			break TrialAndError
 		}
 	}
+
+	return candidate, total
 }
 
 func GenerateMagicBitboards() {
