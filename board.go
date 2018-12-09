@@ -236,10 +236,11 @@ type BoardLookupInfo struct {
 }
 
 type BoardState struct {
-	board       []byte
-	bitboards   Bitboards
-	whiteToMove bool
-	boardInfo   BoardInfo
+	board         []byte
+	bitboards     Bitboards
+	moveBitboards MoveBitboards
+	whiteToMove   bool
+	boardInfo     BoardInfo
 
 	// number of moves since last capture or pawn advance
 	halfmoveClock uint

@@ -12,6 +12,54 @@ type MoveListing struct {
 	promotions []Move
 }
 
+type MoveBitboards struct {
+	pawnMoves   [2][64]uint64
+	pawnAttacks [2][64]uint64
+}
+
+func CreateMoveBitboards() MoveBitboards {
+	var pawnMoves [2][64]uint64
+	var pawnAttacks [2][64]uint64
+
+	for row := byte(0); row < 8; row++ {
+		for col := byte(0); col < 8; col++ {
+			if row == 0 || row == 7 {
+				continue
+			}
+			sq := idx(col, row)
+
+			var whitePawnMoveBitboard uint64
+			var whitePawnAttackBitboard uint64
+			var blackPawnMoveBitboard uint64
+			var blackPawnAttackBitboard uint64
+
+			whitePawnMoveBitboard = SetBitboard(whitePawnMoveBitboard, idx(col, row+1))
+			blackPawnMoveBitboard = SetBitboard(blackPawnMoveBitboard, idx(col, row+1))
+			if row == 1 {
+				whitePawnMoveBitboard = SetBitboard(whitePawnMoveBitboard, idx(col, row+2))
+			} else if row == 7 {
+				blackPawnMoveBitboard = SetBitboard(blackPawnMoveBitboard, idx(col, row-2))
+			}
+
+			if col > 0 {
+				whitePawnAttackBitboard = SetBitboard(whitePawnAttackBitboard, idx(col-1, row+1))
+				blackPawnAttackBitboard = SetBitboard(blackPawnAttackBitboard, idx(col-1, row-1))
+			}
+
+			if col < 7 {
+				whitePawnAttackBitboard = SetBitboard(whitePawnAttackBitboard, idx(col+1, row+1))
+				blackPawnAttackBitboard = SetBitboard(blackPawnAttackBitboard, idx(col+1, row-1))
+			}
+
+			pawnMoves[WHITE_OFFSET][sq] = whitePawnMoveBitboard
+			pawnMoves[BLACK_OFFSET][sq] = blackPawnMoveBitboard
+			pawnAttacks[WHITE_OFFSET][sq] = whitePawnAttackBitboard
+			pawnAttacks[BLACK_OFFSET][sq] = blackPawnAttackBitboard
+		}
+	}
+	return MoveBitboards{pawnAttacks: pawnAttacks, pawnMoves: pawnMoves}
+}
+
 func createMoveListing() MoveListing {
 	listing := MoveListing{}
 	listing.moves = make([]Move, 0)
