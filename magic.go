@@ -93,33 +93,33 @@ func RookMoveBoard(sq byte, occupancies uint64) uint64 {
 	row := sq / 8
 
 	var bitboard uint64
-	for wcol := col - 1; wcol > 0 && wcol < 8; wcol-- {
+	for wcol := col - 1; wcol >= 0 && wcol < 8; wcol-- {
 		sq := row*8 + wcol
+		bitboard = SetBitboard(bitboard, sq)
 		if IsBitboardSet(occupancies, sq) {
 			break
 		}
-		bitboard = SetBitboard(bitboard, sq)
 	}
-	for ecol := col + 1; ecol < 7; ecol++ {
+	for ecol := col + 1; ecol < 8; ecol++ {
 		sq := row*8 + ecol
+		bitboard = SetBitboard(bitboard, sq)
 		if IsBitboardSet(occupancies, sq) {
 			break
 		}
-		bitboard = SetBitboard(bitboard, sq)
 	}
-	for nrow := row + 1; nrow < 7; nrow++ {
+	for nrow := row + 1; nrow < 8; nrow++ {
 		sq := nrow*8 + col
+		bitboard = SetBitboard(bitboard, sq)
 		if IsBitboardSet(occupancies, sq) {
 			break
 		}
-		bitboard = SetBitboard(bitboard, sq)
 	}
-	for srow := row - 1; srow > 0 && srow < 8; srow-- {
+	for srow := row - 1; srow >= 0 && srow < 8; srow-- {
 		sq := srow*8 + col
+		bitboard = SetBitboard(bitboard, sq)
 		if IsBitboardSet(occupancies, sq) {
 			break
 		}
-		bitboard = SetBitboard(bitboard, sq)
 	}
 
 	return bitboard
@@ -151,34 +151,33 @@ func BishopMoveBoard(sq byte, occupancies uint64) uint64 {
 	row := sq / 8
 
 	var bitboard uint64
-	for wcol, nrow := col-1, row+1; wcol > 0 && wcol < 8 && nrow < 7; wcol, nrow = wcol-1, nrow+1 {
+	for wcol, nrow := col-1, row+1; wcol >= 0 && wcol < 8 && nrow < 8; wcol, nrow = wcol-1, nrow+1 {
 		sq := nrow*8 + wcol
-		if IsBitboardSet(occupancies, sq) {
-			break
-		}
 		bitboard = SetBitboard(bitboard, nrow*8+wcol)
+		if IsBitboardSet(occupancies, sq) {
+			break
+		}
 	}
-	for ecol, nrow := col+1, row+1; ecol < 7 && nrow < 7; ecol, nrow = ecol+1, nrow+1 {
+	for ecol, nrow := col+1, row+1; ecol < 8 && nrow < 8; ecol, nrow = ecol+1, nrow+1 {
 		sq := nrow*8 + ecol
+		bitboard = SetBitboard(bitboard, sq)
 		if IsBitboardSet(occupancies, sq) {
 			break
 		}
-		bitboard = SetBitboard(bitboard, sq)
 	}
-	for wcol, srow := col-1, row-1; wcol > 0 && wcol < 8 && srow > 0 && srow < 8; wcol, srow = wcol-1, srow-1 {
+	for wcol, srow := col-1, row-1; wcol >= 0 && wcol < 8 && srow >= 0 && srow < 8; wcol, srow = wcol-1, srow-1 {
 		sq := srow*8 + wcol
+		bitboard = SetBitboard(bitboard, sq)
 		if IsBitboardSet(occupancies, sq) {
 			break
 		}
-		bitboard = SetBitboard(bitboard, sq)
 	}
-	for ecol, srow := col+1, row-1; ecol < 7 && srow > 0 && srow < 8; ecol, srow = ecol+1, srow-1 {
+	for ecol, srow := col+1, row-1; ecol < 8 && srow >= 0 && srow < 8; ecol, srow = ecol+1, srow-1 {
 		sq := srow*8 + ecol
+		bitboard = SetBitboard(bitboard, sq)
 		if IsBitboardSet(occupancies, sq) {
 			break
 		}
-
-		bitboard = SetBitboard(bitboard, sq)
 	}
 
 	return bitboard
@@ -339,11 +338,18 @@ func GenerateMagicBitboards() error {
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
 			sq := idx(col, row)
-			rookMagic, _ := GenerateRookMagic(idx(col, row), r)
-			bishopMagic, _ := GenerateBishopMagic(idx(col, row), r)
+			rookMagic, rookIterations := GenerateRookMagic(idx(col, row), r)
+			bishopMagic, bishopIterations := GenerateBishopMagic(idx(col, row), r)
 
 			rookMagics[sq] = rookMagic
 			bishopMagics[sq] = bishopMagic
+
+			fmt.Printf("[%d] rook=%d (%d iterations), bishop = %d (%d iterations)\n",
+				sq,
+				rookMagic.Magic,
+				rookIterations,
+				bishopMagic.Magic,
+				bishopIterations)
 		}
 	}
 
@@ -359,15 +365,15 @@ func GenerateMagicBitboards() error {
 }
 
 func GenerateSlidingMoves(rookMagics map[byte]Magic, bishopMagics map[byte]Magic) {
-	rookMoves := make(map[uint64][]Move, 0)
-	bishopMoves := make(map[uint64][]Move, 0)
+	rookMoves := make(map[byte]map[uint64][]Move, 0)
+	bishopMoves := make(map[byte]map[uint64][]Move, 0)
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
 			sq := idx(col, row)
 
-			GenerateRookSlidingMoves(sq, rookMagics[sq], rookMoves)
-			GenerateBishopSlidingMoves(sq, bishopMagics[sq], bishopMoves)
+			GenerateRookSlidingMoves(sq, rookMagics[sq], rookMoves[sq])
+			GenerateBishopSlidingMoves(sq, bishopMagics[sq], bishopMoves[sq])
 			// for all occupancies (including with pieces on the edges)
 			// mask occupancy with NON_EDGE_MASK, multiply by magic value
 			// generate to/from moves
@@ -379,8 +385,7 @@ func GenerateSlidingMoves(rookMagics map[byte]Magic, bishopMagics map[byte]Magic
 func GenerateRookSlidingMoves(sq byte, magic Magic, moves map[uint64][]Move) {
 	occupancies := GenerateRookOccupancies(sq, true)
 	for _, occupancy := range occupancies {
-		mask := RookMask(sq)
-		key := ((occupancy & mask) * magic.Magic) >> (64 - magic.Bits)
+		key := ((occupancy & magic.Mask) * magic.Magic) >> (64 - magic.Bits)
 		moves[key] = createMovesFromBoard(sq, RookMoveBoard(sq, occupancy))
 	}
 }
@@ -388,8 +393,7 @@ func GenerateRookSlidingMoves(sq byte, magic Magic, moves map[uint64][]Move) {
 func GenerateBishopSlidingMoves(sq byte, magic Magic, moves map[uint64][]Move) {
 	occupancies := GenerateBishopOccupancies(sq, true)
 	for _, occupancy := range occupancies {
-		mask := BishopMask(sq)
-		key := ((occupancy & mask) * magic.Magic) >> (64 - magic.Bits)
+		key := ((occupancy & magic.Mask) * magic.Magic) >> (64 - magic.Bits)
 		moves[key] = createMovesFromBoard(sq, BishopMoveBoard(sq, occupancy))
 	}
 }
