@@ -10,9 +10,18 @@ const QUEEN_MASK byte = 0x05
 const KING_MASK byte = 0x06
 const BLACK_MASK byte = 0x80
 const WHITE_MASK byte = 0x40
+
+// Bitboard constants
 const WHITE_OFFSET int = 0
 const BLACK_OFFSET int = 1
+const BITBOARD_PAWN_OFFSET = 1
+const BITBOARD_KNIGHT_OFFSET = 2
+const BITBOARD_BISHOP_OFFSET = 3
+const BITBOARD_ROOK_OFFSET = 4
+const BITBOARD_QUEEN_OFFSET = 5
+const BITBOARD_KING_OFFSET = 6
 
+// Legacy squares for mailbox board representation.  Remove once bitboards complete
 const SQUARE_A1 byte = 21
 const SQUARE_B1 byte = 22
 const SQUARE_C1 byte = 23
