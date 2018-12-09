@@ -15,8 +15,10 @@ type CollisionEntry struct {
 }
 
 type Magic struct {
-	Magic uint64 `json:magic`
-	Sq    byte   `json:sq`
+	Magic uint64 `json:"magic"`
+	Sq    byte   `json:"sq"`
+	Bits  uint   `json:"bits"`
+	Mask  uint64 `json:"mask"`
 }
 
 const (
@@ -256,8 +258,9 @@ func GenerateBishopOccupancies(sq byte, includeEdges bool) []uint64 {
 	return occupancies
 }
 
-func GenerateRookMagic(sq byte, r *rand.Rand) (uint64, int) {
-	numBits := bits.OnesCount64(RookMask(sq))
+func GenerateRookMagic(sq byte, r *rand.Rand) (Magic, int) {
+	mask := RookMask(sq)
+	numBits := uint(bits.OnesCount64(mask))
 	occupancies := GenerateRookOccupancies(sq, false)
 
 	occupancyMoves := make(map[uint64]uint64)
@@ -265,11 +268,13 @@ func GenerateRookMagic(sq byte, r *rand.Rand) (uint64, int) {
 		occupancyMoves[occupancy] = RookMoveBoard(sq, occupancy)
 	}
 
-	return TrialAndErrorMagic(sq, r, numBits, occupancies, occupancyMoves)
+	magicNumber, iterations := TrialAndErrorMagic(sq, r, numBits, occupancies, occupancyMoves)
+	return Magic{Magic: magicNumber, Bits: numBits, Mask: mask, Sq: sq}, iterations
 }
 
-func GenerateBishopMagic(sq byte, r *rand.Rand) (uint64, int) {
-	numBits := bits.OnesCount64(BishopMask(sq))
+func GenerateBishopMagic(sq byte, r *rand.Rand) (Magic, int) {
+	mask := BishopMask(sq)
+	numBits := uint(bits.OnesCount64(mask))
 	occupancies := GenerateBishopOccupancies(sq, false)
 
 	occupancyMoves := make(map[uint64]uint64)
@@ -277,13 +282,14 @@ func GenerateBishopMagic(sq byte, r *rand.Rand) (uint64, int) {
 		occupancyMoves[occupancy] = BishopMoveBoard(sq, occupancy)
 	}
 
-	return TrialAndErrorMagic(sq, r, numBits, occupancies, occupancyMoves)
+	magicNumber, iterations := TrialAndErrorMagic(sq, r, numBits, occupancies, occupancyMoves)
+	return Magic{Magic: magicNumber, Bits: numBits, Mask: mask, Sq: sq}, iterations
 }
 
 func TrialAndErrorMagic(
 	sq byte,
 	r *rand.Rand,
-	numBits int,
+	numBits uint,
 	occupancies []uint64,
 	occupancyMoves map[uint64]uint64,
 ) (uint64, int) {
@@ -336,8 +342,8 @@ func GenerateMagicBitboards() error {
 			rookMagic, _ := GenerateRookMagic(idx(col, row), r)
 			bishopMagic, _ := GenerateBishopMagic(idx(col, row), r)
 
-			rookMagics[sq] = Magic{Sq: sq, Magic: rookMagic}
-			bishopMagics[sq] = Magic{Sq: sq, Magic: bishopMagic}
+			rookMagics[sq] = rookMagic
+			bishopMagics[sq] = bishopMagic
 		}
 	}
 
@@ -353,18 +359,49 @@ func GenerateMagicBitboards() error {
 }
 
 func GenerateSlidingMoves(rookMagics map[byte]Magic, bishopMagics map[byte]Magic) {
+	rookMoves := make(map[uint64][]Move, 0)
+	bishopMoves := make(map[uint64][]Move, 0)
+
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
 			sq := idx(col, row)
-			GenerateRookSlidingMoves(sq)
+
+			GenerateRookSlidingMoves(sq, rookMagics[sq], rookMoves)
+			GenerateBishopSlidingMoves(sq, bishopMagics[sq], bishopMoves)
 			// for all occupancies (including with pieces on the edges)
-			//
+			// mask occupancy with NON_EDGE_MASK, multiply by magic value
+			// generate to/from moves
+			// TODO: how do captures work here (?)
 		}
 	}
 }
 
-func GenerateRookSlidingMoves(sq byte) {
+func GenerateRookSlidingMoves(sq byte, magic Magic, moves map[uint64][]Move) {
+	occupancies := GenerateRookOccupancies(sq, true)
+	for _, occupancy := range occupancies {
+		mask := RookMask(sq)
+		key := ((occupancy & mask) * magic.Magic) >> (64 - magic.Bits)
+		moves[key] = createMovesFromBoard(sq, RookMoveBoard(sq, occupancy))
+	}
+}
 
+func GenerateBishopSlidingMoves(sq byte, magic Magic, moves map[uint64][]Move) {
+	occupancies := GenerateBishopOccupancies(sq, true)
+	for _, occupancy := range occupancies {
+		mask := BishopMask(sq)
+		key := ((occupancy & mask) * magic.Magic) >> (64 - magic.Bits)
+		moves[key] = createMovesFromBoard(sq, BishopMoveBoard(sq, occupancy))
+	}
+}
+
+func createMovesFromBoard(sq byte, moveBoard uint64) []Move {
+	moves := make([]Move, 0)
+	for destSq := byte(0); destSq < 64; destSq++ {
+		if IsBitboardSet(moveBoard, destSq) {
+			moves = append(moves, CreateMove(sq, destSq))
+		}
+	}
+	return moves
 }
 
 func outputMagicFile(magics map[byte]Magic, filename string) error {
@@ -379,6 +416,18 @@ func outputMagicFile(magics map[byte]Magic, filename string) error {
 	fmt.Printf("Wrote magic numbers to %s\n", filename)
 
 	return nil
+}
+
+func inputMagicFile(filename string) (map[byte]Magic, error) {
+	b, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	var magics map[byte]Magic
+	json.Unmarshal(b, &magics)
+
+	return magics, nil
 }
 
 func idx(col byte, row byte) byte {
