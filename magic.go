@@ -385,7 +385,7 @@ func GenerateSlidingMoves(rookMagics map[byte]Magic, bishopMagics map[byte]Magic
 func GenerateRookSlidingMoves(sq byte, magic Magic, moves map[uint16][]Move) {
 	occupancies := GenerateRookOccupancies(sq, true)
 	for _, occupancy := range occupancies {
-		key := uint16(((occupancy & magic.Mask) * magic.Magic) >> (64 - magic.Bits))
+		key := hashKey(occupancy, magic)
 		moves[key] = createMovesFromBoard(sq, RookMoveBoard(sq, occupancy))
 	}
 }
@@ -393,9 +393,13 @@ func GenerateRookSlidingMoves(sq byte, magic Magic, moves map[uint16][]Move) {
 func GenerateBishopSlidingMoves(sq byte, magic Magic, moves map[uint16][]Move) {
 	occupancies := GenerateBishopOccupancies(sq, true)
 	for _, occupancy := range occupancies {
-		key := uint16(((occupancy & magic.Mask) * magic.Magic) >> (64 - magic.Bits))
+		key := hashKey(occupancy, magic)
 		moves[key] = createMovesFromBoard(sq, BishopMoveBoard(sq, occupancy))
 	}
+}
+
+func hashKey(occupancy uint64, magic Magic) uint16 {
+	return uint16(((occupancy & magic.Mask) * magic.Magic) >> (64 - magic.Bits))
 }
 
 func createMovesFromBoard(sq byte, moveBoard uint64) []Move {
