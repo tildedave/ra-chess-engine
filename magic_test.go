@@ -103,7 +103,7 @@ func TestGenerateRookSlidingMoves(t *testing.T) {
 	bitboard = SetBitboard(bitboard, BB_SQUARE_A5)
 	bitboard = SetBitboard(bitboard, BB_SQUARE_G1)
 
-	key := uint16(((bitboard & a1Magic.Mask) * a1Magic.Magic) >> (64 - a1Magic.Bits))
+	key := hashKey(bitboard, a1Magic)
 	assert.Equal(t, 10, len(moves[key]))
 	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_A2)
 	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_A3)
@@ -122,7 +122,7 @@ func TestGenerateRookSlidingMoves(t *testing.T) {
 
 	bitboard = 0
 	bitboard = SetBitboard(bitboard, BB_SQUARE_D2)
-	key = uint16(((bitboard & d3Magic.Mask) * d3Magic.Magic) >> (64 - d3Magic.Bits))
+	key = hashKey(bitboard, d3Magic)
 	assert.Equal(t, 13, len(moves[key]))
 
 	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D2)
@@ -149,7 +149,7 @@ func TestGenerateBishopSlidingMoves(t *testing.T) {
 	bitboard = SetBitboard(bitboard, BB_SQUARE_F1)
 	bitboard = SetBitboard(bitboard, BB_SQUARE_G6)
 
-	key := uint16(((bitboard & d3Magic.Mask) * d3Magic.Magic) >> (64 - d3Magic.Bits))
+	key := hashKey(bitboard, d3Magic)
 	assert.Equal(t, 9, len(moves[key]))
 
 	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_E2)
