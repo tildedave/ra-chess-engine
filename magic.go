@@ -298,14 +298,14 @@ func TrialAndErrorMagic(
 TrialAndError:
 	for {
 		// try candidates until one of them is
-		collisionMap := make(map[uint]CollisionEntry)
+		collisionMap := make(map[uint16]CollisionEntry)
 		// overly bias zeros in the candidate - trick from https://github.com/goutham/magic-bits
 		candidate = r.Uint64() & r.Uint64() & r.Uint64()
 		total++
 
 		collision := false
 		for _, occupancy := range occupancies {
-			hashKey := uint((occupancy * candidate) >> uint(64-numBits))
+			hashKey := uint16((occupancy * candidate) >> uint(64-numBits))
 			moveBoard := occupancyMoves[occupancy]
 
 			if !collisionMap[hashKey].set {
@@ -365,8 +365,8 @@ func GenerateMagicBitboards() error {
 }
 
 func GenerateSlidingMoves(rookMagics map[byte]Magic, bishopMagics map[byte]Magic) {
-	rookMoves := make(map[byte]map[uint64][]Move, 0)
-	bishopMoves := make(map[byte]map[uint64][]Move, 0)
+	rookMoves := make(map[byte]map[uint16][]Move, 0)
+	bishopMoves := make(map[byte]map[uint16][]Move, 0)
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
@@ -382,18 +382,18 @@ func GenerateSlidingMoves(rookMagics map[byte]Magic, bishopMagics map[byte]Magic
 	}
 }
 
-func GenerateRookSlidingMoves(sq byte, magic Magic, moves map[uint64][]Move) {
+func GenerateRookSlidingMoves(sq byte, magic Magic, moves map[uint16][]Move) {
 	occupancies := GenerateRookOccupancies(sq, true)
 	for _, occupancy := range occupancies {
-		key := ((occupancy & magic.Mask) * magic.Magic) >> (64 - magic.Bits)
+		key := uint16(((occupancy & magic.Mask) * magic.Magic) >> (64 - magic.Bits))
 		moves[key] = createMovesFromBoard(sq, RookMoveBoard(sq, occupancy))
 	}
 }
 
-func GenerateBishopSlidingMoves(sq byte, magic Magic, moves map[uint64][]Move) {
+func GenerateBishopSlidingMoves(sq byte, magic Magic, moves map[uint16][]Move) {
 	occupancies := GenerateBishopOccupancies(sq, true)
 	for _, occupancy := range occupancies {
-		key := ((occupancy & magic.Mask) * magic.Magic) >> (64 - magic.Bits)
+		key := uint16(((occupancy & magic.Mask) * magic.Magic) >> (64 - magic.Bits))
 		moves[key] = createMovesFromBoard(sq, BishopMoveBoard(sq, occupancy))
 	}
 }
