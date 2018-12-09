@@ -2,8 +2,9 @@ package main
 
 import (
 	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
+
+	"github.com/stretchr/testify/assert"
 )
 
 var _ = fmt.Println
@@ -140,4 +141,16 @@ func TestEnPassantCaptureFromPawn(t *testing.T) {
 
 	assert.Equal(t, 2, len(moves))
 	assert.Equal(t, 1, len(filterCaptures(moves)))
+}
+
+func TestCreateMoveBitboards(t *testing.T) {
+	moveBitboards := CreateMoveBitboards()
+	assert.Equal(t, uint64(0x2020000), moveBitboards.pawnMoves[WHITE_OFFSET][BB_SQUARE_B2])
+	assert.Equal(t, uint64(0x50000), moveBitboards.pawnAttacks[WHITE_OFFSET][BB_SQUARE_B2])
+
+	assert.Equal(t, uint64(0x1000000), moveBitboards.pawnMoves[WHITE_OFFSET][BB_SQUARE_A3])
+	assert.Equal(t, uint64(0x2000000), moveBitboards.pawnAttacks[WHITE_OFFSET][BB_SQUARE_A3])
+
+	assert.Equal(t, uint64(0x80800000), moveBitboards.pawnMoves[WHITE_OFFSET][BB_SQUARE_H2])
+	assert.Equal(t, uint64(0x400000), moveBitboards.pawnAttacks[WHITE_OFFSET][BB_SQUARE_H2])
 }
