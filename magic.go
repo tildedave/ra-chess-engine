@@ -1,11 +1,22 @@
 package main
 
 import (
-	"fmt"
+	"encoding/json"
+	"io/ioutil"
 	"math/bits"
 	"math/rand"
 	"time"
 )
+
+type CollisionEntry struct {
+	set       bool
+	moveBoard uint64
+}
+
+type Magic struct {
+	Magic uint64 `json:magic`
+	Sq    byte   `json:sq`
+}
 
 const (
 	NORTH      = iota
@@ -197,11 +208,6 @@ func GenerateRookOccupancies(sq byte) []uint64 {
 	return occupancies
 }
 
-type CollisionEntry struct {
-	set       bool
-	moveBoard uint64
-}
-
 func GenerateRookMagic(sq byte, r *rand.Rand) (uint64, int) {
 	numBits := bits.OnesCount64(RookMask(sq))
 	occupancies := GenerateRookOccupancies(sq)
@@ -265,57 +271,40 @@ TrialAndError:
 	return candidate, total
 }
 
-func GenerateMagicBitboards() {
+func GenerateMagicBitboards() error {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+	rookMagics := make([]Magic, 64)
+	bishopMagics := make([]Magic, 64)
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
-			// choose a random number, see if it's magic
-			rookMagic, rookIterations := GenerateRookMagic(col+row*8, r)
-			bishopMagic, bishopIterations := GenerateBishopMagic(col+row*8, r)
-			fmt.Printf("Number %d is rook magic for square %d (%d iterations)\n", rookMagic, col+row*8, rookIterations)
-			fmt.Printf("Number %d is bishop magic for square %d (%d iterations)\n", bishopMagic, col+row*8, bishopIterations)
-			// for i := 0; i < row -
-			// b := FollowRay(row, col, NORTH)
-			// combos := AllCombinations()
-			// fmt.Println("combos")
-			// fmt.Println(len(combos))
-			// for _, b := range combos {
-			// 	fmt.Println(BitboardToString(b))
-			// }
-			// // go in all four directions
-			// for down := 0; int(row)-down >= 0; down++ {
-			// 	for up := 0; int(row)+up < 8; up++ {
-			// 		for left := 0; int(col)-left >= 0; left++ {
-			// 			for right := 0; int(col)+right <= 8; right++ {
+			sq := idx(col, row)
+			rookMagic, _ := GenerateRookMagic(idx(col, row), r)
+			bishopMagic, _ := GenerateBishopMagic(idx(col, row), r)
 
-			// 				// up/down/left/right is the bounding box
-
-			// 				combinationsDown := 1<<uint(row) - down
-			// 				combinationsUp := 8 - (1<<uint(row) + up)
-
-			// 				fmt.Printf("start: %d, up: %d (%d) down: %d (%d) left: %d right: %d\n",
-			// 					row*8+col,
-			// 					up,
-			// 					combinationsUp,
-			// 					down,
-			// 					combinationsDown,
-			// 					left,
-			// 					right)
-
-			// 				var bitboard uint64
-			// 				bitboard = SetBitboard(bitboard, idx(col-byte(left), row))
-			// 				bitboard = SetBitboard(bitboard, idx(col+byte(right), row))
-			// 				bitboard = SetBitboard(bitboard, idx(col, row-byte(down)))
-			// 				bitboard = SetBitboard(bitboard, idx(col, row+byte(up)))
-			// 				fmt.Println(bitboard)
-			// 				fmt.Println(BitboardToString(bitboard))
-			// 			}
-			// 		}
-			// 	}
-			// }
+			rookMagics[sq] = Magic{Sq: sq, Magic: rookMagic}
+			bishopMagics[sq] = Magic{Sq: sq, Magic: bishopMagic}
 		}
 	}
+
+	rookMagicJSON, err := json.Marshal(rookMagics)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile("rook-magics.json", rookMagicJSON, 0644)
+	if err != nil {
+		return err
+	}
+	bishopMagicJSON, err := json.Marshal(bishopMagics)
+	if err != nil {
+		return err
+	}
+	err = ioutil.WriteFile("bishop-magics.json", bishopMagicJSON, 0644)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
 
 func idx(col byte, row byte) byte {
