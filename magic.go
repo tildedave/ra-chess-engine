@@ -186,25 +186,22 @@ func GenerateRookOccupancies(sq byte, includeEdges bool) []uint64 {
 	col := sq % 8
 	row := sq / 8
 	occupancies := make([]uint64, 0)
-	// var offset uint = 1
-	// if includeEdges {
-	// 	offset = 0
-	// }
 
 	above := 8 - int(row) - 1
 	below := int(row)
-	west := col
+	west := int(col)
 	east := 8 - int(col) - 1
-	fmt.Println(above)
-	fmt.Println(below)
-	fmt.Println(west)
-	fmt.Println(east)
+	if !includeEdges {
+		above = Max(above-1, 0)
+		below = Max(below-1, 0)
+		west = Max(west-1, 0)
+		east = Max(east-1, 0)
+	}
 
-	for i := 0; i < 1<<(uint(above)-1); i++ {
-		for j := 0; j < 1<<(uint(below)-1); j++ {
-			for k := 0; k < 1<<(uint(west)-1); k++ {
-				for l := 0; l < 1<<(uint(east)-1); l++ {
-					fmt.Println("hi")
+	for i := 0; i < 1<<uint(above); i++ {
+		for j := 0; j < 1<<uint(below); j++ {
+			for k := 0; k < 1<<uint(west); k++ {
+				for l := 0; l < 1<<uint(east); l++ {
 					var bitboard uint64
 					bitboard = FollowRay(bitboard, col, row, NORTH, i)
 					bitboard = FollowRay(bitboard, col, row, SOUTH, j)
@@ -219,36 +216,37 @@ func GenerateRookOccupancies(sq byte, includeEdges bool) []uint64 {
 	return occupancies
 }
 
-func min(i int, j int) int {
-	if i < j {
-		return i
-	}
-
-	return j
-}
-
 func GenerateBishopOccupancies(sq byte, includeEdges bool) []uint64 {
 	col := sq % 8
 	row := sq / 8
 	occupancies := make([]uint64, 0)
-	var offset uint = 1
-	if includeEdges {
-		offset = 0
-	}
 
 	above := 8 - int(row) - 1
 	below := int(row)
-	west := col
+	west := int(col)
 	east := 8 - int(col) - 1
-	for i := 0; i < 1<<(uint(above)-offset); i++ {
-		for j := 0; j < 1<<(uint(below)-offset); j++ {
-			for k := 0; k < 1<<(uint(west)-offset); k++ {
-				for l := 0; l < 1<<(uint(east)-offset); l++ {
+
+	northWest := Min(above, west)
+	northEast := Min(above, east)
+	southWest := Min(below, west)
+	southEast := Min(below, east)
+
+	if !includeEdges {
+		northWest = Max(northWest-1, 0)
+		northEast = Max(northEast-1, 0)
+		southWest = Max(southWest-1, 0)
+		southEast = Max(southEast-1, 0)
+	}
+
+	for i := 0; i < 1<<uint(northWest); i++ {
+		for j := 0; j < 1<<uint(northEast); j++ {
+			for k := 0; k < 1<<uint(southWest); k++ {
+				for l := 0; l < 1<<uint(southEast); l++ {
 					var bitboard uint64
-					bitboard = FollowRay(bitboard, col, row, NORTH_WEST, min(i, k))
-					bitboard = FollowRay(bitboard, col, row, NORTH_EAST, min(i, l))
-					bitboard = FollowRay(bitboard, col, row, SOUTH_WEST, min(j, k))
-					bitboard = FollowRay(bitboard, col, row, SOUTH_EAST, min(j, l))
+					bitboard = FollowRay(bitboard, col, row, NORTH_WEST, i)
+					bitboard = FollowRay(bitboard, col, row, NORTH_EAST, j)
+					bitboard = FollowRay(bitboard, col, row, SOUTH_WEST, k)
+					bitboard = FollowRay(bitboard, col, row, SOUTH_EAST, l)
 					occupancies = append(occupancies, bitboard)
 				}
 			}

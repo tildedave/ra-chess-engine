@@ -40,6 +40,23 @@ func TestBishopMoveBoard(t *testing.T) {
 	assert.Equal(t, uint64(0x400142000), BishopMoveBoard(BB_SQUARE_D4, occupancies))
 }
 
+func TestRookOccupancies(t *testing.T) {
+	assert.Equal(t, 1024, len(GenerateRookOccupancies(BB_SQUARE_D4, false)))
+	assert.Equal(t, 4096, len(GenerateRookOccupancies(BB_SQUARE_A1, false)))
+	assert.Equal(t, 4096, len(GenerateRookOccupancies(BB_SQUARE_H1, false)))
+
+	assert.Equal(t, 16384, len(GenerateRookOccupancies(BB_SQUARE_D4, true)))
+	assert.Equal(t, 16384, len(GenerateRookOccupancies(BB_SQUARE_A1, true)))
+	assert.Equal(t, 16384, len(GenerateRookOccupancies(BB_SQUARE_H1, true)))
+}
+
+func TestBishopOccupancies(t *testing.T) {
+	assert.Equal(t, 64, len(GenerateBishopOccupancies(BB_SQUARE_A1, false)))
+	assert.Equal(t, 128, len(GenerateBishopOccupancies(BB_SQUARE_A1, true)))
+	assert.Equal(t, 32, len(GenerateBishopOccupancies(BB_SQUARE_D1, false)))
+	assert.Equal(t, 128, len(GenerateBishopOccupancies(BB_SQUARE_D1, true)))
+}
+
 func TestRookMoveBoard(t *testing.T) {
 	var occupancies uint64
 	occupancies = SetBitboard(occupancies, BB_SQUARE_D1)
