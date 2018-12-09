@@ -2,6 +2,7 @@ package main
 
 import (
 	"encoding/json"
+	"fmt"
 	"io/ioutil"
 	"math/bits"
 	"math/rand"
@@ -271,6 +272,12 @@ TrialAndError:
 	return candidate, total
 }
 
+// GenerateMagicBitboards generates the magic values for both rook and bishop squares.
+// It then creates two files:
+// - rook-magics.json
+// - bishop-magics.json
+// These files will be read on engine initialization for pre-computing sliding piece moves based
+// on an occupancy map for a given square.
 func GenerateMagicBitboards() error {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
 	rookMagics := make([]Magic, 64)
@@ -287,22 +294,27 @@ func GenerateMagicBitboards() error {
 		}
 	}
 
-	rookMagicJSON, err := json.Marshal(rookMagics)
+	err := outputMagicFile(rookMagics, "rook-magics.json")
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile("rook-magics.json", rookMagicJSON, 0644)
+	err = outputMagicFile(bishopMagics, "bishop-magics.json")
 	if err != nil {
 		return err
 	}
-	bishopMagicJSON, err := json.Marshal(bishopMagics)
+	return nil
+}
+
+func outputMagicFile(magics []Magic, filename string) error {
+	magicJSON, err := json.Marshal(magics)
 	if err != nil {
 		return err
 	}
-	err = ioutil.WriteFile("bishop-magics.json", bishopMagicJSON, 0644)
+	err = ioutil.WriteFile(filename, magicJSON, 0644)
 	if err != nil {
 		return err
 	}
+	fmt.Printf("Wrote magic numbers to %s\n", filename)
 
 	return nil
 }
