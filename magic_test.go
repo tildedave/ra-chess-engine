@@ -95,7 +95,7 @@ func TestGenerateRookSlidingMoves(t *testing.T) {
 		panic(err)
 	}
 
-	moves := make(map[uint64][]Move)
+	moves := make(map[uint16][]Move)
 	a1Magic := magics[BB_SQUARE_A1]
 	GenerateRookSlidingMoves(BB_SQUARE_A1, a1Magic, moves)
 
@@ -103,7 +103,7 @@ func TestGenerateRookSlidingMoves(t *testing.T) {
 	bitboard = SetBitboard(bitboard, BB_SQUARE_A5)
 	bitboard = SetBitboard(bitboard, BB_SQUARE_G1)
 
-	key := ((bitboard & a1Magic.Mask) * a1Magic.Magic) >> (64 - a1Magic.Bits)
+	key := uint16(((bitboard & a1Magic.Mask) * a1Magic.Magic) >> (64 - a1Magic.Bits))
 	assert.Equal(t, 10, len(moves[key]))
 	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_A2)
 	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_A3)
@@ -116,13 +116,13 @@ func TestGenerateRookSlidingMoves(t *testing.T) {
 	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_F1)
 	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_G1)
 
-	moves = make(map[uint64][]Move)
+	moves = make(map[uint16][]Move)
 	d3Magic := magics[BB_SQUARE_D3]
 	GenerateRookSlidingMoves(BB_SQUARE_D3, d3Magic, moves)
 
 	bitboard = 0
 	bitboard = SetBitboard(bitboard, BB_SQUARE_D2)
-	key = ((bitboard & d3Magic.Mask) * d3Magic.Magic) >> (64 - d3Magic.Bits)
+	key = uint16(((bitboard & d3Magic.Mask) * d3Magic.Magic) >> (64 - d3Magic.Bits))
 	assert.Equal(t, 13, len(moves[key]))
 
 	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D2)
@@ -140,7 +140,7 @@ func TestGenerateBishopSlidingMoves(t *testing.T) {
 		panic(err)
 	}
 
-	moves := make(map[uint64][]Move)
+	moves := make(map[uint16][]Move)
 	d3Magic := magics[BB_SQUARE_D3]
 	GenerateBishopSlidingMoves(BB_SQUARE_D3, d3Magic, moves)
 
@@ -149,7 +149,7 @@ func TestGenerateBishopSlidingMoves(t *testing.T) {
 	bitboard = SetBitboard(bitboard, BB_SQUARE_F1)
 	bitboard = SetBitboard(bitboard, BB_SQUARE_G6)
 
-	key := ((bitboard & d3Magic.Mask) * d3Magic.Magic) >> (64 - d3Magic.Bits)
+	key := uint16(((bitboard & d3Magic.Mask) * d3Magic.Magic) >> (64 - d3Magic.Bits))
 	assert.Equal(t, 9, len(moves[key]))
 
 	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_E2)
