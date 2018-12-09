@@ -353,18 +353,32 @@ func TestWhitePawnPromotes(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_H7, WHITE_MASK|PAWN_MASK)
 	originalKey := testBoard.hashKey
 
+	// bitboard asserts
+	assert.Equal(t, SetBitboard(0, BB_SQUARE_H7), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, BB_SQUARE_H7), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_QUEEN_OFFSET])
+
 	var m = CreatePromotion(SQUARE_H7, SQUARE_H8, QUEEN_MASK)
 
 	testBoard.ApplyMove(m)
 
 	assert.Equal(t, EMPTY_SQUARE, testBoard.PieceAtSquare(SQUARE_H7))
 	assert.Equal(t, WHITE_MASK|QUEEN_MASK, testBoard.PieceAtSquare(SQUARE_H8))
+	// bitboard asserts
+	assert.Equal(t, SetBitboard(0, BB_SQUARE_H8), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, BB_SQUARE_H8), testBoard.bitboards.piece[BITBOARD_QUEEN_OFFSET])
 
 	testBoard.UnapplyMove(m)
 
 	assert.Equal(t, EMPTY_SQUARE, testBoard.PieceAtSquare(SQUARE_H8))
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_H7))
 	assert.Equal(t, originalKey, testBoard.hashKey)
+
+	// bitboard asserts
+	assert.Equal(t, SetBitboard(0, BB_SQUARE_H7), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, BB_SQUARE_H7), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_QUEEN_OFFSET])
 }
 
 func TestBlackPawnPromotes(t *testing.T) {
@@ -373,6 +387,11 @@ func TestBlackPawnPromotes(t *testing.T) {
 	testBoard.whiteToMove = false
 	originalKey := testBoard.hashKey
 
+	// bitboard asserts
+	assert.Equal(t, SetBitboard(0, BB_SQUARE_D2), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(0, BB_SQUARE_D2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+
 	var m = CreatePromotion(SQUARE_D2, SQUARE_D1, ROOK_MASK)
 
 	testBoard.ApplyMove(m)
@@ -380,11 +399,21 @@ func TestBlackPawnPromotes(t *testing.T) {
 	assert.Equal(t, EMPTY_SQUARE, testBoard.PieceAtSquare(SQUARE_D2))
 	assert.Equal(t, BLACK_MASK|ROOK_MASK, testBoard.PieceAtSquare(SQUARE_D1))
 
+	// bitboard asserts
+	assert.Equal(t, SetBitboard(0, BB_SQUARE_D1), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, BB_SQUARE_D1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+
 	testBoard.UnapplyMove(m)
 
 	assert.Equal(t, EMPTY_SQUARE, testBoard.PieceAtSquare(SQUARE_D1))
 	assert.Equal(t, BLACK_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_D2))
 	assert.Equal(t, originalKey, testBoard.hashKey)
+
+	// bitboard asserts
+	assert.Equal(t, SetBitboard(0, BB_SQUARE_D2), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(0, BB_SQUARE_D2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 }
 
 func TestEnPassantCapture(t *testing.T) {
