@@ -4,10 +4,22 @@ const BITBOARD_ALL_ONES = 0xFFFFFFFFFFFFFFFF
 const BITBOARD_ALL_ZEROS = 0
 
 type Bitboards struct {
-	// 0 = WHITE, 1 = BLACK
-	color [2]uint64
-	// 0 = unused, 1 = PAWN, 2 = KNIGHT, 3 = BISHOP, 4 = ROOK, 5 = QUEEN, 6 = KING
-	piece [7]uint64
+	color [2]uint64 // 0 = WHITE, 1 = BLACK
+	piece [7]uint64 // 0 = unused, 1 = PAWN, 2 = KNIGHT, 3 = BISHOP, 4 = ROOK, 5 = QUEEN, 6 = KING
+}
+
+func BitboardsToString(b Bitboards) string {
+	str := ""
+	str += "white:\n" + BitboardToString(b.color[0])
+	str += "black:\n" + BitboardToString(b.color[1])
+	str += "pawns:\n" + BitboardToString(b.piece[1])
+	str += "knights:\n" + BitboardToString(b.piece[2])
+	str += "bishops:\n" + BitboardToString(b.piece[3])
+	str += "rooks:\n" + BitboardToString(b.piece[4])
+	str += "queens:\n" + BitboardToString(b.piece[5])
+	str += "kings:\n" + BitboardToString(b.piece[6])
+
+	return str
 }
 
 func legacySquareToBitboardSquare(sq byte) byte {
