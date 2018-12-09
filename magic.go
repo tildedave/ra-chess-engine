@@ -203,21 +203,38 @@ type CollisionEntry struct {
 }
 
 func GenerateRookMagic(sq byte, r *rand.Rand) (uint64, int) {
-	// 2) generate blocker mask, bits count is the # of things we shift the result by
-	// 3) generate list of all occupancies
-
-	blockerMask := RookMask(sq)
-	numBits := bits.OnesCount64(blockerMask)
+	numBits := bits.OnesCount64(RookMask(sq))
 	occupancies := GenerateRookOccupancies(sq)
-
-	total := 0
 
 	occupancyMoves := make(map[uint64]uint64)
 	for _, occupancy := range occupancies {
 		occupancyMoves[occupancy] = RookMoveBoard(sq, occupancy)
 	}
 
+	return TrialAndErrorMagic(sq, r, numBits, occupancies, occupancyMoves)
+}
+
+func GenerateBishopMagic(sq byte, r *rand.Rand) (uint64, int) {
+	numBits := bits.OnesCount64(BishopMask(sq))
+	occupancies := GenerateRookOccupancies(sq)
+
+	occupancyMoves := make(map[uint64]uint64)
+	for _, occupancy := range occupancies {
+		occupancyMoves[occupancy] = BishopMoveBoard(sq, occupancy)
+	}
+
+	return TrialAndErrorMagic(sq, r, numBits, occupancies, occupancyMoves)
+}
+
+func TrialAndErrorMagic(
+	sq byte,
+	r *rand.Rand,
+	numBits int,
+	occupancies []uint64,
+	occupancyMoves map[uint64]uint64,
+) (uint64, int) {
 	var candidate uint64
+	total := 0
 
 TrialAndError:
 	for {
@@ -254,8 +271,10 @@ func GenerateMagicBitboards() {
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
 			// choose a random number, see if it's magic
-			magic, iterations := GenerateRookMagic(col+row*8, r)
-			fmt.Printf("Number %d is magic for square %d (%d iterations)\n", magic, col+row*8, iterations)
+			rookMagic, rookIterations := GenerateRookMagic(col+row*8, r)
+			bishopMagic, bishopIterations := GenerateBishopMagic(col+row*8, r)
+			fmt.Printf("Number %d is rook magic for square %d (%d iterations)\n", rookMagic, col+row*8, rookIterations)
+			fmt.Printf("Number %d is bishop magic for square %d (%d iterations)\n", bishopMagic, col+row*8, bishopIterations)
 			// for i := 0; i < row -
 			// b := FollowRay(row, col, NORTH)
 			// combos := AllCombinations()
