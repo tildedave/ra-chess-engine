@@ -167,7 +167,17 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			}
 
 			if move.IsPromotion() {
-				boardState.board[move.to] = move.GetPromotionPiece() | whiteToMoveToColorMask(boardState.whiteToMove)
+				promotionPiece := move.GetPromotionPiece()
+				boardState.board[move.to] = promotionPiece | whiteToMoveToColorMask(boardState.whiteToMove)
+
+				boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = UnsetBitboard(
+					boardState.bitboards.piece[BITBOARD_PAWN_OFFSET],
+					legacySquareToBitboardSquare(move.to))
+
+				offset := promotionPiece & 0x0F
+				boardState.bitboards.piece[offset] = SetBitboard(
+					boardState.bitboards.piece[offset],
+					legacySquareToBitboardSquare(move.to))
 			}
 		}
 	}
@@ -358,6 +368,15 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			mask = BLACK_MASK
 		}
 		boardState.board[move.from] = mask | PAWN_MASK
+
+		boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = SetBitboard(
+			boardState.bitboards.piece[BITBOARD_PAWN_OFFSET],
+			legacySquareToBitboardSquare(move.from))
+
+		offset := move.GetPromotionPiece() & 0x0F
+		boardState.bitboards.piece[offset] = UnsetBitboard(
+			boardState.bitboards.piece[offset],
+			legacySquareToBitboardSquare(move.from))
 	}
 
 	boardState.hashKey = boardState.UpdateHashUnapplyMove(boardState.hashKey, oldBoardInfo, move)
