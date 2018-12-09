@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"math/bits"
 	"testing"
 
@@ -64,5 +65,22 @@ func TestRookMoveBoard(t *testing.T) {
 	occupancies = SetBitboard(occupancies, BB_SQUARE_D6)
 
 	assert.Equal(t, uint64(0x808360800), RookMoveBoard(BB_SQUARE_D3, occupancies))
+}
 
+func TestGenerateRookSlidingMoves(t *testing.T) {
+	magics, err := inputMagicFile("rook-magics.json")
+	if err != nil {
+		panic(err)
+	}
+
+	moves := make(map[uint64][]Move)
+	a1Magic := magics[BB_SQUARE_A1]
+	GenerateRookSlidingMoves(BB_SQUARE_A1, a1Magic, moves)
+
+	var bitboard uint64
+	bitboard = SetBitboard(bitboard, BB_SQUARE_A5)
+	bitboard = SetBitboard(bitboard, BB_SQUARE_G1)
+
+	key := ((bitboard & RookMask(BB_SQUARE_A1)) * a1Magic.Magic) >> (64 - a1Magic.Bits)
+	fmt.Println(moves[key])
 }
