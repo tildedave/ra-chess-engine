@@ -2,6 +2,9 @@ package main
 
 import (
 	"fmt"
+	"math/bits"
+	"math/rand"
+	"time"
 )
 
 const (
@@ -167,31 +170,93 @@ func BishopMoveBoard(sq byte, occupancies uint64) uint64 {
 	return bitboard
 }
 
-func GenerateMagicBitboards() {
-	// generate all occupancies
+func GenerateRookOccupancies(sq byte) []uint64 {
+	col := sq % 8
+	row := sq / 8
+	occupancies := make([]uint64, 0)
 
-	for col := byte(0); col < 8; col++ {
-		for row := byte(0); row < 8; row++ {
-			fmt.Printf("Current sq: %d\n", col+row*8)
-			above := 8 - int(row) - 1
-			below := int(row)
-			west := col
-			east := 8 - int(col) - 1
-			fmt.Printf("above: %d, below: %d, west: %d, east: %d\n", above, below, west, east)
-			for i := 0; i < 1<<uint(above); i++ {
-				for j := 0; j < 1<<uint(below); j++ {
-					for k := 0; k < 1<<uint(west); k++ {
-						for l := 0; l < 1<<uint(east); l++ {
-							var bitboard uint64
-							bitboard = FollowRay(bitboard, col, row, NORTH, i)
-							bitboard = FollowRay(bitboard, col, row, SOUTH, j)
-							bitboard = FollowRay(bitboard, col, row, WEST, k)
-							bitboard = FollowRay(bitboard, col, row, EAST, l)
-							fmt.Println(BitboardToString(bitboard))
-						}
-					}
+	above := 8 - int(row) - 1
+	below := int(row)
+	west := col
+	east := 8 - int(col) - 1
+	for i := 0; i < 1<<(uint(above)-1); i++ {
+		for j := 0; j < 1<<(uint(below)-1); j++ {
+			for k := 0; k < 1<<(uint(west)-1); k++ {
+				for l := 0; l < 1<<(uint(east)-1); l++ {
+					var bitboard uint64
+					bitboard = FollowRay(bitboard, col, row, NORTH, i)
+					bitboard = FollowRay(bitboard, col, row, SOUTH, j)
+					bitboard = FollowRay(bitboard, col, row, WEST, k)
+					bitboard = FollowRay(bitboard, col, row, EAST, l)
+					occupancies = append(occupancies, bitboard)
 				}
 			}
+		}
+	}
+
+	return occupancies
+}
+
+func GenerateRookMagic(sq byte, r *rand.Rand) (uint64, int) {
+	// 1) choose magic number
+	// 2) generate blocker mask, bits count is the # of things we shift the result by
+	// 3) generate list of all occupancies
+
+	// for each occupancy, multiply by candidate and bit shift.  this gives a result
+	// if not yet set, set it to the move board
+	//
+
+	blockerMask := RookMask(sq)
+	numBits := bits.OnesCount64(blockerMask)
+	occupancies := GenerateRookOccupancies(sq)
+
+	defaultBoard := ^uint64(0)
+	total := 0
+
+	occupancyMoves := make(map[uint64]uint64)
+	for _, occupancy := range occupancies {
+		occupancyMoves[occupancy] = RookMoveBoard(sq, occupancy)
+	}
+
+	for {
+		collisionMap := make(map[uint]uint64)
+		for i := uint(0); i < 1<<uint(numBits); i++ {
+			collisionMap[i] = defaultBoard
+		}
+
+		candidate := r.Uint64() & r.Uint64() & r.Uint64()
+		total++
+
+		collision := false
+		for _, occupancy := range occupancies {
+			// result is occupancy * candidate << (64 - numBits)
+			hashKey := uint((occupancy * candidate) >> uint(64-numBits))
+			moveBoard := occupancyMoves[occupancy]
+			if collisionMap[hashKey] == defaultBoard {
+				collisionMap[hashKey] = moveBoard
+			} else {
+				otherMoveBoard := collisionMap[hashKey]
+				if moveBoard != otherMoveBoard {
+					collision = true
+					break
+				}
+			}
+		}
+
+		if !collision {
+			return candidate, total
+		}
+	}
+}
+
+func GenerateMagicBitboards() {
+	r := rand.New(rand.NewSource(time.Now().UnixNano()))
+
+	for row := byte(0); row < 8; row++ {
+		for col := byte(0); col < 8; col++ {
+			// choose a random number, see if it's magic
+			magic, iterations := GenerateRookMagic(col+row*8, r)
+			fmt.Printf("Number %d is magic for square %d (%d iterations)\n", magic, col+row*8, iterations)
 			// for i := 0; i < row -
 			// b := FollowRay(row, col, NORTH)
 			// combos := AllCombinations()
