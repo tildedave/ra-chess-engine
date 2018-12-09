@@ -280,8 +280,8 @@ TrialAndError:
 // on an occupancy map for a given square.
 func GenerateMagicBitboards() error {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	rookMagics := make([]Magic, 64)
-	bishopMagics := make([]Magic, 64)
+	rookMagics := make(map[byte]Magic, 64)
+	bishopMagics := make(map[byte]Magic, 64)
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
@@ -305,7 +305,11 @@ func GenerateMagicBitboards() error {
 	return nil
 }
 
-func outputMagicFile(magics []Magic, filename string) error {
+func GenerateSlidingMoves(rookMagics map[byte]Magic, bishopMagics map[byte]Magic) {
+
+}
+
+func outputMagicFile(magics map[byte]Magic, filename string) error {
 	magicJSON, err := json.Marshal(magics)
 	if err != nil {
 		return err
