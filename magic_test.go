@@ -8,6 +8,28 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
+func assertMovePresent(t *testing.T, moves []Move, fromSq byte, toSq byte) {
+	found := false
+	for _, move := range moves {
+		if move.from == fromSq && move.to == toSq {
+			found = true
+		}
+	}
+
+	assert.True(t, found, fmt.Sprintf("Move from=%d to=%d was not present", fromSq, toSq))
+}
+
+func assertMoveNotPresent(t *testing.T, moves []Move, fromSq byte, toSq byte) {
+	found := false
+	for _, move := range moves {
+		if move.from == fromSq && move.to == toSq {
+			found = true
+		}
+	}
+
+	assert.False(t, found, fmt.Sprintf("Move from=%d to=%d was present", fromSq, toSq))
+}
+
 func TestRookMask(t *testing.T) {
 	assert.Equal(t, uint64(0x8080876080800), RookMask(BB_SQUARE_D4))
 	assert.Equal(t, 10, bits.OnesCount64(RookMask(BB_SQUARE_D4)))
@@ -38,7 +60,7 @@ func TestBishopMoveBoard(t *testing.T) {
 	occupancies = SetBitboard(occupancies, BB_SQUARE_B6)
 	occupancies = SetBitboard(occupancies, BB_SQUARE_E5)
 
-	assert.Equal(t, uint64(0x400142000), BishopMoveBoard(BB_SQUARE_D4, occupancies))
+	assert.Equal(t, uint64(0x21400142240), BishopMoveBoard(BB_SQUARE_D4, occupancies))
 }
 
 func TestRookOccupancies(t *testing.T) {
@@ -64,7 +86,7 @@ func TestRookMoveBoard(t *testing.T) {
 	occupancies = SetBitboard(occupancies, BB_SQUARE_G3)
 	occupancies = SetBitboard(occupancies, BB_SQUARE_D6)
 
-	assert.Equal(t, uint64(0x808360800), RookMoveBoard(BB_SQUARE_D3, occupancies))
+	assert.Equal(t, uint64(0x80808770808), RookMoveBoard(BB_SQUARE_D3, occupancies))
 }
 
 func TestGenerateRookSlidingMoves(t *testing.T) {
@@ -81,6 +103,62 @@ func TestGenerateRookSlidingMoves(t *testing.T) {
 	bitboard = SetBitboard(bitboard, BB_SQUARE_A5)
 	bitboard = SetBitboard(bitboard, BB_SQUARE_G1)
 
-	key := ((bitboard & RookMask(BB_SQUARE_A1)) * a1Magic.Magic) >> (64 - a1Magic.Bits)
-	fmt.Println(moves[key])
+	key := ((bitboard & a1Magic.Mask) * a1Magic.Magic) >> (64 - a1Magic.Bits)
+	assert.Equal(t, 10, len(moves[key]))
+	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_A2)
+	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_A3)
+	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_A4)
+	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_A5)
+	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_B1)
+	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_C1)
+	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_D1)
+	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_E1)
+	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_F1)
+	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_G1)
+
+	moves = make(map[uint64][]Move)
+	d3Magic := magics[BB_SQUARE_D3]
+	GenerateRookSlidingMoves(BB_SQUARE_D3, d3Magic, moves)
+
+	bitboard = 0
+	bitboard = SetBitboard(bitboard, BB_SQUARE_D2)
+	key = ((bitboard & d3Magic.Mask) * d3Magic.Magic) >> (64 - d3Magic.Bits)
+	assert.Equal(t, 13, len(moves[key]))
+
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D2)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D4)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D5)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D6)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D7)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D8)
+	assertMoveNotPresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D1)
+}
+
+func TestGenerateBishopSlidingMoves(t *testing.T) {
+	magics, err := inputMagicFile("bishop-magics.json")
+	if err != nil {
+		panic(err)
+	}
+
+	moves := make(map[uint64][]Move)
+	d3Magic := magics[BB_SQUARE_D3]
+	GenerateBishopSlidingMoves(BB_SQUARE_D3, d3Magic, moves)
+
+	var bitboard uint64
+	bitboard = SetBitboard(bitboard, BB_SQUARE_C2)
+	bitboard = SetBitboard(bitboard, BB_SQUARE_F1)
+	bitboard = SetBitboard(bitboard, BB_SQUARE_G6)
+
+	key := ((bitboard & d3Magic.Mask) * d3Magic.Magic) >> (64 - d3Magic.Bits)
+	assert.Equal(t, 9, len(moves[key]))
+
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_E2)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_F1)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_E4)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_F5)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_G6)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_C2)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_C4)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_B5)
+	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_A6)
 }
