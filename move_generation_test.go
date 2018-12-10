@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/bits"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -143,7 +144,7 @@ func TestEnPassantCaptureFromPawn(t *testing.T) {
 	assert.Equal(t, 1, len(filterCaptures(moves)))
 }
 
-func TestCreateMoveBitboards(t *testing.T) {
+func TestCreateMoveBitboardsPawnAsserts(t *testing.T) {
 	moveBitboards := CreateMoveBitboards()
 	assert.Equal(t, uint64(0x2020000), moveBitboards.pawnMoves[WHITE_OFFSET][BB_SQUARE_B2])
 	assert.Equal(t, uint64(0x50000), moveBitboards.pawnAttacks[WHITE_OFFSET][BB_SQUARE_B2])
@@ -153,6 +154,14 @@ func TestCreateMoveBitboards(t *testing.T) {
 
 	assert.Equal(t, uint64(0x80800000), moveBitboards.pawnMoves[WHITE_OFFSET][BB_SQUARE_H2])
 	assert.Equal(t, uint64(0x400000), moveBitboards.pawnAttacks[WHITE_OFFSET][BB_SQUARE_H2])
+}
+
+func TestCreateMoveBitboardsKingAsserts(t *testing.T) {
+	moveBitboards := CreateMoveBitboards()
+
+	assert.Equal(t, 8, bits.OnesCount64(moveBitboards.kingMoves[BB_SQUARE_D4]))
+	assert.Equal(t, SetBitboard(SetBitboard(SetBitboard(0, BB_SQUARE_A2), BB_SQUARE_B2), BB_SQUARE_B1),
+		moveBitboards.kingMoves[BB_SQUARE_A1])
 }
 
 func TestCreateMovesFromBitboard(t *testing.T) {

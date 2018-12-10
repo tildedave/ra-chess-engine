@@ -15,49 +15,94 @@ type MoveListing struct {
 type MoveBitboards struct {
 	pawnMoves   [2][64]uint64
 	pawnAttacks [2][64]uint64
+	kingMoves   [64]uint64
 }
 
 func CreateMoveBitboards() MoveBitboards {
 	var pawnMoves [2][64]uint64
 	var pawnAttacks [2][64]uint64
+	var kingMoves [64]uint64
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
-			if row == 0 || row == 7 {
-				continue
-			}
 			sq := idx(col, row)
-
-			var whitePawnMoveBitboard uint64
-			var whitePawnAttackBitboard uint64
-			var blackPawnMoveBitboard uint64
-			var blackPawnAttackBitboard uint64
-
-			whitePawnMoveBitboard = SetBitboard(whitePawnMoveBitboard, idx(col, row+1))
-			blackPawnMoveBitboard = SetBitboard(blackPawnMoveBitboard, idx(col, row+1))
-			if row == 1 {
-				whitePawnMoveBitboard = SetBitboard(whitePawnMoveBitboard, idx(col, row+2))
-			} else if row == 7 {
-				blackPawnMoveBitboard = SetBitboard(blackPawnMoveBitboard, idx(col, row-2))
-			}
-
-			if col > 0 {
-				whitePawnAttackBitboard = SetBitboard(whitePawnAttackBitboard, idx(col-1, row+1))
-				blackPawnAttackBitboard = SetBitboard(blackPawnAttackBitboard, idx(col-1, row-1))
-			}
-
-			if col < 7 {
-				whitePawnAttackBitboard = SetBitboard(whitePawnAttackBitboard, idx(col+1, row+1))
-				blackPawnAttackBitboard = SetBitboard(blackPawnAttackBitboard, idx(col+1, row-1))
-			}
-
-			pawnMoves[WHITE_OFFSET][sq] = whitePawnMoveBitboard
-			pawnMoves[BLACK_OFFSET][sq] = blackPawnMoveBitboard
-			pawnAttacks[WHITE_OFFSET][sq] = whitePawnAttackBitboard
-			pawnAttacks[BLACK_OFFSET][sq] = blackPawnAttackBitboard
+			pawnMoves[WHITE_OFFSET][sq], pawnMoves[BLACK_OFFSET][sq] = createPawnMoveBitboards(col, row)
+			pawnAttacks[WHITE_OFFSET][sq], pawnAttacks[BLACK_OFFSET][sq] = createPawnAttackBitboards(col, row)
+			kingMoves[sq] = createKingBitboard(col, row)
 		}
 	}
-	return MoveBitboards{pawnAttacks: pawnAttacks, pawnMoves: pawnMoves}
+
+	return MoveBitboards{pawnAttacks: pawnAttacks, pawnMoves: pawnMoves, kingMoves: kingMoves}
+}
+
+func createKingBitboard(col byte, row byte) uint64 {
+	var kingMoveBitboard uint64
+	if row > 1 {
+		kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col, row-1))
+		if col > 1 {
+			kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col-1, row-1))
+		}
+		if col < 7 {
+			kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col+1, row-1))
+		}
+	}
+	if row < 7 {
+		kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col, row+1))
+		if col > 1 {
+			kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col-1, row+1))
+		}
+		if col < 7 {
+			kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col+1, row+1))
+		}
+	}
+	if col > 1 {
+		kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col-1, row))
+	}
+	if col < 7 {
+		kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col+1, row))
+	}
+
+	return kingMoveBitboard
+}
+
+func createPawnMoveBitboards(col byte, row byte) (uint64, uint64) {
+	if row == 0 || row == 7 {
+		return 0, 0
+	}
+
+	var whitePawnMoveBitboard uint64
+	var blackPawnMoveBitboard uint64
+
+	whitePawnMoveBitboard = SetBitboard(whitePawnMoveBitboard, idx(col, row+1))
+	blackPawnMoveBitboard = SetBitboard(blackPawnMoveBitboard, idx(col, row+1))
+	if row == 1 {
+		whitePawnMoveBitboard = SetBitboard(whitePawnMoveBitboard, idx(col, row+2))
+	} else if row == 7 {
+		blackPawnMoveBitboard = SetBitboard(blackPawnMoveBitboard, idx(col, row-2))
+	}
+
+	return whitePawnMoveBitboard, blackPawnMoveBitboard
+}
+
+func createPawnAttackBitboards(col byte, row byte) (uint64, uint64) {
+	if row == 0 || row == 7 {
+		return 0, 0
+	}
+
+	var whitePawnAttackBitboard uint64
+	var blackPawnAttackBitboard uint64
+
+	if col > 0 {
+		whitePawnAttackBitboard = SetBitboard(whitePawnAttackBitboard, idx(col-1, row+1))
+		blackPawnAttackBitboard = SetBitboard(blackPawnAttackBitboard, idx(col-1, row-1))
+	}
+
+	if col < 7 {
+		whitePawnAttackBitboard = SetBitboard(whitePawnAttackBitboard, idx(col+1, row+1))
+		blackPawnAttackBitboard = SetBitboard(blackPawnAttackBitboard, idx(col+1, row-1))
+	}
+
+	return whitePawnAttackBitboard, blackPawnAttackBitboard
 }
 
 func createMoveListing() MoveListing {
@@ -131,7 +176,6 @@ var whitePawnCaptureOffsetArr = [2]int8{9, 11}
 var blackPawnCaptureOffsetArr = [2]int8{-9, -11}
 
 func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, listing *MoveListing) {
-
 	// 8 possible directions to go (for the queen + king + knight)
 	// 4 directions for bishop + rook
 	// queen, bishop, and rook will continue along a "ray" until they find
