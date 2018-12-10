@@ -297,6 +297,7 @@ func CreateEmptyBoardState() BoardState {
 	}
 	b.halfmoveClock = 0
 	b.fullmoveNumber = 1
+	b.moveBitboards = CreateMoveBitboards()
 	generateBoardLookupInfo(&b)
 	generateZobrishHashInfo(&b)
 	generateTranspositionTable(&b)
