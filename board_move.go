@@ -153,10 +153,13 @@ func (boardState *BoardState) ApplyMove(move Move) {
 				}
 			} else if move.to == epTargetSquare {
 				var pos uint8
+				var otherOffset int
 				if boardState.whiteToMove {
 					pos = move.to - 10
+					otherOffset = BLACK_OFFSET
 				} else {
 					pos = move.to + 10
+					otherOffset = WHITE_OFFSET
 				}
 
 				// captureStack is wrong in this case (it has a 0 on it) so we need to fix it
@@ -164,6 +167,12 @@ func (boardState *BoardState) ApplyMove(move Move) {
 				boardState.captureStack.Pop()
 				boardState.captureStack.Push(boardState.board[pos])
 				boardState.board[pos] = 0x00
+				boardState.bitboards.color[otherOffset] = UnsetBitboard(
+					boardState.bitboards.color[otherOffset],
+					legacySquareToBitboardSquare(pos))
+				boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = UnsetBitboard(
+					boardState.bitboards.piece[BITBOARD_PAWN_OFFSET],
+					legacySquareToBitboardSquare(pos))
 			}
 
 			if move.IsPromotion() {
@@ -348,15 +357,31 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 	case PAWN_MASK:
 		if move.IsEnPassantCapture() {
 			var pos uint8
+			var otherOffset int
+			var offset int
 			if boardState.whiteToMove {
 				pos = move.to - 10
+				otherOffset = BLACK_OFFSET
+				offset = WHITE_OFFSET
 			} else {
 				pos = move.to + 10
+				offset = BLACK_OFFSET
+				otherOffset = WHITE_OFFSET
 			}
 
 			boardState.board[pos] = boardState.board[move.to]
 			boardState.board[move.to] = 0x00
 			boardState.boardInfo.enPassantTargetSquare = move.to
+
+			boardState.bitboards.color[offset] = SetBitboard(
+				UnsetBitboard(boardState.bitboards.color[offset], legacySquareToBitboardSquare(move.to)),
+				legacySquareToBitboardSquare(move.from))
+			boardState.bitboards.color[otherOffset] = SetBitboard(
+				UnsetBitboard(boardState.bitboards.color[otherOffset], legacySquareToBitboardSquare(move.to)),
+				legacySquareToBitboardSquare(pos))
+			boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = SetBitboard(
+				UnsetBitboard(boardState.bitboards.piece[BITBOARD_PAWN_OFFSET], legacySquareToBitboardSquare(move.to)),
+				legacySquareToBitboardSquare(pos))
 		}
 	}
 
