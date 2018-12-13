@@ -32,6 +32,13 @@ func legacySquareToBitboardSquare(sq byte) byte {
 	return row*8 + col
 }
 
+func bitboardSquareToLegacySquare(sq byte) byte {
+	var row = sq / 8
+	var col = sq % 8
+
+	return RowAndColToSquare(row, col)
+}
+
 func SetBitboard(bitboard uint64, sq byte) uint64 {
 	return (bitboard | (1 << sq))
 }

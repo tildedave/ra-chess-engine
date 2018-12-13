@@ -500,16 +500,22 @@ func ParseAlgebraicSquare(sq string) (uint8, error) {
 	return RowAndColToSquare(row, col), nil
 }
 
+func PieceToColorOffset(p byte) int {
+	switch p & 0xF0 {
+	case WHITE_MASK:
+		return WHITE_OFFSET
+	case BLACK_MASK:
+		return BLACK_OFFSET
+	default:
+		panic("Invalid piece")
+	}
+}
+
 // SetPieceAtSquare should only be used in non-performance critical places.
 func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 	boardState.board[sq] = p
-	var colorOffset int
-	switch p & 0xF0 {
-	case WHITE_MASK:
-		colorOffset = WHITE_OFFSET
-	case BLACK_MASK:
-		colorOffset = BLACK_OFFSET
-	}
+
+	colorOffset := PieceToColorOffset(p)
 	pieceOffset := p & 0x0F
 	bbSq := legacySquareToBitboardSquare(sq)
 	boardState.bitboards.color[colorOffset] = SetBitboard(boardState.bitboards.color[colorOffset], bbSq)

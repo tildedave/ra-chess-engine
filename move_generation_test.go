@@ -160,6 +160,7 @@ func TestCreateMoveBitboardsKingAsserts(t *testing.T) {
 	moveBitboards := CreateMoveBitboards()
 
 	assert.Equal(t, 8, bits.OnesCount64(moveBitboards.kingMoves[BB_SQUARE_D4]))
+	assert.Equal(t, 5, bits.OnesCount64(moveBitboards.kingMoves[BB_SQUARE_A2]))
 	assert.Equal(t, SetBitboard(SetBitboard(SetBitboard(0, BB_SQUARE_A2), BB_SQUARE_B2), BB_SQUARE_B1),
 		moveBitboards.kingMoves[BB_SQUARE_A1])
 }

@@ -37,7 +37,7 @@ func CreateMoveBitboards() MoveBitboards {
 
 func createKingBitboard(col byte, row byte) uint64 {
 	var kingMoveBitboard uint64
-	if row > 1 {
+	if row > 0 {
 		kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col, row-1))
 		if col > 1 {
 			kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col-1, row-1))
@@ -181,44 +181,67 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 	// queen, bishop, and rook will continue along a "ray" until they find
 	// a stopping point
 	// Knight = 2, Bishop = 3, Rook = 4, Queen = 5, King = 6
-	offsets := offsetArr[p&0x0F]
 
-	var captureMask byte
-	if isWhite {
-		captureMask = BLACK_MASK
+	if p&0x0F == KING_MASK {
+		bb := boardState.moveBitboards.kingMoves[legacySquareToBitboardSquare(sq)] & ^boardState.bitboards.color[PieceToColorOffset(p)]
+		moves := CreateMovesFromBitboard(sq, bb)
+
+		// eventually this will need to be done at the very end ...
+		// not sure the .moves/.captures works well for the bitboard setup.  need to think more
+
+		for i := range moves {
+			move := moves[i]
+			move.to = bitboardSquareToLegacySquare(move.to)
+
+			oppositePiece := boardState.PieceAtSquare(move.to)
+			if oppositePiece != EMPTY_SQUARE && oppositePiece&0xF0 != p&0xF0 {
+				move.flags |= CAPTURE_MASK
+				listing.captures = append(listing.captures, move)
+			} else {
+				listing.moves = append(listing.moves, move)
+			}
+		}
+		// TODO must also handle captures
 	} else {
-		captureMask = WHITE_MASK
-	}
+		offsets := offsetArr[p&0x0F]
 
-	for _, value := range offsets {
-		var dest byte = sq
-		if value == 0 {
-			continue
+		var captureMask byte
+		if isWhite {
+			captureMask = BLACK_MASK
+		} else {
+			captureMask = WHITE_MASK
 		}
 
-		// we'll continue until we have to stop
-		for true {
-			dest = uint8(int8(dest) + value)
-			destPiece := boardState.board[dest]
-
-			if destPiece == SENTINEL_MASK {
-				// stop - end of the board
-				break
-			} else if destPiece == EMPTY_SQUARE {
-				// keep moving
-				listing.moves = append(listing.moves, CreateMove(sq, dest))
-			} else {
-				if destPiece&captureMask == captureMask {
-					listing.captures = append(listing.captures, CreateCapture(sq, dest))
-				}
-
-				// stop - hit another piece or made a capture
-				break
+		for _, value := range offsets {
+			var dest byte = sq
+			if value == 0 {
+				continue
 			}
 
-			// stop - piece type only gets one move
-			if !slidingPieces[p&0x0F] {
-				break
+			// we'll continue until we have to stop
+			for true {
+				dest = uint8(int8(dest) + value)
+				destPiece := boardState.board[dest]
+
+				if destPiece == SENTINEL_MASK {
+					// stop - end of the board
+					break
+				} else if destPiece == EMPTY_SQUARE {
+					// keep moving
+					listing.moves = append(listing.moves, CreateMove(sq, dest))
+				} else {
+					if destPiece&captureMask == captureMask {
+						listing.captures = append(listing.captures, CreateCapture(sq, dest))
+					}
+
+					// stop - hit another piece or made a capture
+					break
+				}
+
+				// stop - piece type only gets one move
+				if !slidingPieces[p&0x0F] {
+					break
+				}
 			}
 		}
 	}
