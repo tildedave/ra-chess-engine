@@ -3,6 +3,8 @@ package main
 const BITBOARD_ALL_ONES = 0xFFFFFFFFFFFFFFFF
 const BITBOARD_ALL_ZEROS = 0
 
+var BITBOARD_PIECES = [6]byte{1, 2, 3, 4, 5, 6}
+
 type Bitboards struct {
 	color [2]uint64 // 0 = WHITE, 1 = BLACK
 	piece [7]uint64 // 0 = unused, 1 = PAWN, 2 = KNIGHT, 3 = BISHOP, 4 = ROOK, 5 = QUEEN, 6 = KING

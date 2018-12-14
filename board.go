@@ -526,7 +526,7 @@ func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 		for _, colorOffset := range []int{WHITE_OFFSET, BLACK_OFFSET} {
 			boardState.bitboards.color[colorOffset] = UnsetBitboard(boardState.bitboards.color[colorOffset], bbSq)
 		}
-		for pieceOffset := 2; pieceOffset < 7; pieceOffset++ {
+		for _, pieceOffset := range BITBOARD_PIECES {
 			boardState.bitboards.piece[pieceOffset] = UnsetBitboard(boardState.bitboards.piece[pieceOffset], bbSq)
 		}
 	}
