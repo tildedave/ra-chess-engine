@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"math/bits"
 	"math/rand"
 	"strconv"
@@ -507,7 +508,7 @@ func PieceToColorOffset(p byte) int {
 	case BLACK_MASK:
 		return BLACK_OFFSET
 	default:
-		panic("Invalid piece")
+		panic(fmt.Sprintf("Invalid piece: %x", p))
 	}
 }
 
@@ -515,11 +516,20 @@ func PieceToColorOffset(p byte) int {
 func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 	boardState.board[sq] = p
 
-	colorOffset := PieceToColorOffset(p)
-	pieceOffset := p & 0x0F
 	bbSq := legacySquareToBitboardSquare(sq)
-	boardState.bitboards.color[colorOffset] = SetBitboard(boardState.bitboards.color[colorOffset], bbSq)
-	boardState.bitboards.piece[pieceOffset] = SetBitboard(boardState.bitboards.piece[pieceOffset], bbSq)
+	if p != EMPTY_SQUARE {
+		colorOffset := PieceToColorOffset(p)
+		pieceOffset := p & 0x0F
+		boardState.bitboards.color[colorOffset] = SetBitboard(boardState.bitboards.color[colorOffset], bbSq)
+		boardState.bitboards.piece[pieceOffset] = SetBitboard(boardState.bitboards.piece[pieceOffset], bbSq)
+	} else {
+		for _, colorOffset := range []int{WHITE_OFFSET, BLACK_OFFSET} {
+			boardState.bitboards.color[colorOffset] = UnsetBitboard(boardState.bitboards.color[colorOffset], bbSq)
+		}
+		for pieceOffset := 2; pieceOffset < 7; pieceOffset++ {
+			boardState.bitboards.piece[pieceOffset] = UnsetBitboard(boardState.bitboards.piece[pieceOffset], bbSq)
+		}
+	}
 }
 
 // CreateMovesFromBitboard transforms a bitboard and a square to a slice of moves.
