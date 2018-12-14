@@ -33,6 +33,11 @@ func (boardState *BoardState) ApplyMove(move Move) {
 		otherOffset = WHITE_OFFSET
 	}
 
+	if move.IsCapture() {
+		boardState.bitboards.color[otherOffset] = UnsetBitboard(boardState.bitboards.color[otherOffset], legacySquareToBitboardSquare(move.to))
+		boardState.bitboards.piece[capturedPiece&0x0F] = UnsetBitboard(boardState.bitboards.piece[capturedPiece&0x0F], legacySquareToBitboardSquare(move.to))
+	}
+
 	boardState.bitboards.piece[p&0x0F] = SetBitboard(
 		UnsetBitboard(boardState.bitboards.piece[p&0x0F], legacySquareToBitboardSquare(move.from)),
 		legacySquareToBitboardSquare(move.to))
@@ -40,11 +45,6 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	boardState.bitboards.color[offset] = SetBitboard(
 		UnsetBitboard(boardState.bitboards.color[offset], legacySquareToBitboardSquare(move.from)),
 		legacySquareToBitboardSquare(move.to))
-
-	if move.IsCapture() {
-		boardState.bitboards.color[otherOffset] = UnsetBitboard(boardState.bitboards.color[otherOffset], legacySquareToBitboardSquare(move.to))
-		boardState.bitboards.piece[capturedPiece&0x0F] = UnsetBitboard(boardState.bitboards.piece[capturedPiece&0x0F], legacySquareToBitboardSquare(move.to))
-	}
 
 	var epTargetSquare = boardState.boardInfo.enPassantTargetSquare
 
