@@ -1,24 +1,22 @@
 package main
 
-import (
-	"fmt"
-)
-
-var _ = fmt.Println
-
 type MoveListing struct {
 	moves      []Move
 	captures   []Move
 	promotions []Move
 }
 
+var moveBitboards *MoveBitboards
+
 type MoveBitboards struct {
-	pawnMoves    [2][64]uint64
-	pawnAttacks  [2][64]uint64
-	kingMoves    [64]uint64
-	knightMoves  [64]uint64
-	bishopMagics map[byte]Magic
-	rookMagics   map[byte]Magic
+	pawnMoves          [2][64]uint64
+	pawnAttacks        [2][64]uint64
+	kingMoves          [64]uint64
+	knightMoves        [64]uint64
+	bishopMagics       map[byte]Magic
+	rookMagics         map[byte]Magic
+	rookSlidingMoves   map[byte]map[uint16][]Move
+	bishopSlidingMoves map[byte]map[uint16][]Move
 }
 
 func CreateMoveBitboards() MoveBitboards {
@@ -30,6 +28,8 @@ func CreateMoveBitboards() MoveBitboards {
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
 			sq := idx(col, row)
+
+			// TODO: just pre-generate all these moves like we do for magics
 			pawnMoves[WHITE_OFFSET][sq], pawnMoves[BLACK_OFFSET][sq] = createPawnMoveBitboards(col, row)
 			pawnAttacks[WHITE_OFFSET][sq], pawnAttacks[BLACK_OFFSET][sq] = createPawnAttackBitboards(col, row)
 			kingMoves[sq] = createKingBitboard(col, row)
@@ -47,13 +47,17 @@ func CreateMoveBitboards() MoveBitboards {
 		panic(err)
 	}
 
+	rookSlidingMoves, bishopSlidingMoves := GenerateSlidingMoves(rookMagics, bishopMagics)
+
 	return MoveBitboards{
-		pawnAttacks:  pawnAttacks,
-		pawnMoves:    pawnMoves,
-		kingMoves:    kingMoves,
-		knightMoves:  knightMoves,
-		bishopMagics: bishopMagics,
-		rookMagics:   rookMagics,
+		pawnAttacks:        pawnAttacks,
+		pawnMoves:          pawnMoves,
+		kingMoves:          kingMoves,
+		knightMoves:        knightMoves,
+		bishopMagics:       bishopMagics,
+		rookMagics:         rookMagics,
+		rookSlidingMoves:   rookSlidingMoves,
+		bishopSlidingMoves: bishopSlidingMoves,
 	}
 }
 
@@ -260,23 +264,36 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 	// Knight = 2, Bishop = 3, Rook = 4, Queen = 5, King = 6
 
 	pieceType := p & 0x0F
-	if pieceType == KING_MASK || pieceType == KNIGHT_MASK {
+	if pieceType == KING_MASK || pieceType == KNIGHT_MASK || pieceType == BISHOP_MASK {
 		var offset int
+		var otherOffset int
 		if isWhite {
 			offset = WHITE_OFFSET
+			otherOffset = BLACK_OFFSET
 		} else {
 			offset = BLACK_OFFSET
+			otherOffset = WHITE_OFFSET
 		}
 
-		var moveArr [64]uint64
+		moveBitboards := boardState.moveBitboards
+		occupancy := boardState.bitboards.color[offset]
+		bbSq := legacySquareToBitboardSquare(sq)
+
+		var moves []Move
+
 		switch pieceType {
 		case KING_MASK:
-			moveArr = boardState.moveBitboards.kingMoves
+			moveBoard := moveBitboards.kingMoves[bbSq] & ^occupancy
+			moves = CreateMovesFromBitboard(bbSq, moveBoard)
 		case KNIGHT_MASK:
-			moveArr = boardState.moveBitboards.knightMoves
+			moveBoard := moveBitboards.knightMoves[bbSq] & ^occupancy
+			moves = CreateMovesFromBitboard(bbSq, moveBoard)
+		case BISHOP_MASK:
+			otherOccupancy := boardState.bitboards.color[otherOffset]
+			magic := moveBitboards.bishopMagics[bbSq]
+			key := hashKey(occupancy|otherOccupancy, magic)
+			moves = moveBitboards.bishopSlidingMoves[bbSq][key]
 		}
-		bb := moveArr[legacySquareToBitboardSquare(sq)] & ^boardState.bitboards.color[offset]
-		moves := CreateMovesFromBitboard(sq, bb)
 
 		// eventually this will need to be done at the very end ...
 		// not sure the .moves/.captures works well for the bitboard setup.  need to think more
@@ -284,11 +301,17 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 		for i := range moves {
 			move := moves[i]
 			move.to = bitboardSquareToLegacySquare(move.to)
+			move.from = bitboardSquareToLegacySquare(move.from)
 
 			oppositePiece := boardState.PieceAtSquare(move.to)
-			if oppositePiece != EMPTY_SQUARE && oppositePiece&0xF0 != p&0xF0 {
-				move.flags |= CAPTURE_MASK
-				listing.captures = append(listing.captures, move)
+			if oppositePiece != EMPTY_SQUARE {
+				if oppositePiece&0xF0 != p&0xF0 {
+					move.flags |= CAPTURE_MASK
+					listing.captures = append(listing.captures, move)
+				} else {
+					// same color, just skip it
+					// I think this is how we need to filter out the precomputed sliding moves
+				}
 			} else {
 				listing.moves = append(listing.moves, move)
 			}

@@ -364,18 +364,25 @@ func GenerateMagicBitboards() error {
 	return nil
 }
 
-func GenerateSlidingMoves(rookMagics map[byte]Magic, bishopMagics map[byte]Magic) {
+func GenerateSlidingMoves(
+	rookMagics map[byte]Magic,
+	bishopMagics map[byte]Magic,
+) (map[byte]map[uint16][]Move, map[byte]map[uint16][]Move) {
 	rookMoves := make(map[byte]map[uint16][]Move, 0)
 	bishopMoves := make(map[byte]map[uint16][]Move, 0)
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
 			sq := idx(col, row)
+			rookMoves[sq] = make(map[uint16][]Move, 0)
+			bishopMoves[sq] = make(map[uint16][]Move, 0)
 
 			GenerateRookSlidingMoves(sq, rookMagics[sq], rookMoves[sq])
 			GenerateBishopSlidingMoves(sq, bishopMagics[sq], bishopMoves[sq])
 		}
 	}
+
+	return rookMoves, bishopMoves
 }
 
 func GenerateRookSlidingMoves(sq byte, magic Magic, moves map[uint16][]Move) {
