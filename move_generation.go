@@ -264,7 +264,7 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 	// Knight = 2, Bishop = 3, Rook = 4, Queen = 5, King = 6
 
 	pieceType := p & 0x0F
-	if pieceType == KING_MASK || pieceType == KNIGHT_MASK || pieceType == BISHOP_MASK {
+	if pieceType == KING_MASK || pieceType == KNIGHT_MASK || pieceType == BISHOP_MASK || pieceType == ROOK_MASK {
 		var offset int
 		var otherOffset int
 		if isWhite {
@@ -293,6 +293,11 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 			magic := moveBitboards.bishopMagics[bbSq]
 			key := hashKey(occupancy|otherOccupancy, magic)
 			moves = moveBitboards.bishopSlidingMoves[bbSq][key]
+		case ROOK_MASK:
+			otherOccupancy := boardState.bitboards.color[otherOffset]
+			magic := moveBitboards.rookMagics[bbSq]
+			key := hashKey(occupancy|otherOccupancy, magic)
+			moves = moveBitboards.rookSlidingMoves[bbSq][key]
 		}
 
 		// eventually this will need to be done at the very end ...
