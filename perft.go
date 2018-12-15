@@ -66,6 +66,10 @@ func RunPerftJson(perftJsonFile string, options PerftOptions) (bool, error) {
 func RunPerft(startingFen string, depth uint, options PerftOptions) (bool, error) {
 	for i := uint(0); i <= depth; i++ {
 		board, err := CreateBoardStateFromFENString(startingFen)
+		if i == uint(0) {
+			fmt.Println(board.ToString())
+		}
+
 		if err == nil {
 			options.depth = i
 			fmt.Println(Perft(&board, i, options))
