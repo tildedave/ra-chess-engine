@@ -1,5 +1,9 @@
 package main
 
+import (
+	"math/bits"
+)
+
 type MoveListing struct {
 	moves      []Move
 	captures   []Move
@@ -202,23 +206,28 @@ func createMoveListing() MoveListing {
 func GenerateMoveListing(boardState *BoardState) MoveListing {
 	listing := createMoveListing()
 
-	for i := byte(0); i < 8; i++ {
-		for j := byte(0); j < 8; j++ {
-			sq := RowAndColToSquare(i, j)
-			p := boardState.board[sq]
-			if p == EMPTY_SQUARE {
-				continue
-			}
+	var isWhite = boardState.whiteToMove
+	var offset int
+	if isWhite {
+		offset = WHITE_OFFSET
+	} else {
+		offset = BLACK_OFFSET
+	}
 
-			isWhite := p&BLACK_MASK != BLACK_MASK
-			if isWhite == boardState.whiteToMove {
-				if !isPawn(p) {
-					generatePieceMoves(boardState, p, sq, isWhite, &listing)
-				} else {
-					generatePawnMoves(boardState, p, sq, isWhite, &listing)
-				}
-			}
+	occupancy := boardState.bitboards.color[offset]
+	for occupancy != 0 {
+		bbSq := byte(bits.TrailingZeros64(occupancy))
+		sq := bitboardSquareToLegacySquare(bbSq)
+
+		p := boardState.board[sq]
+
+		if !isPawn(p) {
+			generatePieceMoves(boardState, p, sq, isWhite, &listing)
+		} else {
+			generatePawnMoves(boardState, p, sq, isWhite, &listing)
 		}
+
+		occupancy ^= 1 << bbSq
 	}
 
 	return listing
