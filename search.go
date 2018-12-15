@@ -67,19 +67,40 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 		}
 
 		move := entry.result.move
-		isLegal, err := boardState.IsMoveLegal(move)
-		if err == nil && isLegal {
-			hashMove = append(hashMove, move)
-		}
+		// Hash move might be bogus due to hash collision, so we need to validate
+		// that it's a legit move (later)
+		hashMove = append(hashMove, move)
 	}
 
 	var nodes uint
-
 	listing := GenerateMoveListing(boardState)
 	var bestResult *SearchResult
 
-	for _, moveList := range [][]Move{hashMove, listing.promotions, listing.captures, listing.moves} {
+	for i, moveList := range [][]Move{hashMove, listing.promotions, listing.captures, listing.moves} {
 		for _, move := range moveList {
+			if i == 0 {
+				// validate hash move is one of our generated moves
+				// TODO: is this the best way?  we could just generate the moves from the square in
+				// the hash move prior to generating the full move listing.  feels like this would be
+				// effective at pruning the search tree and also save a bunch of time computing the full
+				// move listing.
+
+				isLegal := false
+			CheckHashMoveLegality:
+				for _, legalMoveListing := range [][]Move{listing.promotions, listing.captures, listing.moves} {
+					for _, legalMove := range legalMoveListing {
+						if move == legalMove {
+							isLegal = true
+							break CheckHashMoveLegality
+						}
+					}
+				}
+
+				if !isLegal {
+					continue
+				}
+			}
+
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
 				continue
 			}
@@ -90,7 +111,7 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 				searchConfig.isDebug = false
 
 				searchDepth := depth - 1
-				if move.IsCapture() || boardState.IsInCheck(boardState.whiteToMove) {
+				if move.IsCapture() {
 					searchDepth++
 				}
 

@@ -24,7 +24,7 @@ func main() {
 	startingFen := flag.String("fen", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "Fen board")
 	isPerft := flag.Bool("perft", false, "Perft mode")
 	perftDepth := flag.Uint("perftdepth", 5, "Perft depth to search")
-	perftChecks := flag.Bool("countchecks", false, "Perft: count check positions (slower)")
+	perftChecks := flag.Bool("perftchecks", false, "Perft: count check positions (slower)")
 	perftSanityCheck := flag.Bool("sanitycheck", false, "Perft: sanity check board and moves (slower)")
 	perftJSONFile := flag.String("perftjson", "", "JSON specification")
 	perftPrintMoves := flag.Bool("printmoves", false, "Perft: print all generates moves at final depth")

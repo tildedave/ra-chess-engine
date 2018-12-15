@@ -1,13 +1,10 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-var _ = fmt.Println
 
 func TestApplyMove(t *testing.T) {
 	emptyBoard := CreateEmptyBoardState()
