@@ -232,18 +232,21 @@ func GenerateMoveListing(boardState *BoardState) MoveListing {
 	occupancy := boardState.bitboards.color[offset]
 	for occupancy != 0 {
 		sq := byte(bits.TrailingZeros64(occupancy))
-		p := boardState.board[sq]
-
-		if !isPawn(p) {
-			generatePieceMoves(boardState, p, sq, isWhite, &listing)
-		} else {
-			generatePawnMoves(boardState, p, sq, isWhite, &listing)
-		}
+		GenerateMovesFromSquare(boardState, sq, isWhite, &listing)
 
 		occupancy ^= 1 << sq
 	}
 
 	return listing
+}
+
+func GenerateMovesFromSquare(boardState *BoardState, sq byte, isWhite bool, listing *MoveListing) {
+	p := boardState.board[sq]
+	if !isPawn(p) {
+		generatePieceMoves(boardState, p, sq, isWhite, listing)
+	} else {
+		generatePawnMoves(boardState, p, sq, isWhite, listing)
+	}
 }
 
 func GenerateMoves(boardState *BoardState) []Move {
@@ -408,9 +411,9 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, li
 	}
 
 	var dest byte = uint8(int8(sq) + sqOffset)
-
 	if boardState.board[dest] == EMPTY_SQUARE {
 		var sourceRank byte = Rank(sq)
+
 		// promotion
 		if (isWhite && sourceRank == RANK_7) || (!isWhite && sourceRank == RANK_2) {
 			// promotions are color-maskless
@@ -426,6 +429,7 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, li
 				(!isWhite && sourceRank == RANK_7) {
 				// home row for white so we can move one more
 				dest = uint8(int8(dest) + sqOffset)
+
 				if boardState.board[dest] == EMPTY_SQUARE {
 					listing.moves = append(listing.moves, CreateMove(sq, dest))
 				}
