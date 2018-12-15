@@ -190,9 +190,8 @@ func createPawnMoveBitboards(col byte, row byte) (uint64, uint64) {
 }
 
 func createPawnAttackBitboards(col byte, row byte) (uint64, uint64) {
-	if row == 0 || row == 7 {
-		return 0, 0
-	}
+	// We must create pawn attack bitboards for all squares on the board because they
+	// get used in check detection by having the king pretend to be a pawn of that color.
 
 	var whitePawnAttackBitboard uint64
 	var blackPawnAttackBitboard uint64
@@ -264,24 +263,6 @@ func GenerateMoves(boardState *BoardState) []Move {
 
 	return moves
 }
-
-// These arrays are used for both move generation + king in check detection,
-// so we'll pull them out of function scope
-
-// ray starts from going up, then clockwise around
-var offsetArr = [7][8]int8{
-	[8]int8{0, 0, 0, 0, 0, 0, 0, 0},
-	[8]int8{0, 0, 0, 0, 0, 0, 0, 0},
-	[8]int8{-19, -8, 12, 21, 19, 8, -12, -21},
-	[8]int8{-11, -9, 9, 11, 0, 0, 0, 0},
-	[8]int8{-10, 1, 10, -1, 0, 0, 0, 0},
-	[8]int8{-10, -9, 1, 11, 10, 9, -1, -11},
-	[8]int8{-10, -9, 1, 11, 10, 9, -1, -11},
-}
-
-// black is negative
-var whitePawnCaptureOffsetArr = [2]int8{9, 11}
-var blackPawnCaptureOffsetArr = [2]int8{-9, -11}
 
 func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, listing *MoveListing) {
 	// 8 possible directions to go (for the queen + king + knight)

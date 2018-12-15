@@ -21,89 +21,50 @@ func (boardState *BoardState) IsInCheck(whiteInCheck bool) bool {
 }
 
 func (boardState *BoardState) IsSquareUnderAttack(sq byte, colorMask byte) bool {
-	for _, pieceMask := range []byte{BISHOP_MASK, ROOK_MASK} {
-		for _, offset := range offsetArr[pieceMask] {
-			piece := followRay(boardState, sq, offset)
-			// TODO(perf) should be possible to combine these checks both
-			// here and in move generation w/an appropriate bit test
-			if piece != SENTINEL_MASK && piece&colorMask == colorMask {
-				// we care about this piece, is it the piece we're looking for
-				// or a queen
-				if isQueen(piece) || piece == colorMask|pieceMask {
-					// bam in check
-					return true
-				}
-			}
-		}
-	}
-
-	// test all knight squares
-	knightPiece := colorMask | KNIGHT_MASK
-
-	for _, offset := range offsetArr[KNIGHT_MASK] {
-		piece := boardState.PieceAtSquare(uint8(int8(sq) + offset))
-
-		if piece == knightPiece {
-			return true
-		}
-	}
-
-	var pawnCaptureOffsetArr [2]int8
-	var opposingKingSq uint8
-
-	if colorMask == BLACK_MASK {
-		pawnCaptureOffsetArr = whitePawnCaptureOffsetArr
-		opposingKingSq = boardState.lookupInfo.blackKingSquare
+	// var offset int
+	var offset int
+	var offsetForOurColor int
+	if colorMask == WHITE_MASK {
+		offset = WHITE_OFFSET
+		offsetForOurColor = BLACK_OFFSET
 	} else {
-		pawnCaptureOffsetArr = blackPawnCaptureOffsetArr
-		opposingKingSq = boardState.lookupInfo.whiteKingSquare
+		offset = BLACK_OFFSET
+		offsetForOurColor = WHITE_OFFSET
 	}
 
-	// test pawn squares
-	pawnPiece := colorMask | PAWN_MASK
+	occupancy := boardState.bitboards.color[offset]
+	bbSq := legacySquareToBitboardSquare(sq)
 
-	for _, offset := range pawnCaptureOffsetArr {
-		piece := boardState.PieceAtSquare(uint8(int8(sq) + offset))
-
-		if piece == pawnPiece {
-			return true
-		}
+	if boardState.moveBitboards.knightAttacks[bbSq].board&boardState.bitboards.piece[KNIGHT_MASK]&occupancy != 0 {
+		return true
 	}
 
-	// test all king squares
-	for _, offset := range offsetArr[KING_MASK] {
-		if uint8(int8(opposingKingSq)+offset) == sq {
-			return true
-		}
+	if boardState.moveBitboards.kingAttacks[bbSq].board&boardState.bitboards.piece[KING_MASK]&occupancy != 0 {
+		return true
+	}
+
+	allOccupancies := occupancy | boardState.bitboards.color[offsetForOurColor]
+	bishopKey := hashKey(allOccupancies, boardState.moveBitboards.bishopMagics[bbSq])
+
+	if boardState.moveBitboards.bishopAttacks[bbSq][bishopKey].board&
+		(boardState.bitboards.piece[BISHOP_MASK]|boardState.bitboards.piece[QUEEN_MASK])&occupancy != 0 {
+		return true
+	}
+
+	rookKey := hashKey(allOccupancies, boardState.moveBitboards.rookMagics[bbSq])
+
+	if boardState.moveBitboards.rookAttacks[bbSq][rookKey].board&
+		(boardState.bitboards.piece[ROOK_MASK]|boardState.bitboards.piece[QUEEN_MASK])&occupancy != 0 {
+		return true
+	}
+
+	// pawn attacks - pretend to be a pawn of our color, see if we're attacking a pawn of the opposite color
+	// TODO: does not handle en-passant (though this is not a check detection case)
+	if boardState.moveBitboards.pawnAttacks[offsetForOurColor][bbSq]&boardState.bitboards.piece[PAWN_MASK]&occupancy != 0 {
+		return true
 	}
 
 	return false
-}
-
-func followRay(boardState *BoardState, sq byte, offset int8) byte {
-	var dest byte = sq
-	if offset == 0 {
-		return SENTINEL_MASK
-	}
-
-	// we'll continue until we have to stop
-	for true {
-		dest = uint8(int8(dest) + offset)
-		destPiece := boardState.PieceAtSquare(dest)
-
-		if destPiece == SENTINEL_MASK {
-			// stop - end of the board
-			return SENTINEL_MASK
-		} else if destPiece == EMPTY_SQUARE {
-			// keep moving
-		} else {
-			// got a piece, return it
-			return destPiece
-		}
-	}
-
-	// impossible to get here
-	return SENTINEL_MASK
 }
 
 func (boardState *BoardState) TestCastleLegality(move Move) bool {
