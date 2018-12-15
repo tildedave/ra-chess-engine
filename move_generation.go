@@ -305,9 +305,6 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 		moves = append(moves, moveBitboards.rookSlidingMoves[bbSq][rookKey]...)
 	}
 
-	// eventually this will need to be done at the very end ...
-	// not sure the .moves/.captures works well for the bitboard setup.  need to think more
-
 	for i := range moves {
 		move := moves[i]
 		move.to = bitboardSquareToLegacySquare(move.to)
@@ -364,14 +361,58 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 }
 
 func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, listing *MoveListing) {
-	var offset int8
+	var otherOffset int
+	var offset int
 	if isWhite {
-		offset = 10
+		offset = WHITE_OFFSET
+		otherOffset = BLACK_OFFSET
 	} else {
-		offset = -10
+		offset = BLACK_OFFSET
+		otherOffset = WHITE_OFFSET
 	}
 
-	var dest byte = uint8(int8(sq) + offset)
+	bbSq := legacySquareToBitboardSquare(sq)
+	otherOccupancies := boardState.bitboards.color[otherOffset]
+	if boardState.boardInfo.enPassantTargetSquare != 0 {
+		epSquare := legacySquareToBitboardSquare(boardState.boardInfo.enPassantTargetSquare)
+		otherOccupancies = SetBitboard(otherOccupancies, epSquare)
+	}
+	pawnAttacks := boardState.moveBitboards.pawnAttacks[offset][bbSq]
+	captures := CreateCapturesFromBitboard(bbSq, pawnAttacks&otherOccupancies)
+
+	for _, capture := range captures {
+		capture.to = bitboardSquareToLegacySquare(capture.to)
+		capture.from = bitboardSquareToLegacySquare(capture.from)
+
+		var destRank = Rank(capture.to)
+		if (isWhite && destRank == RANK_8) || (!isWhite && destRank == RANK_1) {
+			// promotion time
+			var flags byte = PROMOTION_MASK | CAPTURE_MASK
+			capture.flags = flags | QUEEN_MASK
+			listing.promotions = append(listing.promotions, capture)
+			capture.flags = flags | ROOK_MASK
+			listing.promotions = append(listing.promotions, capture)
+			capture.flags = flags | BISHOP_MASK
+			listing.promotions = append(listing.promotions, capture)
+			capture.flags = flags | KNIGHT_MASK
+			listing.promotions = append(listing.promotions, capture)
+		} else {
+			if capture.to == boardState.boardInfo.enPassantTargetSquare {
+				capture.flags |= SPECIAL1_MASK
+			}
+			listing.captures = append(listing.captures, capture)
+		}
+	}
+
+	// TODO: must handle the double moves and being blocked by another piece
+	var sqOffset int8
+	if isWhite {
+		sqOffset = 10
+	} else {
+		sqOffset = -10
+	}
+
+	var dest byte = uint8(int8(sq) + sqOffset)
 
 	if boardState.board[dest] == EMPTY_SQUARE {
 		var sourceRank byte = Rank(sq)
@@ -389,45 +430,10 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, li
 			if (isWhite && sourceRank == RANK_2) ||
 				(!isWhite && sourceRank == RANK_7) {
 				// home row for white so we can move one more
-				dest = uint8(int8(dest) + offset)
+				dest = uint8(int8(dest) + sqOffset)
 				if boardState.board[dest] == EMPTY_SQUARE {
 					listing.moves = append(listing.moves, CreateMove(sq, dest))
 				}
-			}
-		}
-	}
-
-	var pawnCaptureOffsetArr [2]int8
-	if isWhite {
-		pawnCaptureOffsetArr = whitePawnCaptureOffsetArr
-	} else {
-		pawnCaptureOffsetArr = blackPawnCaptureOffsetArr
-	}
-
-	for _, offset := range pawnCaptureOffsetArr {
-		var dest byte = uint8(int8(sq) + offset)
-
-		if boardState.boardInfo.enPassantTargetSquare == dest {
-			listing.captures = append(listing.captures, CreateEnPassantCapture(sq, dest))
-			continue
-		}
-
-		destPiece := boardState.board[dest]
-		if destPiece == SENTINEL_MASK || destPiece == EMPTY_SQUARE {
-			continue
-		}
-
-		isDestPieceWhite := destPiece&BLACK_MASK != BLACK_MASK
-		if isWhite != isDestPieceWhite {
-			var destRank byte = Rank(dest)
-			if (isWhite && destRank == RANK_8) || (!isWhite && destRank == RANK_1) {
-				// promotion time
-				listing.promotions = append(listing.promotions, CreatePromotionCapture(sq, dest, QUEEN_MASK))
-				listing.promotions = append(listing.promotions, CreatePromotionCapture(sq, dest, ROOK_MASK))
-				listing.promotions = append(listing.promotions, CreatePromotionCapture(sq, dest, BISHOP_MASK))
-				listing.promotions = append(listing.promotions, CreatePromotionCapture(sq, dest, KNIGHT_MASK))
-			} else {
-				listing.captures = append(listing.captures, CreateCapture(sq, dest))
 			}
 		}
 	}

@@ -549,6 +549,21 @@ func CreateMovesFromBitboard(sq byte, moveBoard uint64) []Move {
 	return moves
 }
 
+// CreateCapturesFromBitboard transforms a bitboard and a square to a slice of moves
+// with the capture flag set.
+// TODO: figure out how to reduce code duplication with CreateMovesFromBitboard (?)
+func CreateCapturesFromBitboard(sq byte, moveBoard uint64) []Move {
+	moves := make([]Move, 0)
+
+	for moveBoard != 0 {
+		destSq := byte(bits.TrailingZeros64(moveBoard))
+		moveBoard ^= 1 << destSq
+		moves = append(moves, CreateCapture(sq, destSq))
+	}
+
+	return moves
+}
+
 func sanityCheckBitboards(move Move, boardState *BoardState) {
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
