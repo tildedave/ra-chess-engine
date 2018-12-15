@@ -146,24 +146,24 @@ func TestEnPassantCaptureFromPawn(t *testing.T) {
 
 func TestCreateMoveBitboardsPawnAsserts(t *testing.T) {
 	moveBitboards := CreateMoveBitboards()
-	assert.Equal(t, uint64(0x2020000), moveBitboards.pawnMoves[WHITE_OFFSET][BB_SQUARE_B2])
-	assert.Equal(t, uint64(0x50000), moveBitboards.pawnAttacks[WHITE_OFFSET][BB_SQUARE_B2])
+	assert.Equal(t, uint64(0x2020000), moveBitboards.pawnMoves[WHITE_OFFSET][SQUARE_B2])
+	assert.Equal(t, uint64(0x50000), moveBitboards.pawnAttacks[WHITE_OFFSET][SQUARE_B2])
 
-	assert.Equal(t, uint64(0x1000000), moveBitboards.pawnMoves[WHITE_OFFSET][BB_SQUARE_A3])
-	assert.Equal(t, uint64(0x2000000), moveBitboards.pawnAttacks[WHITE_OFFSET][BB_SQUARE_A3])
+	assert.Equal(t, uint64(0x1000000), moveBitboards.pawnMoves[WHITE_OFFSET][SQUARE_A3])
+	assert.Equal(t, uint64(0x2000000), moveBitboards.pawnAttacks[WHITE_OFFSET][SQUARE_A3])
 
-	assert.Equal(t, uint64(0x80800000), moveBitboards.pawnMoves[WHITE_OFFSET][BB_SQUARE_H2])
-	assert.Equal(t, uint64(0x400000), moveBitboards.pawnAttacks[WHITE_OFFSET][BB_SQUARE_H2])
+	assert.Equal(t, uint64(0x80800000), moveBitboards.pawnMoves[WHITE_OFFSET][SQUARE_H2])
+	assert.Equal(t, uint64(0x400000), moveBitboards.pawnAttacks[WHITE_OFFSET][SQUARE_H2])
 }
 
 func TestGetKingMoveBitboard(t *testing.T) {
-	assert.Equal(t, 8, bits.OnesCount64(getKingMoveBitboard(BB_SQUARE_D4)))
-	assert.Equal(t, 5, bits.OnesCount64(getKingMoveBitboard(BB_SQUARE_A2)))
-	assert.Equal(t, 5, bits.OnesCount64(getKingMoveBitboard(BB_SQUARE_H2)))
-	assert.Equal(t, 8, bits.OnesCount64(getKingMoveBitboard(BB_SQUARE_B4)))
-	assert.Equal(t, 8, bits.OnesCount64(getKingMoveBitboard(BB_SQUARE_G4)))
-	assert.Equal(t, SetBitboard(SetBitboard(SetBitboard(0, BB_SQUARE_A2), BB_SQUARE_B2), BB_SQUARE_B1),
-		getKingMoveBitboard(BB_SQUARE_A1))
+	assert.Equal(t, 8, bits.OnesCount64(getKingMoveBitboard(SQUARE_D4)))
+	assert.Equal(t, 5, bits.OnesCount64(getKingMoveBitboard(SQUARE_A2)))
+	assert.Equal(t, 5, bits.OnesCount64(getKingMoveBitboard(SQUARE_H2)))
+	assert.Equal(t, 8, bits.OnesCount64(getKingMoveBitboard(SQUARE_B4)))
+	assert.Equal(t, 8, bits.OnesCount64(getKingMoveBitboard(SQUARE_G4)))
+	assert.Equal(t, SetBitboard(SetBitboard(SetBitboard(0, SQUARE_A2), SQUARE_B2), SQUARE_B1),
+		getKingMoveBitboard(SQUARE_A1))
 }
 
 func TestCreateMoveBitboardsKnightAsserts(t *testing.T) {
@@ -185,19 +185,19 @@ func TestCreateMoveBitboardsKnightAsserts(t *testing.T) {
 		assert.Equal(t, expectedNumber, bits.OnesCount64(getKnightMoveBitboard(idx(i, 3))))
 		assert.Equal(t, expectedNumber, bits.OnesCount64(getKnightMoveBitboard(idx(3, i))))
 	}
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_B3), BB_SQUARE_C2),
-		getKnightMoveBitboard(BB_SQUARE_A1))
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_B3), SQUARE_C2),
+		getKnightMoveBitboard(SQUARE_A1))
 }
 
 func TestCreateMovesFromBitboard(t *testing.T) {
 	var bitboard uint64
-	bitboard = SetBitboard(bitboard, BB_SQUARE_A5)
-	bitboard = SetBitboard(bitboard, BB_SQUARE_B3)
-	bitboard = SetBitboard(bitboard, BB_SQUARE_D4)
+	bitboard = SetBitboard(bitboard, SQUARE_A5)
+	bitboard = SetBitboard(bitboard, SQUARE_B3)
+	bitboard = SetBitboard(bitboard, SQUARE_D4)
 
-	moves := CreateMovesFromBitboard(BB_SQUARE_D3, bitboard)
+	moves := CreateMovesFromBitboard(SQUARE_D3, bitboard)
 	assert.Len(t, moves, 3)
-	assertMovePresent(t, moves, BB_SQUARE_D3, BB_SQUARE_A5)
-	assertMovePresent(t, moves, BB_SQUARE_D3, BB_SQUARE_B3)
-	assertMovePresent(t, moves, BB_SQUARE_D3, BB_SQUARE_D4)
+	assertMovePresent(t, moves, SQUARE_D3, SQUARE_A5)
+	assertMovePresent(t, moves, SQUARE_D3, SQUARE_B3)
+	assertMovePresent(t, moves, SQUARE_D3, SQUARE_D4)
 }

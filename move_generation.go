@@ -231,9 +231,7 @@ func GenerateMoveListing(boardState *BoardState) MoveListing {
 
 	occupancy := boardState.bitboards.color[offset]
 	for occupancy != 0 {
-		bbSq := byte(bits.TrailingZeros64(occupancy))
-		sq := bitboardSquareToLegacySquare(bbSq)
-
+		sq := byte(bits.TrailingZeros64(occupancy))
 		p := boardState.board[sq]
 
 		if !isPawn(p) {
@@ -242,7 +240,7 @@ func GenerateMoveListing(boardState *BoardState) MoveListing {
 			generatePawnMoves(boardState, p, sq, isWhite, &listing)
 		}
 
-		occupancy ^= 1 << bbSq
+		occupancy ^= 1 << sq
 	}
 
 	return listing
@@ -284,38 +282,34 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 
 	moveBitboards := boardState.moveBitboards
 	occupancy := boardState.bitboards.color[offset]
-	bbSq := legacySquareToBitboardSquare(sq)
 
 	var moves []Move
 
 	switch pieceType {
 	case KING_MASK:
-		moves = moveBitboards.kingAttacks[bbSq].moves
+		moves = moveBitboards.kingAttacks[sq].moves
 	case KNIGHT_MASK:
-		moves = moveBitboards.knightAttacks[bbSq].moves
+		moves = moveBitboards.knightAttacks[sq].moves
 	case BISHOP_MASK:
 		otherOccupancy := boardState.bitboards.color[otherOffset]
-		magic := moveBitboards.bishopMagics[bbSq]
+		magic := moveBitboards.bishopMagics[sq]
 		key := hashKey(occupancy|otherOccupancy, magic)
-		moves = moveBitboards.bishopAttacks[bbSq][key].moves
+		moves = moveBitboards.bishopAttacks[sq][key].moves
 	case ROOK_MASK:
 		otherOccupancy := boardState.bitboards.color[otherOffset]
-		magic := moveBitboards.rookMagics[bbSq]
+		magic := moveBitboards.rookMagics[sq]
 		key := hashKey(occupancy|otherOccupancy, magic)
-		moves = moveBitboards.rookAttacks[bbSq][key].moves
+		moves = moveBitboards.rookAttacks[sq][key].moves
 	case QUEEN_MASK:
 		otherOccupancy := boardState.bitboards.color[otherOffset]
-		bishopKey := hashKey(occupancy|otherOccupancy, moveBitboards.bishopMagics[bbSq])
-		moves = moveBitboards.bishopAttacks[bbSq][bishopKey].moves
-		rookKey := hashKey(occupancy|otherOccupancy, moveBitboards.rookMagics[bbSq])
-		moves = append(moves, moveBitboards.rookAttacks[bbSq][rookKey].moves...)
+		bishopKey := hashKey(occupancy|otherOccupancy, moveBitboards.bishopMagics[sq])
+		moves = moveBitboards.bishopAttacks[sq][bishopKey].moves
+		rookKey := hashKey(occupancy|otherOccupancy, moveBitboards.rookMagics[sq])
+		moves = append(moves, moveBitboards.rookAttacks[sq][rookKey].moves...)
 	}
 
 	for i := range moves {
 		move := moves[i]
-		move.to = bitboardSquareToLegacySquare(move.to)
-		move.from = bitboardSquareToLegacySquare(move.from)
-
 		oppositePiece := boardState.PieceAtSquare(move.to)
 		if oppositePiece != EMPTY_SQUARE {
 			if oppositePiece&0xF0 != p&0xF0 {
@@ -377,19 +371,14 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, li
 		otherOffset = WHITE_OFFSET
 	}
 
-	bbSq := legacySquareToBitboardSquare(sq)
 	otherOccupancies := boardState.bitboards.color[otherOffset]
 	if boardState.boardInfo.enPassantTargetSquare != 0 {
-		epSquare := legacySquareToBitboardSquare(boardState.boardInfo.enPassantTargetSquare)
-		otherOccupancies = SetBitboard(otherOccupancies, epSquare)
+		otherOccupancies = SetBitboard(otherOccupancies, boardState.boardInfo.enPassantTargetSquare)
 	}
-	pawnAttacks := boardState.moveBitboards.pawnAttacks[offset][bbSq]
-	captures := CreateCapturesFromBitboard(bbSq, pawnAttacks&otherOccupancies)
+	pawnAttacks := boardState.moveBitboards.pawnAttacks[offset][sq]
+	captures := CreateCapturesFromBitboard(sq, pawnAttacks&otherOccupancies)
 
 	for _, capture := range captures {
-		capture.to = bitboardSquareToLegacySquare(capture.to)
-		capture.from = bitboardSquareToLegacySquare(capture.from)
-
 		var destRank = Rank(capture.to)
 		if (isWhite && destRank == RANK_8) || (!isWhite && destRank == RANK_1) {
 			// promotion time
@@ -413,9 +402,9 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, li
 	// TODO: must handle the double moves and being blocked by another piece
 	var sqOffset int8
 	if isWhite {
-		sqOffset = 10
+		sqOffset = 8
 	} else {
-		sqOffset = -10
+		sqOffset = -8
 	}
 
 	var dest byte = uint8(int8(sq) + sqOffset)

@@ -14,9 +14,9 @@ func TestApplyMove(t *testing.T) {
 	emptyBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A2), emptyBoard.bitboards.color[0])
+	assert.Equal(t, SetBitboard(0, SQUARE_A2), emptyBoard.bitboards.color[0])
 	assert.Equal(t, uint64(0), emptyBoard.bitboards.color[1])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A2), emptyBoard.bitboards.piece[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_A2), emptyBoard.bitboards.piece[1])
 
 	move := CreateMove(SQUARE_A2, SQUARE_A4)
 	emptyBoard.ApplyMove(move)
@@ -27,9 +27,9 @@ func TestApplyMove(t *testing.T) {
 	assert.Equal(t, emptyBoard.boardInfo.enPassantTargetSquare, SQUARE_A3)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A4), emptyBoard.bitboards.color[0])
+	assert.Equal(t, SetBitboard(0, SQUARE_A4), emptyBoard.bitboards.color[0])
 	assert.Equal(t, uint64(0), emptyBoard.bitboards.color[1])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A4), emptyBoard.bitboards.piece[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_A4), emptyBoard.bitboards.piece[1])
 
 	emptyBoard.UnapplyMove(move)
 
@@ -62,8 +62,8 @@ func TestApplyBlackPawnMove(t *testing.T) {
 
 	// bitboard asserts
 	assert.Equal(t, uint64(0), emptyBoard.bitboards.color[0])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A7), emptyBoard.bitboards.color[1])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A7), emptyBoard.bitboards.piece[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_A7), emptyBoard.bitboards.color[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_A7), emptyBoard.bitboards.piece[1])
 
 	emptyBoard.ApplyMove(CreateMove(SQUARE_A7, SQUARE_A5))
 
@@ -74,8 +74,8 @@ func TestApplyBlackPawnMove(t *testing.T) {
 
 	// bitboard asserts
 	assert.Equal(t, uint64(0), emptyBoard.bitboards.color[0])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A5), emptyBoard.bitboards.color[1])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A5), emptyBoard.bitboards.piece[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_A5), emptyBoard.bitboards.color[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_A5), emptyBoard.bitboards.piece[1])
 
 	emptyBoard.UnapplyMove(CreateMove(SQUARE_A7, SQUARE_A5))
 
@@ -86,8 +86,8 @@ func TestApplyBlackPawnMove(t *testing.T) {
 
 	// bitboard asserts
 	assert.Equal(t, uint64(0), emptyBoard.bitboards.color[0])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A7), emptyBoard.bitboards.color[1])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A7), emptyBoard.bitboards.piece[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_A7), emptyBoard.bitboards.color[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_A7), emptyBoard.bitboards.piece[1])
 }
 
 func TestApplyCapture(t *testing.T) {
@@ -97,10 +97,10 @@ func TestApplyCapture(t *testing.T) {
 	originalKey := testBoard.hashKey
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A2), testBoard.bitboards.color[0])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.color[1])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_A2), testBoard.bitboards.color[0])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.color[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_A2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
 	m := CreateCapture(SQUARE_A2, SQUARE_B3)
 	testBoard.ApplyMove(m)
@@ -109,9 +109,9 @@ func TestApplyCapture(t *testing.T) {
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_B3))
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.color[0])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.color[0])
 	assert.Equal(t, uint64(0), testBoard.bitboards.color[1])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
 	testBoard.UnapplyMove(m)
@@ -121,10 +121,10 @@ func TestApplyCapture(t *testing.T) {
 	assert.Equal(t, originalKey, testBoard.hashKey)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A2), testBoard.bitboards.color[0])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.color[1])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_A2), testBoard.bitboards.color[0])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.color[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_A2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 }
 
 func TestApplyCaptureTwice(t *testing.T) {
@@ -134,11 +134,11 @@ func TestApplyCaptureTwice(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_C5, BLACK_MASK|KNIGHT_MASK)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A2), testBoard.bitboards.color[0])
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_B3), BB_SQUARE_C5), testBoard.bitboards.color[1])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_C5), testBoard.bitboards.piece[BITBOARD_KNIGHT_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_A2), testBoard.bitboards.color[0])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_B3), SQUARE_C5), testBoard.bitboards.color[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_A2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_C5), testBoard.bitboards.piece[BITBOARD_KNIGHT_OFFSET])
 
 	m1 := CreateCapture(SQUARE_A2, SQUARE_B3)
 	m2 := CreateCapture(SQUARE_C5, SQUARE_B3)
@@ -150,11 +150,11 @@ func TestApplyCaptureTwice(t *testing.T) {
 	assert.Equal(t, BLACK_MASK|KNIGHT_MASK, testBoard.PieceAtSquare(SQUARE_C5))
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.color[0])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_C5), testBoard.bitboards.color[1])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.color[0])
+	assert.Equal(t, SetBitboard(0, SQUARE_C5), testBoard.bitboards.color[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_C5), testBoard.bitboards.piece[BITBOARD_KNIGHT_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_C5), testBoard.bitboards.piece[BITBOARD_KNIGHT_OFFSET])
 
 	testBoard.ApplyMove(m2)
 
@@ -164,10 +164,10 @@ func TestApplyCaptureTwice(t *testing.T) {
 
 	// bitboard asserts
 	assert.Equal(t, uint64(0), testBoard.bitboards.color[0])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.color[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.color[1])
 	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.piece[BITBOARD_KNIGHT_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.piece[BITBOARD_KNIGHT_OFFSET])
 
 	testBoard.UnapplyMove(m2)
 
@@ -176,11 +176,11 @@ func TestApplyCaptureTwice(t *testing.T) {
 	assert.Equal(t, BLACK_MASK|KNIGHT_MASK, testBoard.PieceAtSquare(SQUARE_C5))
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.color[0])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_C5), testBoard.bitboards.color[1])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.color[0])
+	assert.Equal(t, SetBitboard(0, SQUARE_C5), testBoard.bitboards.color[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_C5), testBoard.bitboards.piece[BITBOARD_KNIGHT_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_C5), testBoard.bitboards.piece[BITBOARD_KNIGHT_OFFSET])
 
 	testBoard.UnapplyMove(m1)
 
@@ -189,11 +189,11 @@ func TestApplyCaptureTwice(t *testing.T) {
 	assert.Equal(t, BLACK_MASK|KNIGHT_MASK, testBoard.PieceAtSquare(SQUARE_C5))
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A2), testBoard.bitboards.color[0])
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_B3), BB_SQUARE_C5), testBoard.bitboards.color[1])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B3), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_C5), testBoard.bitboards.piece[BITBOARD_KNIGHT_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_A2), testBoard.bitboards.color[0])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_B3), SQUARE_C5), testBoard.bitboards.color[1])
+	assert.Equal(t, SetBitboard(0, SQUARE_A2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_C5), testBoard.bitboards.piece[BITBOARD_KNIGHT_OFFSET])
 }
 
 func TestApplyWhiteKingsideCastle(t *testing.T) {
@@ -203,9 +203,9 @@ func TestApplyWhiteKingsideCastle(t *testing.T) {
 	originalKey := testBoard.hashKey
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_E1), BB_SQUARE_H1), testBoard.bitboards.color[0])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_E1), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_H1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_E1), SQUARE_H1), testBoard.bitboards.color[0])
+	assert.Equal(t, SetBitboard(0, SQUARE_E1), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_H1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
 	testBoard.boardInfo.whiteCanCastleKingside = true
 	var m = CreateKingsideCastle(SQUARE_E1, SQUARE_G1)
@@ -218,9 +218,9 @@ func TestApplyWhiteKingsideCastle(t *testing.T) {
 	assert.False(t, testBoard.boardInfo.whiteCanCastleKingside)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_G1), BB_SQUARE_F1), testBoard.bitboards.color[WHITE_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_G1), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_F1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_G1), SQUARE_F1), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_G1), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_F1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
 	testBoard.UnapplyMove(m)
 
@@ -230,9 +230,9 @@ func TestApplyWhiteKingsideCastle(t *testing.T) {
 	assert.Equal(t, testBoard.hashKey, originalKey)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_E1), BB_SQUARE_H1), testBoard.bitboards.color[0])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_E1), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_H1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_E1), SQUARE_H1), testBoard.bitboards.color[0])
+	assert.Equal(t, SetBitboard(0, SQUARE_E1), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_H1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 }
 
 func TestApplyBlackKingsideCastle(t *testing.T) {
@@ -243,9 +243,9 @@ func TestApplyBlackKingsideCastle(t *testing.T) {
 	testBoard.boardInfo.blackCanCastleKingside = true
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_E8), BB_SQUARE_H8), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_E8), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_H8), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_E8), SQUARE_H8), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_E8), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_H8), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
 	var m = CreateKingsideCastle(SQUARE_E8, SQUARE_G8)
 
@@ -258,9 +258,9 @@ func TestApplyBlackKingsideCastle(t *testing.T) {
 	assert.False(t, testBoard.boardInfo.blackCanCastleKingside)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_G8), BB_SQUARE_F8), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_G8), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_F8), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_G8), SQUARE_F8), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_G8), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_F8), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
 	testBoard.UnapplyMove(m)
 
@@ -269,9 +269,9 @@ func TestApplyBlackKingsideCastle(t *testing.T) {
 	assert.True(t, testBoard.boardInfo.blackCanCastleKingside)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_E8), BB_SQUARE_H8), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_E8), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_H8), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_E8), SQUARE_H8), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_E8), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_H8), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 }
 
 func TestApplyWhiteQueensideCastle(t *testing.T) {
@@ -280,9 +280,9 @@ func TestApplyWhiteQueensideCastle(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_A1, WHITE_MASK|ROOK_MASK)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_E1), BB_SQUARE_A1), testBoard.bitboards.color[WHITE_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_E1), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_E1), SQUARE_A1), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_E1), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_A1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
 	var m = CreateQueensideCastle(SQUARE_E1, SQUARE_C1)
 
@@ -294,9 +294,9 @@ func TestApplyWhiteQueensideCastle(t *testing.T) {
 	assert.False(t, testBoard.boardInfo.whiteCanCastleQueenside)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_C1), BB_SQUARE_D1), testBoard.bitboards.color[WHITE_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_C1), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_D1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_C1), SQUARE_D1), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_C1), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_D1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
 	testBoard.UnapplyMove(m)
 
@@ -305,9 +305,9 @@ func TestApplyWhiteQueensideCastle(t *testing.T) {
 	assert.True(t, testBoard.boardInfo.whiteCanCastleQueenside)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_E1), BB_SQUARE_A1), testBoard.bitboards.color[WHITE_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_E1), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_E1), SQUARE_A1), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_E1), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_A1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 }
 
 func TestApplyBlackQueensideCastle(t *testing.T) {
@@ -318,9 +318,9 @@ func TestApplyBlackQueensideCastle(t *testing.T) {
 	testBoard.boardInfo.blackCanCastleQueenside = true
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_E8), BB_SQUARE_A8), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_E8), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A8), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_E8), SQUARE_A8), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_E8), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_A8), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
 	var m = CreateQueensideCastle(SQUARE_E8, SQUARE_C8)
 
@@ -332,9 +332,9 @@ func TestApplyBlackQueensideCastle(t *testing.T) {
 	assert.False(t, testBoard.boardInfo.blackCanCastleQueenside)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_C8), BB_SQUARE_D8), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_C8), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_D8), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_C8), SQUARE_D8), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_C8), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_D8), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
 	testBoard.UnapplyMove(m)
 
@@ -343,9 +343,9 @@ func TestApplyBlackQueensideCastle(t *testing.T) {
 	assert.True(t, testBoard.boardInfo.blackCanCastleQueenside)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_E8), BB_SQUARE_A8), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_E8), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A8), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_E8), SQUARE_A8), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_E8), testBoard.bitboards.piece[BITBOARD_KING_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_A8), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 }
 
 func TestWhitePawnPromotes(t *testing.T) {
@@ -354,8 +354,8 @@ func TestWhitePawnPromotes(t *testing.T) {
 	originalKey := testBoard.hashKey
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_H7), testBoard.bitboards.color[WHITE_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_H7), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_H7), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_H7), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_QUEEN_OFFSET])
 
 	var m = CreatePromotion(SQUARE_H7, SQUARE_H8, QUEEN_MASK)
@@ -365,9 +365,9 @@ func TestWhitePawnPromotes(t *testing.T) {
 	assert.Equal(t, EMPTY_SQUARE, testBoard.PieceAtSquare(SQUARE_H7))
 	assert.Equal(t, WHITE_MASK|QUEEN_MASK, testBoard.PieceAtSquare(SQUARE_H8))
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_H8), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_H8), testBoard.bitboards.color[WHITE_OFFSET])
 	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_H8), testBoard.bitboards.piece[BITBOARD_QUEEN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_H8), testBoard.bitboards.piece[BITBOARD_QUEEN_OFFSET])
 
 	testBoard.UnapplyMove(m)
 
@@ -376,8 +376,8 @@ func TestWhitePawnPromotes(t *testing.T) {
 	assert.Equal(t, originalKey, testBoard.hashKey)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_H7), testBoard.bitboards.color[WHITE_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_H7), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_H7), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_H7), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_QUEEN_OFFSET])
 }
 
@@ -388,8 +388,8 @@ func TestBlackPawnPromotes(t *testing.T) {
 	originalKey := testBoard.hashKey
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_D2), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_D2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_D2), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_D2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
 	var m = CreatePromotion(SQUARE_D2, SQUARE_D1, ROOK_MASK)
@@ -400,9 +400,9 @@ func TestBlackPawnPromotes(t *testing.T) {
 	assert.Equal(t, BLACK_MASK|ROOK_MASK, testBoard.PieceAtSquare(SQUARE_D1))
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_D1), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_D1), testBoard.bitboards.color[BLACK_OFFSET])
 	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_D1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_D1), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
 	testBoard.UnapplyMove(m)
 
@@ -411,8 +411,8 @@ func TestBlackPawnPromotes(t *testing.T) {
 	assert.Equal(t, originalKey, testBoard.hashKey)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_D2), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_D2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_D2), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_D2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 	assert.Equal(t, uint64(0), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 }
 
@@ -425,9 +425,9 @@ func TestEnPassantCapture(t *testing.T) {
 	originalKey := testBoard.hashKey
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A5), testBoard.bitboards.color[WHITE_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B5), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_B5), BB_SQUARE_A5), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_A5), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_B5), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_B5), SQUARE_A5), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 
 	var m = CreateEnPassantCapture(SQUARE_A5, SQUARE_B6)
 	testBoard.ApplyMove(m)
@@ -436,9 +436,9 @@ func TestEnPassantCapture(t *testing.T) {
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, testBoard.PieceAtSquare(SQUARE_B6))
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B6), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_B6), testBoard.bitboards.color[WHITE_OFFSET])
 	assert.Equal(t, uint64(0), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B6), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_B6), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 
 	testBoard.UnapplyMove(m)
 
@@ -448,9 +448,9 @@ func TestEnPassantCapture(t *testing.T) {
 	assert.Equal(t, originalKey, testBoard.hashKey)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_A5), testBoard.bitboards.color[WHITE_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_B5), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_B5), BB_SQUARE_A5), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_A5), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_B5), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_B5), SQUARE_A5), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 }
 
 func TestEnPassantCaptureBlack(t *testing.T) {
@@ -463,9 +463,9 @@ func TestEnPassantCaptureBlack(t *testing.T) {
 	originalKey := testBoard.hashKey
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_F4), testBoard.bitboards.color[WHITE_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_E4), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_F4), BB_SQUARE_E4), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_F4), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_E4), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_F4), SQUARE_E4), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 
 	var m = CreateEnPassantCapture(SQUARE_E4, SQUARE_F3)
 	testBoard.ApplyMove(m)
@@ -475,8 +475,8 @@ func TestEnPassantCaptureBlack(t *testing.T) {
 
 	// bitboard asserts
 	assert.Equal(t, uint64(0), testBoard.bitboards.color[WHITE_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_F3), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_F3), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_F3), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_F3), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 
 	testBoard.UnapplyMove(m)
 
@@ -486,9 +486,9 @@ func TestEnPassantCaptureBlack(t *testing.T) {
 	assert.Equal(t, originalKey, testBoard.hashKey)
 
 	// bitboard asserts
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_F4), testBoard.bitboards.color[WHITE_OFFSET])
-	assert.Equal(t, SetBitboard(0, BB_SQUARE_E4), testBoard.bitboards.color[BLACK_OFFSET])
-	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_F4), BB_SQUARE_E4), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_F4), testBoard.bitboards.color[WHITE_OFFSET])
+	assert.Equal(t, SetBitboard(0, SQUARE_E4), testBoard.bitboards.color[BLACK_OFFSET])
+	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_F4), SQUARE_E4), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 }
 
 func TestFiddlingWithQueensideRooks(t *testing.T) {

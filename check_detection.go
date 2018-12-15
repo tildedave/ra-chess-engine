@@ -33,34 +33,33 @@ func (boardState *BoardState) IsSquareUnderAttack(sq byte, colorMask byte) bool 
 	}
 
 	occupancy := boardState.bitboards.color[offset]
-	bbSq := legacySquareToBitboardSquare(sq)
 
-	if boardState.moveBitboards.knightAttacks[bbSq].board&boardState.bitboards.piece[KNIGHT_MASK]&occupancy != 0 {
+	if boardState.moveBitboards.knightAttacks[sq].board&boardState.bitboards.piece[KNIGHT_MASK]&occupancy != 0 {
 		return true
 	}
 
-	if boardState.moveBitboards.kingAttacks[bbSq].board&boardState.bitboards.piece[KING_MASK]&occupancy != 0 {
+	if boardState.moveBitboards.kingAttacks[sq].board&boardState.bitboards.piece[KING_MASK]&occupancy != 0 {
 		return true
 	}
 
 	allOccupancies := occupancy | boardState.bitboards.color[offsetForOurColor]
-	bishopKey := hashKey(allOccupancies, boardState.moveBitboards.bishopMagics[bbSq])
+	bishopKey := hashKey(allOccupancies, boardState.moveBitboards.bishopMagics[sq])
 
-	if boardState.moveBitboards.bishopAttacks[bbSq][bishopKey].board&
+	if boardState.moveBitboards.bishopAttacks[sq][bishopKey].board&
 		(boardState.bitboards.piece[BISHOP_MASK]|boardState.bitboards.piece[QUEEN_MASK])&occupancy != 0 {
 		return true
 	}
 
-	rookKey := hashKey(allOccupancies, boardState.moveBitboards.rookMagics[bbSq])
+	rookKey := hashKey(allOccupancies, boardState.moveBitboards.rookMagics[sq])
 
-	if boardState.moveBitboards.rookAttacks[bbSq][rookKey].board&
+	if boardState.moveBitboards.rookAttacks[sq][rookKey].board&
 		(boardState.bitboards.piece[ROOK_MASK]|boardState.bitboards.piece[QUEEN_MASK])&occupancy != 0 {
 		return true
 	}
 
 	// pawn attacks - pretend to be a pawn of our color, see if we're attacking a pawn of the opposite color
 	// TODO: does not handle en-passant (though this is not a check detection case)
-	if boardState.moveBitboards.pawnAttacks[offsetForOurColor][bbSq]&boardState.bitboards.piece[PAWN_MASK]&occupancy != 0 {
+	if boardState.moveBitboards.pawnAttacks[offsetForOurColor][sq]&boardState.bitboards.piece[PAWN_MASK]&occupancy != 0 {
 		return true
 	}
 

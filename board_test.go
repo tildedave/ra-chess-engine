@@ -1,34 +1,32 @@
 package main
 
 import (
-	"fmt"
-	"github.com/stretchr/testify/assert"
 	"testing"
-)
 
-var _ = fmt.Println
+	"github.com/stretchr/testify/assert"
+)
 
 func TestInitialBoard(t *testing.T) {
 	var initialBoard BoardState = CreateInitialBoardState()
 
-	assert.Equal(t, initialBoard.PieceAtSquare(RowAndColToSquare(0, 0)), WHITE_MASK|ROOK_MASK)
-	assert.Equal(t, initialBoard.PieceAtSquare(RowAndColToSquare(0, 1)), WHITE_MASK|KNIGHT_MASK)
+	assert.Equal(t, initialBoard.PieceAtSquare(idx(0, 0)), WHITE_MASK|ROOK_MASK)
+	assert.Equal(t, initialBoard.PieceAtSquare(idx(1, 0)), WHITE_MASK|KNIGHT_MASK)
 
 	for i := 0; i < 8; i++ {
-		piece := initialBoard.PieceAtSquare(RowAndColToSquare(1, byte(i)))
+		piece := initialBoard.PieceAtSquare(idx(byte(i), 1))
 		assert.Equal(t, piece, byte(WHITE_MASK|PAWN_MASK))
 		assert.True(t, isPieceWhite(piece))
 		assert.True(t, isPawn(piece))
 	}
 	for i := 2; i <= 5; i++ {
 		for j := 0; j < 8; j++ {
-			piece := initialBoard.PieceAtSquare(RowAndColToSquare(byte(i), byte(j)))
+			piece := initialBoard.PieceAtSquare(idx(byte(j), byte(i)))
 			assert.Equal(t, piece, byte(0x00))
 			assert.True(t, isSquareEmpty(piece))
 		}
 	}
 	for i := 0; i < 8; i++ {
-		piece := initialBoard.PieceAtSquare(RowAndColToSquare(6, byte(i)))
+		piece := initialBoard.PieceAtSquare(idx(byte(i), 6))
 		assert.Equal(t, piece, byte(BLACK_MASK|PAWN_MASK))
 		assert.True(t, isPieceBlack(piece))
 		assert.True(t, isPawn(piece))
@@ -62,9 +60,6 @@ func TestRank(t *testing.T) {
 }
 
 func TestSquareToAlgebraicString(t *testing.T) {
-	assert.Equal(t, "??", SquareToAlgebraicString(0))
-	assert.Equal(t, "??", SquareToAlgebraicString(10))
-	assert.Equal(t, "??", SquareToAlgebraicString(20))
 	assert.Equal(t, "a1", SquareToAlgebraicString(SQUARE_A1))
 	assert.Equal(t, "b1", SquareToAlgebraicString(SQUARE_B1))
 	assert.Equal(t, "c1", SquareToAlgebraicString(SQUARE_C1))
@@ -73,8 +68,6 @@ func TestSquareToAlgebraicString(t *testing.T) {
 	assert.Equal(t, "f1", SquareToAlgebraicString(SQUARE_F1))
 	assert.Equal(t, "g1", SquareToAlgebraicString(SQUARE_G1))
 	assert.Equal(t, "h1", SquareToAlgebraicString(SQUARE_H1))
-	assert.Equal(t, "??", SquareToAlgebraicString(29))
-	assert.Equal(t, "??", SquareToAlgebraicString(30))
 	assert.Equal(t, "a2", SquareToAlgebraicString(SQUARE_A2))
 	assert.Equal(t, "a3", SquareToAlgebraicString(SQUARE_A3))
 	assert.Equal(t, "a4", SquareToAlgebraicString(SQUARE_A4))
