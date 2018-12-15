@@ -39,7 +39,7 @@ func createKingBitboard(col byte, row byte) uint64 {
 	var kingMoveBitboard uint64
 	if row > 0 {
 		kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col, row-1))
-		if col > 1 {
+		if col > 0 {
 			kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col-1, row-1))
 		}
 		if col < 7 {
@@ -48,14 +48,14 @@ func createKingBitboard(col byte, row byte) uint64 {
 	}
 	if row < 7 {
 		kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col, row+1))
-		if col > 1 {
+		if col > 0 {
 			kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col-1, row+1))
 		}
 		if col < 7 {
 			kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col+1, row+1))
 		}
 	}
-	if col > 1 {
+	if col > 0 {
 		kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col-1, row))
 	}
 	if col < 7 {
