@@ -19,10 +19,6 @@ func isPieceWhite(p byte) bool {
 	return p&WHITE_MASK == WHITE_MASK
 }
 
-func isSentinel(p byte) bool {
-	return p == SENTINEL_MASK
-}
-
 func isPawn(p byte) bool {
 	return p&0x0F == PAWN_MASK
 }
@@ -96,7 +92,7 @@ func (boardState *BoardState) ToString() string {
 
 	for i := byte(0); i < 8; i++ {
 		for j := byte(0); j < 8; j++ {
-			var p = boardState.PieceAtSquare(RowAndColToSquare(i, j))
+			var p = boardState.PieceAtSquare(idx(j, i))
 			s[(7-i)*9+j] = pieceToString(p)
 		}
 		s[(7-i)*9+8] = '\n'
@@ -110,7 +106,7 @@ func (boardState *BoardState) ToFENString() string {
 	for i := byte(0); i < 8; i++ {
 		var numEmpty = 0
 		for j := byte(0); j < 8; j++ {
-			p := boardState.PieceAtSquare(RowAndColToSquare(7-i, j))
+			p := boardState.PieceAtSquare(idx(j, 7-i))
 			if isSquareEmpty(p) {
 				numEmpty++
 			} else {
@@ -175,12 +171,8 @@ func (boardState *BoardState) PieceAtSquare(sq uint8) byte {
 	return boardState.board[sq]
 }
 
-func RowAndColToSquare(row uint8, col uint8) uint8 {
-	return 20 + row*10 + 1 + col
-}
-
 func Rank(sq uint8) uint8 {
-	return (sq-1)/10 - 1
+	return sq/8 + 1
 }
 
 func ColumnToAlgebraicNotation(col uint8) string {
@@ -207,19 +199,11 @@ func ColumnToAlgebraicNotation(col uint8) string {
 }
 
 func SquareToAlgebraicString(sq uint8) string {
-	var row = sq / 10
-	var col = sq % 10
+	var row = sq / 8
+	var col = sq % 8
 
-	if row < 2 || row > 9 {
-		return "??"
-	}
-	if col == 0 || col == 9 {
-		return "??"
-	}
-
-	// No need to offset this as board is 1-indexed
-	var rowStr = strconv.Itoa(int(row - 1))
-	return ColumnToAlgebraicNotation(col) + rowStr
+	var rowStr = strconv.Itoa(int(row + 1))
+	return ColumnToAlgebraicNotation(col+1) + rowStr
 }
 
 type BoardInfo struct {
@@ -274,18 +258,14 @@ func CopyBoardState(boardState *BoardState) BoardState {
 func CreateEmptyBoardState() BoardState {
 	var b BoardState
 	b.board = []byte{
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-		0xFF, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
-		0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
+		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	}
 
 	b.whiteToMove = true
@@ -313,7 +293,7 @@ func CreateEmptyBoardState() BoardState {
 func generateBoardLookupInfo(boardState *BoardState) {
 	for i := byte(0); i < 8; i++ {
 		for j := byte(0); j < 8; j++ {
-			sq := RowAndColToSquare(i, j)
+			sq := idx(j, i)
 			p := boardState.board[sq]
 			if p == BLACK_MASK|KING_MASK {
 				boardState.lookupInfo.blackKingSquare = sq
@@ -353,7 +333,7 @@ func CreateBoardStateFromFENString(s string) (BoardState, error) {
 	for _, rowStr := range strings.Split(boardStr, "/") {
 		col := byte(0)
 		for _, pStr := range strings.Split(rowStr, "") {
-			sq := RowAndColToSquare(row, col)
+			sq := idx(col, row)
 			var p byte
 			switch pStr {
 			case "P":
@@ -502,7 +482,7 @@ func ParseAlgebraicSquare(sq string) (uint8, error) {
 		}
 	}
 
-	return RowAndColToSquare(row, col), nil
+	return idx(col, row), nil
 }
 
 func PieceToColorOffset(p byte) int {
@@ -520,18 +500,17 @@ func PieceToColorOffset(p byte) int {
 func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 	boardState.board[sq] = p
 
-	bbSq := legacySquareToBitboardSquare(sq)
 	if p != EMPTY_SQUARE {
 		colorOffset := PieceToColorOffset(p)
 		pieceOffset := p & 0x0F
-		boardState.bitboards.color[colorOffset] = SetBitboard(boardState.bitboards.color[colorOffset], bbSq)
-		boardState.bitboards.piece[pieceOffset] = SetBitboard(boardState.bitboards.piece[pieceOffset], bbSq)
+		boardState.bitboards.color[colorOffset] = SetBitboard(boardState.bitboards.color[colorOffset], sq)
+		boardState.bitboards.piece[pieceOffset] = SetBitboard(boardState.bitboards.piece[pieceOffset], sq)
 	} else {
 		for _, colorOffset := range []int{WHITE_OFFSET, BLACK_OFFSET} {
-			boardState.bitboards.color[colorOffset] = UnsetBitboard(boardState.bitboards.color[colorOffset], bbSq)
+			boardState.bitboards.color[colorOffset] = UnsetBitboard(boardState.bitboards.color[colorOffset], sq)
 		}
 		for _, pieceOffset := range BITBOARD_PIECES {
-			boardState.bitboards.piece[pieceOffset] = UnsetBitboard(boardState.bitboards.piece[pieceOffset], bbSq)
+			boardState.bitboards.piece[pieceOffset] = UnsetBitboard(boardState.bitboards.piece[pieceOffset], sq)
 		}
 	}
 }
@@ -567,9 +546,8 @@ func CreateCapturesFromBitboard(sq byte, moveBoard uint64) []Move {
 func sanityCheckBitboards(move Move, boardState *BoardState) {
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
-			legacySq := RowAndColToSquare(row, col)
 			sq := idx(col, row)
-			piece := boardState.PieceAtSquare(legacySq)
+			piece := boardState.PieceAtSquare(sq)
 			var isError = false
 			var message string
 			var bitboard uint64

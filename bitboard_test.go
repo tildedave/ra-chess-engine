@@ -7,15 +7,6 @@ import (
 	"github.com/stretchr/testify/assert"
 )
 
-func TestLegacySquareToBitboardSquare(t *testing.T) {
-	assert.Equal(t, byte(0), legacySquareToBitboardSquare(SQUARE_A1))
-	assert.Equal(t, byte(7), legacySquareToBitboardSquare(SQUARE_H1))
-	assert.Equal(t, byte(8), legacySquareToBitboardSquare(SQUARE_A2))
-	assert.Equal(t, byte(15), legacySquareToBitboardSquare(SQUARE_H2))
-	assert.Equal(t, byte(56), legacySquareToBitboardSquare(SQUARE_A8))
-	assert.Equal(t, byte(63), legacySquareToBitboardSquare(SQUARE_H8))
-}
-
 func TestSetUnsetBitboard(t *testing.T) {
 	bitboard := SetBitboard(0, SQUARE_D4)
 	bitboard2 := UnsetBitboard(bitboard, SQUARE_D3)

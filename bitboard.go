@@ -24,23 +24,6 @@ func BitboardsToString(b Bitboards) string {
 	return str
 }
 
-func legacySquareToBitboardSquare(sq byte) byte {
-	var row = sq / 10
-	var col = sq % 10
-
-	row = row - 2
-	col = col - 1
-
-	return row*8 + col
-}
-
-func bitboardSquareToLegacySquare(sq byte) byte {
-	var row = sq / 8
-	var col = sq % 8
-
-	return RowAndColToSquare(row, col)
-}
-
 func SetBitboard(bitboard uint64, sq byte) uint64 {
 	return (bitboard | (1 << sq))
 }

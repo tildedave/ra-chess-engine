@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/bits"
 )
 
 var _ = fmt.Println
@@ -40,6 +41,11 @@ var materialScore = [7]int{
 	0, PAWN_EVAL_SCORE, KNIGHT_EVAL_SCORE, BISHOP_EVAL_SCORE, ROOK_EVAL_SCORE, QUEEN_EVAL_SCORE, 0,
 }
 
+var pawnProtectionBoard = [2]uint64{
+	0x000000000000FF00,
+	0x00FF000000000000,
+}
+
 func Eval(boardState *BoardState) (BoardEval, bool) {
 	material := 0
 	boardPhase := PHASE_OPENING
@@ -55,8 +61,8 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 
 	for i := byte(0); i < 8; i++ {
 		for j := byte(0); j < 8; j++ {
-			p := boardState.PieceAtSquare(RowAndColToSquare(i, j))
-			if p != 0x00 && p != SENTINEL_MASK {
+			p := boardState.PieceAtSquare(idx(j, i))
+			if p != 0x00 {
 				pieceMask := p & 0x0F
 				score := materialScore[pieceMask]
 				isBlack := p&0xF0 == BLACK_MASK
@@ -149,21 +155,13 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 			kingPosition -= KING_CASTLED_EVAL_SCORE
 		}
 		if whiteKingSq == SQUARE_G1 || whiteKingSq == SQUARE_C1 || whiteKingSq == SQUARE_B1 {
-			pawns := 0
-			for i := byte(9); i < 12; i++ {
-				if boardState.PieceAtSquare(whiteKingSq+i) == PAWN_MASK|WHITE_MASK {
-					pawns++
-				}
-			}
+			pawns := bits.OnesCount64(boardState.moveBitboards.kingAttacks[whiteKingSq].board &
+				pawnProtectionBoard[WHITE_OFFSET])
 			kingPosition += pawns * KING_PAWN_COVER_EVAL_SCORE
 		}
-		if blackKingSq == SQUARE_G8 || whiteKingSq == SQUARE_C8 || whiteKingSq == SQUARE_B8 {
-			pawns := 0
-			for i := byte(9); i < 12; i++ {
-				if boardState.PieceAtSquare(blackKingSq-i) == PAWN_MASK|WHITE_MASK {
-					pawns++
-				}
-			}
+		if blackKingSq == SQUARE_G8 || blackKingSq == SQUARE_C8 || blackKingSq == SQUARE_B8 {
+			pawns := bits.OnesCount64(boardState.moveBitboards.kingAttacks[blackKingSq].board &
+				pawnProtectionBoard[BLACK_OFFSET])
 			kingPosition -= pawns * KING_PAWN_COVER_EVAL_SCORE
 		}
 	} else {

@@ -23,7 +23,7 @@ func CreateHashInfo(r *rand.Rand) HashInfo {
 
 	for i := byte(0); i < 8; i++ {
 		for j := byte(0); j < 8; j++ {
-			sq := RowAndColToSquare(i, j)
+			sq := idx(j, i)
 			for _, m := range []byte{WHITE_MASK, BLACK_MASK} {
 				hashInfo.content[sq][m|PAWN_MASK] = r.Uint32()
 				hashInfo.content[sq][m|KNIGHT_MASK] = r.Uint32()
@@ -35,8 +35,8 @@ func CreateHashInfo(r *rand.Rand) HashInfo {
 		}
 	}
 	for i := byte(0); i < 8; i++ {
-		hashInfo.enpassant[RowAndColToSquare(3, i)] = r.Uint32()
-		hashInfo.enpassant[RowAndColToSquare(6, i)] = r.Uint32()
+		hashInfo.enpassant[idx(i, 3)] = r.Uint32()
+		hashInfo.enpassant[idx(i, 6)] = r.Uint32()
 	}
 	// target square 0 is used for a 'clear' EP target
 	hashInfo.enpassant[0] = r.Uint32()
@@ -57,7 +57,7 @@ func (boardState *BoardState) CreateHashKey(info *HashInfo) uint32 {
 	}
 	for i := byte(0); i < 8; i++ {
 		for j := byte(0); j < 8; j++ {
-			sq := RowAndColToSquare(i, j)
+			sq := idx(j, i)
 			key ^= info.content[sq][boardState.board[sq]]
 		}
 	}
@@ -91,9 +91,9 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint32, oldBoardInfo Board
 		if move.IsEnPassantCapture() {
 			var pos uint8
 			if !boardState.whiteToMove {
-				pos = move.to - 10
+				pos = move.to - 8
 			} else {
-				pos = move.to + 10
+				pos = move.to + 8
 			}
 			key ^= info.content[pos][capturePiece]
 		} else {
@@ -166,9 +166,9 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint32, oldBoardInfo Boa
 		if move.IsEnPassantCapture() {
 			var pos uint8
 			if boardState.whiteToMove {
-				pos = move.to - 10
+				pos = move.to - 8
 			} else {
-				pos = move.to + 10
+				pos = move.to + 8
 			}
 			key ^= info.content[pos][boardState.board[pos]]
 		} else {

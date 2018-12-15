@@ -2,11 +2,8 @@ package main
 
 import (
 	"errors"
-	"fmt"
 	"strconv"
 )
-
-var _ = fmt.Println
 
 func (boardState *BoardState) ApplyMove(move Move) {
 	boardState.boardInfoHistory[boardState.moveIndex] = boardState.boardInfo
@@ -34,17 +31,17 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	}
 
 	if move.IsCapture() {
-		boardState.bitboards.color[otherOffset] = UnsetBitboard(boardState.bitboards.color[otherOffset], legacySquareToBitboardSquare(move.to))
-		boardState.bitboards.piece[capturedPiece&0x0F] = UnsetBitboard(boardState.bitboards.piece[capturedPiece&0x0F], legacySquareToBitboardSquare(move.to))
+		boardState.bitboards.color[otherOffset] = UnsetBitboard(boardState.bitboards.color[otherOffset], move.to)
+		boardState.bitboards.piece[capturedPiece&0x0F] = UnsetBitboard(boardState.bitboards.piece[capturedPiece&0x0F], move.to)
 	}
 
 	boardState.bitboards.piece[p&0x0F] = SetBitboard(
-		UnsetBitboard(boardState.bitboards.piece[p&0x0F], legacySquareToBitboardSquare(move.from)),
-		legacySquareToBitboardSquare(move.to))
+		UnsetBitboard(boardState.bitboards.piece[p&0x0F], move.from),
+		move.to)
 
 	boardState.bitboards.color[offset] = SetBitboard(
-		UnsetBitboard(boardState.bitboards.color[offset], legacySquareToBitboardSquare(move.from)),
-		legacySquareToBitboardSquare(move.to))
+		UnsetBitboard(boardState.bitboards.color[offset], move.from),
+		move.to)
 
 	var epTargetSquare = boardState.boardInfo.enPassantTargetSquare
 
@@ -58,11 +55,11 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.board[SQUARE_D1] = WHITE_MASK | ROOK_MASK
 
 			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], BB_SQUARE_A1),
-				BB_SQUARE_D1)
+				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_A1),
+				SQUARE_D1)
 			boardState.bitboards.color[WHITE_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[WHITE_OFFSET], BB_SQUARE_A1),
-				BB_SQUARE_D1)
+				UnsetBitboard(boardState.bitboards.color[WHITE_OFFSET], SQUARE_A1),
+				SQUARE_D1)
 
 			boardState.boardInfo.whiteCanCastleKingside = false
 			boardState.boardInfo.whiteCanCastleQueenside = false
@@ -73,11 +70,11 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.board[SQUARE_D8] = BLACK_MASK | ROOK_MASK
 
 			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], BB_SQUARE_A8),
-				BB_SQUARE_D8)
+				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_A8),
+				SQUARE_D8)
 			boardState.bitboards.color[BLACK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[BLACK_OFFSET], BB_SQUARE_A8),
-				BB_SQUARE_D8)
+				UnsetBitboard(boardState.bitboards.color[BLACK_OFFSET], SQUARE_A8),
+				SQUARE_D8)
 
 			boardState.boardInfo.blackCanCastleKingside = false
 			boardState.boardInfo.blackCanCastleQueenside = false
@@ -90,11 +87,11 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.board[SQUARE_F1] = WHITE_MASK | ROOK_MASK
 
 			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], BB_SQUARE_H1),
-				BB_SQUARE_F1)
+				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_H1),
+				SQUARE_F1)
 			boardState.bitboards.color[WHITE_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[WHITE_OFFSET], BB_SQUARE_H1),
-				BB_SQUARE_F1)
+				UnsetBitboard(boardState.bitboards.color[WHITE_OFFSET], SQUARE_H1),
+				SQUARE_F1)
 
 			boardState.boardInfo.whiteCanCastleKingside = false
 			boardState.boardInfo.whiteCanCastleQueenside = false
@@ -105,11 +102,11 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.board[SQUARE_F8] = BLACK_MASK | ROOK_MASK
 
 			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], BB_SQUARE_H8),
-				BB_SQUARE_F8)
+				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_H8),
+				SQUARE_F8)
 			boardState.bitboards.color[BLACK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[BLACK_OFFSET], BB_SQUARE_H8),
-				BB_SQUARE_F8)
+				UnsetBitboard(boardState.bitboards.color[BLACK_OFFSET], SQUARE_H8),
+				SQUARE_F8)
 
 			boardState.boardInfo.blackCanCastleKingside = false
 			boardState.boardInfo.blackCanCastleQueenside = false
@@ -145,20 +142,20 @@ func (boardState *BoardState) ApplyMove(move Move) {
 		case PAWN_MASK:
 			if !move.IsCapture() {
 				if move.to > move.from {
-					if move.to-move.from > 10 {
-						boardState.boardInfo.enPassantTargetSquare = move.from + 10
+					if move.to-move.from > 8 {
+						boardState.boardInfo.enPassantTargetSquare = move.from + 8
 					}
-				} else if move.from-move.to > 10 {
-					boardState.boardInfo.enPassantTargetSquare = move.from - 10
+				} else if move.from-move.to > 8 {
+					boardState.boardInfo.enPassantTargetSquare = move.from - 8
 				}
 			} else if move.to == epTargetSquare {
 				var pos uint8
 				var otherOffset int
 				if boardState.whiteToMove {
-					pos = move.to - 10
+					pos = move.to - 8
 					otherOffset = BLACK_OFFSET
 				} else {
-					pos = move.to + 10
+					pos = move.to + 8
 					otherOffset = WHITE_OFFSET
 				}
 
@@ -169,10 +166,10 @@ func (boardState *BoardState) ApplyMove(move Move) {
 				boardState.board[pos] = 0x00
 				boardState.bitboards.color[otherOffset] = UnsetBitboard(
 					boardState.bitboards.color[otherOffset],
-					legacySquareToBitboardSquare(pos))
+					pos)
 				boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = UnsetBitboard(
 					boardState.bitboards.piece[BITBOARD_PAWN_OFFSET],
-					legacySquareToBitboardSquare(pos))
+					pos)
 			}
 
 			if move.IsPromotion() {
@@ -181,12 +178,12 @@ func (boardState *BoardState) ApplyMove(move Move) {
 
 				boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = UnsetBitboard(
 					boardState.bitboards.piece[BITBOARD_PAWN_OFFSET],
-					legacySquareToBitboardSquare(move.to))
+					move.to)
 
 				offset := promotionPiece & 0x0F
 				boardState.bitboards.piece[offset] = SetBitboard(
 					boardState.bitboards.piece[offset],
-					legacySquareToBitboardSquare(move.to))
+					move.to)
 			}
 		}
 	}
@@ -218,8 +215,6 @@ func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
 
 	if fromPiece == EMPTY_SQUARE {
 		return false, errors.New("From square was empty")
-	} else if fromPiece == SENTINEL_MASK {
-		return false, errors.New("From square was sentinel")
 	} else if fromPiece&pieceMask != pieceMask {
 		return false, errors.New("From square was not occupied by expected piece: " + strconv.Itoa(int(fromPiece)))
 	}
@@ -233,8 +228,6 @@ func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
 			if !(isPawn(fromPiece) && move.to == boardState.boardInfo.enPassantTargetSquare) {
 				return false, errors.New("To square was empty for capture")
 			}
-		} else if toPiece == SENTINEL_MASK {
-			return false, errors.New("To square was a sentinel")
 		} else if toPiece&captureMask != captureMask {
 			return false, errors.New("To square was not occupied by piece of correct color: " + strconv.Itoa(int(toPiece)))
 		}
@@ -278,13 +271,13 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 		otherOffset = WHITE_OFFSET
 	}
 
-	boardState.bitboards.piece[p&0x0F] = SetBitboard(boardState.bitboards.piece[p&0x0F], legacySquareToBitboardSquare(move.from))
-	boardState.bitboards.color[offset] = SetBitboard(boardState.bitboards.color[offset], legacySquareToBitboardSquare(move.from))
-	boardState.bitboards.piece[p&0x0F] = UnsetBitboard(boardState.bitboards.piece[p&0x0F], legacySquareToBitboardSquare(move.to))
-	boardState.bitboards.color[offset] = UnsetBitboard(boardState.bitboards.color[offset], legacySquareToBitboardSquare(move.to))
+	boardState.bitboards.piece[p&0x0F] = SetBitboard(boardState.bitboards.piece[p&0x0F], move.from)
+	boardState.bitboards.color[offset] = SetBitboard(boardState.bitboards.color[offset], move.from)
+	boardState.bitboards.piece[p&0x0F] = UnsetBitboard(boardState.bitboards.piece[p&0x0F], move.to)
+	boardState.bitboards.color[offset] = UnsetBitboard(boardState.bitboards.color[offset], move.to)
 	if move.IsCapture() {
-		boardState.bitboards.color[otherOffset] = SetBitboard(boardState.bitboards.color[otherOffset], legacySquareToBitboardSquare(move.to))
-		boardState.bitboards.piece[capturedPiece&0x0F] = SetBitboard(boardState.bitboards.piece[capturedPiece&0x0F], legacySquareToBitboardSquare(move.to))
+		boardState.bitboards.color[otherOffset] = SetBitboard(boardState.bitboards.color[otherOffset], move.to)
+		boardState.bitboards.piece[capturedPiece&0x0F] = SetBitboard(boardState.bitboards.piece[capturedPiece&0x0F], move.to)
 	}
 
 	// TODO(perf) - just switch statement on the different conditions here, they are all mutually exclusive
@@ -295,11 +288,11 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.board[SQUARE_A1] = WHITE_MASK | ROOK_MASK
 
 			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], BB_SQUARE_D1),
-				BB_SQUARE_A1)
+				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_D1),
+				SQUARE_A1)
 			boardState.bitboards.color[WHITE_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[WHITE_OFFSET], BB_SQUARE_D1),
-				BB_SQUARE_A1)
+				UnsetBitboard(boardState.bitboards.color[WHITE_OFFSET], SQUARE_D1),
+				SQUARE_A1)
 
 			boardState.boardInfo.whiteCanCastleQueenside = true
 			boardState.boardInfo.whiteHasCastled = false
@@ -308,11 +301,11 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.board[SQUARE_A8] = BLACK_MASK | ROOK_MASK
 
 			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], BB_SQUARE_D8),
-				BB_SQUARE_A8)
+				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_D8),
+				SQUARE_A8)
 			boardState.bitboards.color[BLACK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[BLACK_OFFSET], BB_SQUARE_D8),
-				BB_SQUARE_A8)
+				UnsetBitboard(boardState.bitboards.color[BLACK_OFFSET], SQUARE_D8),
+				SQUARE_A8)
 
 			boardState.boardInfo.blackCanCastleQueenside = true
 			boardState.boardInfo.blackHasCastled = false
@@ -323,11 +316,11 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.board[SQUARE_H1] = WHITE_MASK | ROOK_MASK
 
 			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], BB_SQUARE_F1),
-				BB_SQUARE_H1)
+				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_F1),
+				SQUARE_H1)
 			boardState.bitboards.color[WHITE_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[WHITE_OFFSET], BB_SQUARE_F1),
-				BB_SQUARE_H1)
+				UnsetBitboard(boardState.bitboards.color[WHITE_OFFSET], SQUARE_F1),
+				SQUARE_H1)
 
 			boardState.boardInfo.whiteCanCastleKingside = true
 			boardState.boardInfo.whiteHasCastled = false
@@ -336,11 +329,11 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.board[SQUARE_H8] = BLACK_MASK | ROOK_MASK
 
 			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], BB_SQUARE_F8),
-				BB_SQUARE_H8)
+				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_F8),
+				SQUARE_H8)
 			boardState.bitboards.color[BLACK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[BLACK_OFFSET], BB_SQUARE_F8),
-				BB_SQUARE_H8)
+				UnsetBitboard(boardState.bitboards.color[BLACK_OFFSET], SQUARE_F8),
+				SQUARE_H8)
 
 			boardState.boardInfo.blackCanCastleKingside = true
 			boardState.boardInfo.blackHasCastled = false
@@ -360,11 +353,11 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			var otherOffset int
 			var offset int
 			if boardState.whiteToMove {
-				pos = move.to - 10
+				pos = move.to - 8
 				otherOffset = BLACK_OFFSET
 				offset = WHITE_OFFSET
 			} else {
-				pos = move.to + 10
+				pos = move.to + 8
 				offset = BLACK_OFFSET
 				otherOffset = WHITE_OFFSET
 			}
@@ -374,14 +367,14 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.boardInfo.enPassantTargetSquare = move.to
 
 			boardState.bitboards.color[offset] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[offset], legacySquareToBitboardSquare(move.to)),
-				legacySquareToBitboardSquare(move.from))
+				UnsetBitboard(boardState.bitboards.color[offset], move.to),
+				move.from)
 			boardState.bitboards.color[otherOffset] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[otherOffset], legacySquareToBitboardSquare(move.to)),
-				legacySquareToBitboardSquare(pos))
+				UnsetBitboard(boardState.bitboards.color[otherOffset], move.to),
+				pos)
 			boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_PAWN_OFFSET], legacySquareToBitboardSquare(move.to)),
-				legacySquareToBitboardSquare(pos))
+				UnsetBitboard(boardState.bitboards.piece[BITBOARD_PAWN_OFFSET], move.to),
+				pos)
 		}
 	}
 
@@ -396,12 +389,12 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 
 		boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = SetBitboard(
 			boardState.bitboards.piece[BITBOARD_PAWN_OFFSET],
-			legacySquareToBitboardSquare(move.from))
+			move.from)
 
 		offset := move.GetPromotionPiece() & 0x0F
 		boardState.bitboards.piece[offset] = UnsetBitboard(
 			boardState.bitboards.piece[offset],
-			legacySquareToBitboardSquare(move.from))
+			move.from)
 	}
 
 	boardState.hashKey = boardState.UpdateHashUnapplyMove(boardState.hashKey, oldBoardInfo, move)
