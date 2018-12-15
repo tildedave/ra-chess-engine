@@ -374,10 +374,6 @@ func GenerateSlidingMoves(rookMagics map[byte]Magic, bishopMagics map[byte]Magic
 
 			GenerateRookSlidingMoves(sq, rookMagics[sq], rookMoves[sq])
 			GenerateBishopSlidingMoves(sq, bishopMagics[sq], bishopMoves[sq])
-			// for all occupancies (including with pieces on the edges)
-			// mask occupancy with NON_EDGE_MASK, multiply by magic value
-			// generate to/from moves
-			// TODO: how do captures work here (?)
 		}
 	}
 }

@@ -13,15 +13,19 @@ type MoveListing struct {
 }
 
 type MoveBitboards struct {
-	pawnMoves   [2][64]uint64
-	pawnAttacks [2][64]uint64
-	kingMoves   [64]uint64
+	pawnMoves    [2][64]uint64
+	pawnAttacks  [2][64]uint64
+	kingMoves    [64]uint64
+	knightMoves  [64]uint64
+	bishopMagics map[byte]Magic
+	rookMagics   map[byte]Magic
 }
 
 func CreateMoveBitboards() MoveBitboards {
 	var pawnMoves [2][64]uint64
 	var pawnAttacks [2][64]uint64
 	var kingMoves [64]uint64
+	var knightMoves [64]uint64
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
@@ -29,10 +33,83 @@ func CreateMoveBitboards() MoveBitboards {
 			pawnMoves[WHITE_OFFSET][sq], pawnMoves[BLACK_OFFSET][sq] = createPawnMoveBitboards(col, row)
 			pawnAttacks[WHITE_OFFSET][sq], pawnAttacks[BLACK_OFFSET][sq] = createPawnAttackBitboards(col, row)
 			kingMoves[sq] = createKingBitboard(col, row)
+			knightMoves[sq] = createKnightBitboard(col, row)
 		}
 	}
 
-	return MoveBitboards{pawnAttacks: pawnAttacks, pawnMoves: pawnMoves, kingMoves: kingMoves}
+	rookMagics, err := inputMagicFile("rook-magics.json")
+	if err != nil {
+		panic(err)
+	}
+
+	bishopMagics, err := inputMagicFile("bishop-magics.json")
+	if err != nil {
+		panic(err)
+	}
+
+	return MoveBitboards{
+		pawnAttacks:  pawnAttacks,
+		pawnMoves:    pawnMoves,
+		kingMoves:    kingMoves,
+		knightMoves:  knightMoves,
+		bishopMagics: bishopMagics,
+		rookMagics:   rookMagics,
+	}
+}
+
+func createKnightBitboard(col byte, row byte) uint64 {
+	var knightMoveBitboard uint64
+	// 8 possibilities
+
+	if row < 6 {
+		// North
+		if col > 0 {
+			// East
+			knightMoveBitboard = SetBitboard(knightMoveBitboard, idx(col-1, row+2))
+		}
+		if col < 7 {
+			// West
+			knightMoveBitboard = SetBitboard(knightMoveBitboard, idx(col+1, row+2))
+		}
+	}
+
+	if row > 1 {
+		// South
+		if col > 0 {
+			// West
+			knightMoveBitboard = SetBitboard(knightMoveBitboard, idx(col-1, row-2))
+		}
+		if col < 7 {
+			// East
+			knightMoveBitboard = SetBitboard(knightMoveBitboard, idx(col+1, row-2))
+		}
+	}
+
+	if col > 1 {
+		// West
+		if row > 0 {
+			// South
+			knightMoveBitboard = SetBitboard(knightMoveBitboard, idx(col-2, row-1))
+		}
+		if row < 7 {
+			// North
+			knightMoveBitboard = SetBitboard(knightMoveBitboard, idx(col-2, row+1))
+		}
+	}
+
+	if col < 6 {
+		// East
+		if row > 0 {
+			// South
+			knightMoveBitboard = SetBitboard(knightMoveBitboard, idx(col+2, row-1))
+		}
+		if row < 7 {
+			// North
+			knightMoveBitboard = SetBitboard(knightMoveBitboard, idx(col+2, row+1))
+		}
+	}
+
+	return knightMoveBitboard
 }
 
 func createKingBitboard(col byte, row byte) uint64 {
@@ -182,14 +259,23 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 	// a stopping point
 	// Knight = 2, Bishop = 3, Rook = 4, Queen = 5, King = 6
 
-	if p&0x0F == KING_MASK {
+	pieceType := p & 0x0F
+	if pieceType == KING_MASK || pieceType == KNIGHT_MASK {
 		var offset int
 		if isWhite {
 			offset = WHITE_OFFSET
 		} else {
 			offset = BLACK_OFFSET
 		}
-		bb := boardState.moveBitboards.kingMoves[legacySquareToBitboardSquare(sq)] & ^boardState.bitboards.color[offset]
+
+		var moveArr [64]uint64
+		switch pieceType {
+		case KING_MASK:
+			moveArr = boardState.moveBitboards.kingMoves
+		case KNIGHT_MASK:
+			moveArr = boardState.moveBitboards.knightMoves
+		}
+		bb := moveArr[legacySquareToBitboardSquare(sq)] & ^boardState.bitboards.color[offset]
 		moves := CreateMovesFromBitboard(sq, bb)
 
 		// eventually this will need to be done at the very end ...
