@@ -27,6 +27,7 @@ type PerftOptions struct {
 	sanityCheck     bool
 	perftPrintMoves bool
 	depth           uint
+	divide          bool
 }
 
 func RunPerftJson(perftJsonFile string, options PerftOptions) (bool, error) {
@@ -66,6 +67,7 @@ func RunPerft(startingFen string, depth uint, options PerftOptions) (bool, error
 	for i := uint(0); i <= depth; i++ {
 		board, err := CreateBoardStateFromFENString(startingFen)
 		if err == nil {
+			options.depth = i
 			fmt.Println(Perft(&board, i, options))
 		} else {
 			fmt.Println(err)
@@ -99,72 +101,16 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 				testMoveLegality(boardState, move)
 				originalHashKey = boardState.hashKey
 
+				if boardState.board[boardState.lookupInfo.whiteKingSquare] != WHITE_MASK|KING_MASK {
+					fmt.Println(boardState.ToString())
+					panic("white king not at expected position")
+				}
 				if boardState.board[boardState.lookupInfo.blackKingSquare] != BLACK_MASK|KING_MASK {
 					fmt.Println(boardState.ToString())
 					panic("black king not at expected position")
 				}
-				for row := byte(0); row < 8; row++ {
-					for col := byte(0); col < 8; col++ {
-						legacySq := RowAndColToSquare(row, col)
-						sq := idx(col, row)
-						piece := boardState.PieceAtSquare(legacySq)
-						var isError = false
-						var message string
-						var bitboard uint64
 
-						if piece == EMPTY_SQUARE {
-							for _, colorOffset := range []int{WHITE_OFFSET, BLACK_OFFSET} {
-								if IsBitboardSet(boardState.bitboards.color[colorOffset], sq) {
-									isError = true
-									message = "Empty square had occupancy set"
-									bitboard = boardState.bitboards.color[colorOffset]
-								}
-							}
-							for _, pieceOffset := range BITBOARD_PIECES {
-								if IsBitboardSet(boardState.bitboards.piece[pieceOffset], sq) {
-									isError = true
-									message = "Empty square was set for piece offset"
-									bitboard = boardState.bitboards.color[pieceOffset]
-								}
-							}
-						} else {
-							colorOffset := PieceToColorOffset(piece)
-							var otherColorOffset = 1
-							if colorOffset == 1 {
-								otherColorOffset = 0
-							}
-							if !IsBitboardSet(boardState.bitboards.color[colorOffset], sq) {
-								isError = true
-								message = "Color occupancy bitboard was not set for piece on square"
-								bitboard = boardState.bitboards.color[colorOffset]
-							}
-							if IsBitboardSet(boardState.bitboards.color[otherColorOffset], sq) {
-								isError = true
-								message = "Color occupancy bitboard was set for opposite color of piece on square"
-								bitboard = boardState.bitboards.color[otherColorOffset]
-							}
-							for _, pieceOffset := range BITBOARD_PIECES {
-								if pieceOffset == piece&0x0F {
-									if !IsBitboardSet(boardState.bitboards.piece[pieceOffset], sq) {
-										isError = true
-										message = fmt.Sprintf("Piece occupancy bitboard was not set for piece on square (piece=%d)", pieceOffset)
-										bitboard = boardState.bitboards.piece[pieceOffset]
-									}
-								} else if IsBitboardSet(boardState.bitboards.piece[pieceOffset], sq) {
-									isError = true
-									message = "Piece occupancy bitboard was set for wrong kind of piece"
-									bitboard = boardState.bitboards.piece[pieceOffset]
-								}
-							}
-						}
-						if isError {
-							fmt.Println(boardState.ToString())
-							fmt.Println(BitboardToString(bitboard))
-							fmt.Println(MoveToString(move))
-							panic(message)
-						}
-					}
-				}
+				sanityCheckBitboards(move, boardState)
 			}
 
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
@@ -172,6 +118,12 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 			}
 
 			boardState.ApplyMove(move)
+
+			info := Perft(boardState, depth-1, options)
+			if options.divide && depth == options.depth {
+				fmt.Printf("%s %d\n", MoveToString(move), info.nodes)
+			}
+			addPerftInfo(&perftInfo, info)
 
 			if options.sanityCheck {
 				if boardState.board[boardState.lookupInfo.whiteKingSquare] != WHITE_MASK|KING_MASK {

@@ -28,6 +28,7 @@ func main() {
 	perftSanityCheck := flag.Bool("sanitycheck", false, "Perft: sanity check board and moves (slower)")
 	perftJSONFile := flag.String("perftjson", "", "JSON specification")
 	perftPrintMoves := flag.Bool("printmoves", false, "Perft: print all generates moves at final depth")
+	perftDivide := flag.Bool("perftdivide", false, "Perft: print divide of all moves at top depth")
 	isTactics := flag.Bool("tactics", false, "Tactics mode")
 	tacticsEpdFile := flag.String("tacticsepd", "", "Tactics file in EPD format")
 	tacticsFen := flag.String("tacticsfen", "", "Tactics position in FEN format")
@@ -47,6 +48,8 @@ func main() {
 		options.checks = *perftChecks
 		options.sanityCheck = *perftSanityCheck
 		options.perftPrintMoves = *perftPrintMoves
+		options.divide = *perftDivide
+		options.depth = *perftDepth
 
 		start := time.Now()
 		if *perftJSONFile != "" {
