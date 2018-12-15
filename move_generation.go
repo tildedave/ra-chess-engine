@@ -10,24 +10,31 @@ type MoveListing struct {
 	promotions []Move
 }
 
+type SquareAttacks struct {
+	moves []Move
+	board uint64
+}
+
 var moveBitboards *MoveBitboards
 
 type MoveBitboards struct {
-	pawnMoves          [2][64]uint64
-	pawnAttacks        [2][64]uint64
-	kingMoves          [64][]Move
-	knightMoves        [64][]Move
-	bishopMagics       map[byte]Magic
-	rookMagics         map[byte]Magic
-	rookSlidingMoves   map[byte]map[uint16][]Move
-	bishopSlidingMoves map[byte]map[uint16][]Move
+	pawnMoves   [2][64]uint64
+	pawnAttacks [2][64]uint64
+
+	knightAttacks [64]SquareAttacks
+	kingAttacks   [64]SquareAttacks
+
+	bishopMagics  map[byte]Magic
+	rookMagics    map[byte]Magic
+	rookAttacks   map[byte]map[uint16]SquareAttacks
+	bishopAttacks map[byte]map[uint16]SquareAttacks
 }
 
 func CreateMoveBitboards() MoveBitboards {
 	var pawnMoves [2][64]uint64
 	var pawnAttacks [2][64]uint64
-	var kingMoves [64][]Move
-	var knightMoves [64][]Move
+	var kingAttacks [64]SquareAttacks
+	var knightAttacks [64]SquareAttacks
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
@@ -35,8 +42,17 @@ func CreateMoveBitboards() MoveBitboards {
 
 			pawnMoves[WHITE_OFFSET][sq], pawnMoves[BLACK_OFFSET][sq] = createPawnMoveBitboards(col, row)
 			pawnAttacks[WHITE_OFFSET][sq], pawnAttacks[BLACK_OFFSET][sq] = createPawnAttackBitboards(col, row)
-			kingMoves[sq] = CreateMovesFromBitboard(sq, getKingMoveBitboard(sq))
-			knightMoves[sq] = CreateMovesFromBitboard(sq, getKnightMoveBitboard(sq))
+
+			kingSqAttacks := SquareAttacks{}
+			kingSqAttacks.board = getKingMoveBitboard(sq)
+			kingSqAttacks.moves = CreateMovesFromBitboard(sq, kingSqAttacks.board)
+
+			knightSqAttacks := SquareAttacks{}
+			knightSqAttacks.board = getKnightMoveBitboard(sq)
+			knightSqAttacks.moves = CreateMovesFromBitboard(sq, knightSqAttacks.board)
+
+			kingAttacks[sq] = kingSqAttacks
+			knightAttacks[sq] = knightSqAttacks
 		}
 	}
 
@@ -50,17 +66,17 @@ func CreateMoveBitboards() MoveBitboards {
 		panic(err)
 	}
 
-	rookSlidingMoves, bishopSlidingMoves := GenerateSlidingMoves(rookMagics, bishopMagics)
+	rookAttacks, bishopAttacks := GenerateSlidingMoves(rookMagics, bishopMagics)
 
 	return MoveBitboards{
-		pawnAttacks:        pawnAttacks,
-		pawnMoves:          pawnMoves,
-		kingMoves:          kingMoves,
-		knightMoves:        knightMoves,
-		bishopMagics:       bishopMagics,
-		rookMagics:         rookMagics,
-		rookSlidingMoves:   rookSlidingMoves,
-		bishopSlidingMoves: bishopSlidingMoves,
+		pawnAttacks:   pawnAttacks,
+		pawnMoves:     pawnMoves,
+		kingAttacks:   kingAttacks,
+		knightAttacks: knightAttacks,
+		bishopMagics:  bishopMagics,
+		rookMagics:    rookMagics,
+		rookAttacks:   rookAttacks,
+		bishopAttacks: bishopAttacks,
 	}
 }
 
@@ -293,25 +309,25 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 
 	switch pieceType {
 	case KING_MASK:
-		moves = moveBitboards.kingMoves[bbSq]
+		moves = moveBitboards.kingAttacks[bbSq].moves
 	case KNIGHT_MASK:
-		moves = moveBitboards.knightMoves[bbSq]
+		moves = moveBitboards.knightAttacks[bbSq].moves
 	case BISHOP_MASK:
 		otherOccupancy := boardState.bitboards.color[otherOffset]
 		magic := moveBitboards.bishopMagics[bbSq]
 		key := hashKey(occupancy|otherOccupancy, magic)
-		moves = moveBitboards.bishopSlidingMoves[bbSq][key]
+		moves = moveBitboards.bishopAttacks[bbSq][key].moves
 	case ROOK_MASK:
 		otherOccupancy := boardState.bitboards.color[otherOffset]
 		magic := moveBitboards.rookMagics[bbSq]
 		key := hashKey(occupancy|otherOccupancy, magic)
-		moves = moveBitboards.rookSlidingMoves[bbSq][key]
+		moves = moveBitboards.rookAttacks[bbSq][key].moves
 	case QUEEN_MASK:
 		otherOccupancy := boardState.bitboards.color[otherOffset]
 		bishopKey := hashKey(occupancy|otherOccupancy, moveBitboards.bishopMagics[bbSq])
-		moves = moveBitboards.bishopSlidingMoves[bbSq][bishopKey]
+		moves = moveBitboards.bishopAttacks[bbSq][bishopKey].moves
 		rookKey := hashKey(occupancy|otherOccupancy, moveBitboards.rookMagics[bbSq])
-		moves = append(moves, moveBitboards.rookSlidingMoves[bbSq][rookKey]...)
+		moves = append(moves, moveBitboards.rookAttacks[bbSq][rookKey].moves...)
 	}
 
 	for i := range moves {

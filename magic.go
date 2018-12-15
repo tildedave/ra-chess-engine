@@ -367,37 +367,53 @@ func GenerateMagicBitboards() error {
 func GenerateSlidingMoves(
 	rookMagics map[byte]Magic,
 	bishopMagics map[byte]Magic,
-) (map[byte]map[uint16][]Move, map[byte]map[uint16][]Move) {
-	rookMoves := make(map[byte]map[uint16][]Move, 0)
-	bishopMoves := make(map[byte]map[uint16][]Move, 0)
+) (map[byte]map[uint16]SquareAttacks, map[byte]map[uint16]SquareAttacks) {
+	rookAttacks := make(map[byte]map[uint16]SquareAttacks, 0)
+	bishopAttacks := make(map[byte]map[uint16]SquareAttacks, 0)
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
 			sq := idx(col, row)
-			rookMoves[sq] = make(map[uint16][]Move, 0)
-			bishopMoves[sq] = make(map[uint16][]Move, 0)
+			rookAttacks[sq] = make(map[uint16]SquareAttacks, 0)
+			bishopAttacks[sq] = make(map[uint16]SquareAttacks, 0)
 
-			GenerateRookSlidingMoves(sq, rookMagics[sq], rookMoves[sq])
-			GenerateBishopSlidingMoves(sq, bishopMagics[sq], bishopMoves[sq])
+			GenerateRookSlidingMoves(sq, rookMagics[sq], rookAttacks[sq])
+			GenerateBishopSlidingMoves(sq, bishopMagics[sq], bishopAttacks[sq])
 		}
 	}
 
-	return rookMoves, bishopMoves
+	return rookAttacks, bishopAttacks
 }
 
-func GenerateRookSlidingMoves(sq byte, magic Magic, moves map[uint16][]Move) {
+func GenerateRookSlidingMoves(
+	sq byte,
+	magic Magic,
+	attacks map[uint16]SquareAttacks,
+) {
 	occupancies := GenerateRookOccupancies(sq, true)
 	for _, occupancy := range occupancies {
 		key := hashKey(occupancy, magic)
-		moves[key] = CreateMovesFromBitboard(sq, RookMoveBoard(sq, occupancy))
+		attackBoard := RookMoveBoard(sq, occupancy)
+		attacks[key] = SquareAttacks{
+			board: attackBoard,
+			moves: CreateMovesFromBitboard(sq, attackBoard),
+		}
 	}
 }
 
-func GenerateBishopSlidingMoves(sq byte, magic Magic, moves map[uint16][]Move) {
+func GenerateBishopSlidingMoves(
+	sq byte,
+	magic Magic,
+	attacks map[uint16]SquareAttacks,
+) {
 	occupancies := GenerateBishopOccupancies(sq, true)
 	for _, occupancy := range occupancies {
 		key := hashKey(occupancy, magic)
-		moves[key] = CreateMovesFromBitboard(sq, BishopMoveBoard(sq, occupancy))
+		attackBoard := BishopMoveBoard(sq, occupancy)
+		attacks[key] = SquareAttacks{
+			board: attackBoard,
+			moves: CreateMovesFromBitboard(sq, attackBoard),
+		}
 	}
 }
 

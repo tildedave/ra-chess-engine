@@ -95,43 +95,45 @@ func TestGenerateRookSlidingMoves(t *testing.T) {
 		panic(err)
 	}
 
-	moves := make(map[uint16][]Move)
+	attacks := make(map[uint16]SquareAttacks)
+
 	a1Magic := magics[BB_SQUARE_A1]
-	GenerateRookSlidingMoves(BB_SQUARE_A1, a1Magic, moves)
+	GenerateRookSlidingMoves(BB_SQUARE_A1, a1Magic, attacks)
 
 	var bitboard uint64
 	bitboard = SetBitboard(bitboard, BB_SQUARE_A5)
 	bitboard = SetBitboard(bitboard, BB_SQUARE_G1)
 
 	key := hashKey(bitboard, a1Magic)
-	assert.Equal(t, 10, len(moves[key]))
-	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_A2)
-	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_A3)
-	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_A4)
-	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_A5)
-	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_B1)
-	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_C1)
-	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_D1)
-	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_E1)
-	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_F1)
-	assertMovePresent(t, moves[key], BB_SQUARE_A1, BB_SQUARE_G1)
+	assert.Equal(t, 10, len(attacks[key].moves))
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_A1, BB_SQUARE_A2)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_A1, BB_SQUARE_A3)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_A1, BB_SQUARE_A4)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_A1, BB_SQUARE_A5)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_A1, BB_SQUARE_B1)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_A1, BB_SQUARE_C1)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_A1, BB_SQUARE_D1)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_A1, BB_SQUARE_E1)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_A1, BB_SQUARE_F1)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_A1, BB_SQUARE_G1)
 
-	moves = make(map[uint16][]Move)
+	attacks = make(map[uint16]SquareAttacks)
+
 	d3Magic := magics[BB_SQUARE_D3]
-	GenerateRookSlidingMoves(BB_SQUARE_D3, d3Magic, moves)
+	GenerateRookSlidingMoves(BB_SQUARE_D3, d3Magic, attacks)
 
 	bitboard = 0
 	bitboard = SetBitboard(bitboard, BB_SQUARE_D2)
 	key = hashKey(bitboard, d3Magic)
-	assert.Equal(t, 13, len(moves[key]))
+	assert.Equal(t, 13, len(attacks[key].moves))
 
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D2)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D4)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D5)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D6)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D7)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D8)
-	assertMoveNotPresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_D1)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_D2)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_D4)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_D5)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_D6)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_D7)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_D8)
+	assertMoveNotPresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_D1)
 }
 
 func TestGenerateBishopSlidingMoves(t *testing.T) {
@@ -140,9 +142,9 @@ func TestGenerateBishopSlidingMoves(t *testing.T) {
 		panic(err)
 	}
 
-	moves := make(map[uint16][]Move)
+	attacks := make(map[uint16]SquareAttacks)
 	d3Magic := magics[BB_SQUARE_D3]
-	GenerateBishopSlidingMoves(BB_SQUARE_D3, d3Magic, moves)
+	GenerateBishopSlidingMoves(BB_SQUARE_D3, d3Magic, attacks)
 
 	var bitboard uint64
 	bitboard = SetBitboard(bitboard, BB_SQUARE_C2)
@@ -150,15 +152,15 @@ func TestGenerateBishopSlidingMoves(t *testing.T) {
 	bitboard = SetBitboard(bitboard, BB_SQUARE_G6)
 
 	key := hashKey(bitboard, d3Magic)
-	assert.Equal(t, 9, len(moves[key]))
+	assert.Equal(t, 9, len(attacks[key].moves))
 
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_E2)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_F1)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_E4)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_F5)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_G6)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_C2)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_C4)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_B5)
-	assertMovePresent(t, moves[key], BB_SQUARE_D3, BB_SQUARE_A6)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_E2)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_F1)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_E4)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_F5)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_G6)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_C2)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_C4)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_B5)
+	assertMovePresent(t, attacks[key].moves, BB_SQUARE_D3, BB_SQUARE_A6)
 }
