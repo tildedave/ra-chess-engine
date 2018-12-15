@@ -240,7 +240,7 @@ type BoardLookupInfo struct {
 type BoardState struct {
 	board         []byte
 	bitboards     Bitboards
-	moveBitboards MoveBitboards
+	moveBitboards *MoveBitboards
 	whiteToMove   bool
 	boardInfo     BoardInfo
 
@@ -298,7 +298,11 @@ func CreateEmptyBoardState() BoardState {
 	}
 	b.halfmoveClock = 0
 	b.fullmoveNumber = 1
-	b.moveBitboards = CreateMoveBitboards()
+	if moveBitboards == nil {
+		moveBoards := CreateMoveBitboards()
+		moveBitboards = &moveBoards
+	}
+	b.moveBitboards = moveBitboards
 	generateBoardLookupInfo(&b)
 	generateZobrishHashInfo(&b)
 	generateTranspositionTable(&b)
