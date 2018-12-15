@@ -11,8 +11,8 @@ var moveBitboards *MoveBitboards
 type MoveBitboards struct {
 	pawnMoves          [2][64]uint64
 	pawnAttacks        [2][64]uint64
-	kingMoves          [64]uint64
-	knightMoves        [64]uint64
+	kingMoves          [64][]Move
+	knightMoves        [64][]Move
 	bishopMagics       map[byte]Magic
 	rookMagics         map[byte]Magic
 	rookSlidingMoves   map[byte]map[uint16][]Move
@@ -22,18 +22,17 @@ type MoveBitboards struct {
 func CreateMoveBitboards() MoveBitboards {
 	var pawnMoves [2][64]uint64
 	var pawnAttacks [2][64]uint64
-	var kingMoves [64]uint64
-	var knightMoves [64]uint64
+	var kingMoves [64][]Move
+	var knightMoves [64][]Move
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
 			sq := idx(col, row)
 
-			// TODO: just pre-generate all these moves like we do for magics
 			pawnMoves[WHITE_OFFSET][sq], pawnMoves[BLACK_OFFSET][sq] = createPawnMoveBitboards(col, row)
 			pawnAttacks[WHITE_OFFSET][sq], pawnAttacks[BLACK_OFFSET][sq] = createPawnAttackBitboards(col, row)
-			kingMoves[sq] = createKingBitboard(col, row)
-			knightMoves[sq] = createKnightBitboard(col, row)
+			kingMoves[sq] = CreateMovesFromBitboard(sq, getKingMoveBitboard(sq))
+			knightMoves[sq] = CreateMovesFromBitboard(sq, getKnightMoveBitboard(sq))
 		}
 	}
 
@@ -61,7 +60,10 @@ func CreateMoveBitboards() MoveBitboards {
 	}
 }
 
-func createKnightBitboard(col byte, row byte) uint64 {
+func getKnightMoveBitboard(sq byte) uint64 {
+	col := sq % 8
+	row := sq / 8
+
 	var knightMoveBitboard uint64
 	// 8 possibilities
 
@@ -116,7 +118,9 @@ func createKnightBitboard(col byte, row byte) uint64 {
 	return knightMoveBitboard
 }
 
-func createKingBitboard(col byte, row byte) uint64 {
+func getKingMoveBitboard(sq byte) uint64 {
+	col := sq % 8
+	row := sq / 8
 	var kingMoveBitboard uint64
 	if row > 0 {
 		kingMoveBitboard = SetBitboard(kingMoveBitboard, idx(col, row-1))
@@ -280,11 +284,9 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 
 	switch pieceType {
 	case KING_MASK:
-		moveBoard := moveBitboards.kingMoves[bbSq] & ^occupancy
-		moves = CreateMovesFromBitboard(bbSq, moveBoard)
+		moves = moveBitboards.kingMoves[bbSq]
 	case KNIGHT_MASK:
-		moveBoard := moveBitboards.knightMoves[bbSq] & ^occupancy
-		moves = CreateMovesFromBitboard(bbSq, moveBoard)
+		moves = moveBitboards.knightMoves[bbSq]
 	case BISHOP_MASK:
 		otherOccupancy := boardState.bitboards.color[otherOffset]
 		magic := moveBitboards.bishopMagics[bbSq]

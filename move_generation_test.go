@@ -156,21 +156,17 @@ func TestCreateMoveBitboardsPawnAsserts(t *testing.T) {
 	assert.Equal(t, uint64(0x400000), moveBitboards.pawnAttacks[WHITE_OFFSET][BB_SQUARE_H2])
 }
 
-func TestCreateMoveBitboardsKingAsserts(t *testing.T) {
-	moveBitboards := CreateMoveBitboards()
-
-	assert.Equal(t, 8, bits.OnesCount64(moveBitboards.kingMoves[BB_SQUARE_D4]))
-	assert.Equal(t, 5, bits.OnesCount64(moveBitboards.kingMoves[BB_SQUARE_A2]))
-	assert.Equal(t, 5, bits.OnesCount64(moveBitboards.kingMoves[BB_SQUARE_H2]))
-	assert.Equal(t, 8, bits.OnesCount64(moveBitboards.kingMoves[BB_SQUARE_B4]))
-	assert.Equal(t, 8, bits.OnesCount64(moveBitboards.kingMoves[BB_SQUARE_G4]))
+func TestGetKingMoveBitboard(t *testing.T) {
+	assert.Equal(t, 8, bits.OnesCount64(getKingMoveBitboard(BB_SQUARE_D4)))
+	assert.Equal(t, 5, bits.OnesCount64(getKingMoveBitboard(BB_SQUARE_A2)))
+	assert.Equal(t, 5, bits.OnesCount64(getKingMoveBitboard(BB_SQUARE_H2)))
+	assert.Equal(t, 8, bits.OnesCount64(getKingMoveBitboard(BB_SQUARE_B4)))
+	assert.Equal(t, 8, bits.OnesCount64(getKingMoveBitboard(BB_SQUARE_G4)))
 	assert.Equal(t, SetBitboard(SetBitboard(SetBitboard(0, BB_SQUARE_A2), BB_SQUARE_B2), BB_SQUARE_B1),
-		moveBitboards.kingMoves[BB_SQUARE_A1])
+		getKingMoveBitboard(BB_SQUARE_A1))
 }
 
 func TestCreateMoveBitboardsKnightAsserts(t *testing.T) {
-	moveBitboards := CreateMoveBitboards()
-
 	// Test edges by traversing the board "up" and "down"
 	for i := byte(0); i < 7; i++ {
 		var expectedNumber int
@@ -186,11 +182,11 @@ func TestCreateMoveBitboardsKnightAsserts(t *testing.T) {
 		default:
 			expectedNumber = 8
 		}
-		assert.Equal(t, expectedNumber, bits.OnesCount64(moveBitboards.knightMoves[idx(i, 3)]))
-		assert.Equal(t, expectedNumber, bits.OnesCount64(moveBitboards.knightMoves[idx(3, i)]))
+		assert.Equal(t, expectedNumber, bits.OnesCount64(getKnightMoveBitboard(idx(i, 3))))
+		assert.Equal(t, expectedNumber, bits.OnesCount64(getKnightMoveBitboard(idx(3, i))))
 	}
 	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_B3), BB_SQUARE_C2),
-		moveBitboards.knightMoves[BB_SQUARE_A1])
+		getKnightMoveBitboard(BB_SQUARE_A1))
 }
 
 func TestCreateMovesFromBitboard(t *testing.T) {
