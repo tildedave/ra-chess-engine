@@ -183,7 +183,13 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 	// Knight = 2, Bishop = 3, Rook = 4, Queen = 5, King = 6
 
 	if p&0x0F == KING_MASK {
-		bb := boardState.moveBitboards.kingMoves[legacySquareToBitboardSquare(sq)] & ^boardState.bitboards.color[PieceToColorOffset(p)]
+		var offset int
+		if isWhite {
+			offset = WHITE_OFFSET
+		} else {
+			offset = BLACK_OFFSET
+		}
+		bb := boardState.moveBitboards.kingMoves[legacySquareToBitboardSquare(sq)] & ^boardState.bitboards.color[offset]
 		moves := CreateMovesFromBitboard(sq, bb)
 
 		// eventually this will need to be done at the very end ...

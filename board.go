@@ -535,6 +535,7 @@ func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 // CreateMovesFromBitboard transforms a bitboard and a square to a slice of moves.
 func CreateMovesFromBitboard(sq byte, moveBoard uint64) []Move {
 	moves := make([]Move, 0)
+
 	for moveBoard != 0 {
 		destSq := byte(bits.TrailingZeros64(moveBoard))
 		moveBoard ^= 1 << destSq
@@ -542,4 +543,69 @@ func CreateMovesFromBitboard(sq byte, moveBoard uint64) []Move {
 	}
 
 	return moves
+}
+
+func sanityCheckBitboards(move Move, boardState *BoardState) {
+	for row := byte(0); row < 8; row++ {
+		for col := byte(0); col < 8; col++ {
+			legacySq := RowAndColToSquare(row, col)
+			sq := idx(col, row)
+			piece := boardState.PieceAtSquare(legacySq)
+			var isError = false
+			var message string
+			var bitboard uint64
+
+			if piece == EMPTY_SQUARE {
+				for _, colorOffset := range []int{WHITE_OFFSET, BLACK_OFFSET} {
+					if IsBitboardSet(boardState.bitboards.color[colorOffset], sq) {
+						isError = true
+						message = "Empty square had occupancy set"
+						bitboard = boardState.bitboards.color[colorOffset]
+					}
+				}
+				for _, pieceOffset := range BITBOARD_PIECES {
+					if IsBitboardSet(boardState.bitboards.piece[pieceOffset], sq) {
+						isError = true
+						message = "Empty square was set for piece offset"
+						bitboard = boardState.bitboards.color[pieceOffset]
+					}
+				}
+			} else {
+				colorOffset := PieceToColorOffset(piece)
+				var otherColorOffset = 1
+				if colorOffset == 1 {
+					otherColorOffset = 0
+				}
+				if !IsBitboardSet(boardState.bitboards.color[colorOffset], sq) {
+					isError = true
+					message = "Color occupancy bitboard was not set for piece on square"
+					bitboard = boardState.bitboards.color[colorOffset]
+				}
+				if IsBitboardSet(boardState.bitboards.color[otherColorOffset], sq) {
+					isError = true
+					message = "Color occupancy bitboard was set for opposite color of piece on square"
+					bitboard = boardState.bitboards.color[otherColorOffset]
+				}
+				for _, pieceOffset := range BITBOARD_PIECES {
+					if pieceOffset == piece&0x0F {
+						if !IsBitboardSet(boardState.bitboards.piece[pieceOffset], sq) {
+							isError = true
+							message = fmt.Sprintf("Piece occupancy bitboard was not set for piece on square (piece=%d)", pieceOffset)
+							bitboard = boardState.bitboards.piece[pieceOffset]
+						}
+					} else if IsBitboardSet(boardState.bitboards.piece[pieceOffset], sq) {
+						isError = true
+						message = "Piece occupancy bitboard was set for wrong kind of piece"
+						bitboard = boardState.bitboards.piece[pieceOffset]
+					}
+				}
+			}
+			if isError {
+				fmt.Println(boardState.ToString())
+				fmt.Println(BitboardToString(bitboard))
+				fmt.Println(MoveToString(move))
+				panic(message)
+			}
+		}
+	}
 }
