@@ -6,6 +6,9 @@ import (
 	"io/ioutil"
 	"math/bits"
 	"math/rand"
+	"os"
+	"path"
+	"path/filepath"
 	"time"
 )
 
@@ -436,6 +439,18 @@ func outputMagicFile(magics map[byte]Magic, filename string) error {
 }
 
 func inputMagicFile(filename string) (map[byte]Magic, error) {
+	// Bad fix for finding the magic file in both xboard + test mode
+	_, err := os.Stat(filename)
+	if os.IsNotExist(err) {
+		ex, err := os.Executable()
+		if err != nil {
+			return nil, err
+		}
+		exPath := filepath.Dir(ex)
+
+		filename = path.Join(exPath, filename)
+	}
+
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
 		return nil, err
