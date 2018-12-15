@@ -31,6 +31,7 @@ func TestSearchStartingPosition(t *testing.T) {
 func TestSearchMateInOne(t *testing.T) {
 	boardState := CreateMateInOneBoard()
 
+	fmt.Println(boardState.ToString())
 	result := Search(&boardState, 2)
 
 	assert.Equal(t, CHECKMATE_SCORE, result.value)

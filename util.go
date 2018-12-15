@@ -50,7 +50,8 @@ func FlipBoardColors(boardState *BoardState) {
 			sq := RowAndColToSquare(i, j)
 			p := boardState.PieceAtSquare(sq)
 			if p != 0x00 && p != SENTINEL_MASK {
-				boardState.board[sq] = p ^ (WHITE_MASK | BLACK_MASK)
+				boardState.SetPieceAtSquare(sq, EMPTY_SQUARE)
+				boardState.SetPieceAtSquare(sq, p^(WHITE_MASK|BLACK_MASK))
 			}
 		}
 	}

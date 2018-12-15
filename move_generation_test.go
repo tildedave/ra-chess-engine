@@ -168,6 +168,31 @@ func TestCreateMoveBitboardsKingAsserts(t *testing.T) {
 		moveBitboards.kingMoves[BB_SQUARE_A1])
 }
 
+func TestCreateMoveBitboardsKnightAsserts(t *testing.T) {
+	moveBitboards := CreateMoveBitboards()
+
+	// Test edges by traversing the board "up" and "down"
+	for i := byte(0); i < 7; i++ {
+		var expectedNumber int
+		switch i {
+		case 0:
+			fallthrough
+		case 7:
+			expectedNumber = 4
+		case 1:
+			fallthrough
+		case 6:
+			expectedNumber = 6
+		default:
+			expectedNumber = 8
+		}
+		assert.Equal(t, expectedNumber, bits.OnesCount64(moveBitboards.knightMoves[idx(i, 3)]))
+		assert.Equal(t, expectedNumber, bits.OnesCount64(moveBitboards.knightMoves[idx(3, i)]))
+	}
+	assert.Equal(t, SetBitboard(SetBitboard(0, BB_SQUARE_B3), BB_SQUARE_C2),
+		moveBitboards.knightMoves[BB_SQUARE_A1])
+}
+
 func TestCreateMovesFromBitboard(t *testing.T) {
 	var bitboard uint64
 	bitboard = SetBitboard(bitboard, BB_SQUARE_A5)
