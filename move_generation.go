@@ -250,8 +250,6 @@ var offsetArr = [7][8]int8{
 	[8]int8{-10, -9, 1, 11, 10, 9, -1, -11},
 }
 
-var slidingPieces = [7]bool{false, false, false, true, true, true, false}
-
 // black is negative
 var whitePawnCaptureOffsetArr = [2]int8{9, 11}
 var blackPawnCaptureOffsetArr = [2]int8{-9, -11}
@@ -264,105 +262,66 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 	// Knight = 2, Bishop = 3, Rook = 4, Queen = 5, King = 6
 
 	pieceType := p & 0x0F
-	if pieceType == KING_MASK || pieceType == KNIGHT_MASK || pieceType == BISHOP_MASK || pieceType == ROOK_MASK {
-		var offset int
-		var otherOffset int
-		if isWhite {
-			offset = WHITE_OFFSET
-			otherOffset = BLACK_OFFSET
-		} else {
-			offset = BLACK_OFFSET
-			otherOffset = WHITE_OFFSET
-		}
-
-		moveBitboards := boardState.moveBitboards
-		occupancy := boardState.bitboards.color[offset]
-		bbSq := legacySquareToBitboardSquare(sq)
-
-		var moves []Move
-
-		switch pieceType {
-		case KING_MASK:
-			moveBoard := moveBitboards.kingMoves[bbSq] & ^occupancy
-			moves = CreateMovesFromBitboard(bbSq, moveBoard)
-		case KNIGHT_MASK:
-			moveBoard := moveBitboards.knightMoves[bbSq] & ^occupancy
-			moves = CreateMovesFromBitboard(bbSq, moveBoard)
-		case BISHOP_MASK:
-			otherOccupancy := boardState.bitboards.color[otherOffset]
-			magic := moveBitboards.bishopMagics[bbSq]
-			key := hashKey(occupancy|otherOccupancy, magic)
-			moves = moveBitboards.bishopSlidingMoves[bbSq][key]
-		case ROOK_MASK:
-			otherOccupancy := boardState.bitboards.color[otherOffset]
-			magic := moveBitboards.rookMagics[bbSq]
-			key := hashKey(occupancy|otherOccupancy, magic)
-			moves = moveBitboards.rookSlidingMoves[bbSq][key]
-		}
-
-		// eventually this will need to be done at the very end ...
-		// not sure the .moves/.captures works well for the bitboard setup.  need to think more
-
-		for i := range moves {
-			move := moves[i]
-			move.to = bitboardSquareToLegacySquare(move.to)
-			move.from = bitboardSquareToLegacySquare(move.from)
-
-			oppositePiece := boardState.PieceAtSquare(move.to)
-			if oppositePiece != EMPTY_SQUARE {
-				if oppositePiece&0xF0 != p&0xF0 {
-					move.flags |= CAPTURE_MASK
-					listing.captures = append(listing.captures, move)
-				} else {
-					// same color, just skip it
-					// I think this is how we need to filter out the precomputed sliding moves
-				}
-			} else {
-				listing.moves = append(listing.moves, move)
-			}
-		}
-		// TODO must also handle captures
+	var offset int
+	var otherOffset int
+	if isWhite {
+		offset = WHITE_OFFSET
+		otherOffset = BLACK_OFFSET
 	} else {
-		offsets := offsetArr[p&0x0F]
+		offset = BLACK_OFFSET
+		otherOffset = WHITE_OFFSET
+	}
 
-		var captureMask byte
-		if isWhite {
-			captureMask = BLACK_MASK
+	moveBitboards := boardState.moveBitboards
+	occupancy := boardState.bitboards.color[offset]
+	bbSq := legacySquareToBitboardSquare(sq)
+
+	var moves []Move
+
+	switch pieceType {
+	case KING_MASK:
+		moveBoard := moveBitboards.kingMoves[bbSq] & ^occupancy
+		moves = CreateMovesFromBitboard(bbSq, moveBoard)
+	case KNIGHT_MASK:
+		moveBoard := moveBitboards.knightMoves[bbSq] & ^occupancy
+		moves = CreateMovesFromBitboard(bbSq, moveBoard)
+	case BISHOP_MASK:
+		otherOccupancy := boardState.bitboards.color[otherOffset]
+		magic := moveBitboards.bishopMagics[bbSq]
+		key := hashKey(occupancy|otherOccupancy, magic)
+		moves = moveBitboards.bishopSlidingMoves[bbSq][key]
+	case ROOK_MASK:
+		otherOccupancy := boardState.bitboards.color[otherOffset]
+		magic := moveBitboards.rookMagics[bbSq]
+		key := hashKey(occupancy|otherOccupancy, magic)
+		moves = moveBitboards.rookSlidingMoves[bbSq][key]
+	case QUEEN_MASK:
+		otherOccupancy := boardState.bitboards.color[otherOffset]
+		bishopKey := hashKey(occupancy|otherOccupancy, moveBitboards.bishopMagics[bbSq])
+		moves = moveBitboards.bishopSlidingMoves[bbSq][bishopKey]
+		rookKey := hashKey(occupancy|otherOccupancy, moveBitboards.rookMagics[bbSq])
+		moves = append(moves, moveBitboards.rookSlidingMoves[bbSq][rookKey]...)
+	}
+
+	// eventually this will need to be done at the very end ...
+	// not sure the .moves/.captures works well for the bitboard setup.  need to think more
+
+	for i := range moves {
+		move := moves[i]
+		move.to = bitboardSquareToLegacySquare(move.to)
+		move.from = bitboardSquareToLegacySquare(move.from)
+
+		oppositePiece := boardState.PieceAtSquare(move.to)
+		if oppositePiece != EMPTY_SQUARE {
+			if oppositePiece&0xF0 != p&0xF0 {
+				move.flags |= CAPTURE_MASK
+				listing.captures = append(listing.captures, move)
+			} else {
+				// same color, just skip it
+				// I think this is how we need to filter out the precomputed sliding moves
+			}
 		} else {
-			captureMask = WHITE_MASK
-		}
-
-		for _, value := range offsets {
-			var dest byte = sq
-			if value == 0 {
-				continue
-			}
-
-			// we'll continue until we have to stop
-			for true {
-				dest = uint8(int8(dest) + value)
-				destPiece := boardState.board[dest]
-
-				if destPiece == SENTINEL_MASK {
-					// stop - end of the board
-					break
-				} else if destPiece == EMPTY_SQUARE {
-					// keep moving
-					listing.moves = append(listing.moves, CreateMove(sq, dest))
-				} else {
-					if destPiece&captureMask == captureMask {
-						listing.captures = append(listing.captures, CreateCapture(sq, dest))
-					}
-
-					// stop - hit another piece or made a capture
-					break
-				}
-
-				// stop - piece type only gets one move
-				if !slidingPieces[p&0x0F] {
-					break
-				}
-			}
+			listing.moves = append(listing.moves, move)
 		}
 	}
 
