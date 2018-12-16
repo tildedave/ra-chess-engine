@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"math"
 	"math/bits"
 	"math/rand"
 	"os"
@@ -370,15 +371,15 @@ func GenerateMagicBitboards() error {
 func GenerateSlidingMoves(
 	rookMagics [64]Magic,
 	bishopMagics [64]Magic,
-) ([64]map[uint16]SquareAttacks, [64]map[uint16]SquareAttacks) {
-	var rookAttacks [64]map[uint16]SquareAttacks
-	var bishopAttacks [64]map[uint16]SquareAttacks
+) ([64][]SquareAttacks, [64][]SquareAttacks) {
+	var rookAttacks [64][]SquareAttacks
+	var bishopAttacks [64][]SquareAttacks
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
 			sq := idx(col, row)
-			rookAttacks[sq] = make(map[uint16]SquareAttacks, 0)
-			bishopAttacks[sq] = make(map[uint16]SquareAttacks, 0)
+			rookAttacks[sq] = make([]SquareAttacks, math.MaxInt16)
+			bishopAttacks[sq] = make([]SquareAttacks, math.MaxInt16)
 
 			GenerateRookSlidingMoves(sq, rookMagics[sq], rookAttacks[sq])
 			GenerateBishopSlidingMoves(sq, bishopMagics[sq], bishopAttacks[sq])
@@ -391,7 +392,7 @@ func GenerateSlidingMoves(
 func GenerateRookSlidingMoves(
 	sq byte,
 	magic Magic,
-	attacks map[uint16]SquareAttacks,
+	attacks []SquareAttacks,
 ) {
 	occupancies := GenerateRookOccupancies(sq, true)
 	for _, occupancy := range occupancies {
@@ -407,7 +408,7 @@ func GenerateRookSlidingMoves(
 func GenerateBishopSlidingMoves(
 	sq byte,
 	magic Magic,
-	attacks map[uint16]SquareAttacks,
+	attacks []SquareAttacks,
 ) {
 	occupancies := GenerateBishopOccupancies(sq, true)
 	for _, occupancy := range occupancies {

@@ -26,8 +26,8 @@ type MoveBitboards struct {
 
 	bishopMagics  [64]Magic
 	rookMagics    [64]Magic
-	rookAttacks   [64]map[uint16]SquareAttacks
-	bishopAttacks [64]map[uint16]SquareAttacks
+	rookAttacks   [64][]SquareAttacks
+	bishopAttacks [64][]SquareAttacks
 }
 
 func CreateMoveBitboards() MoveBitboards {
