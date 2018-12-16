@@ -43,7 +43,7 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 			}
 		}
 
-		prettyMove, err := RunTacticsFen(fen, options)
+		prettyMove, result, err := RunTacticsFen(fen, options)
 		if err != nil {
 			return false, err
 		}
@@ -56,7 +56,8 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 		} else {
 			res = "\033[1;31mFAIL\033[0m"
 		}
-		fmt.Printf("[%s - %s] expected=%s result=%s\n", name, res, bestMove, prettyMove)
+		fmt.Printf("[%s - %s] expected=%s result=%s (score=%d, nodes=%d, depth=%d)\n",
+			name, res, bestMove, prettyMove, result.value, result.nodes, result.depth)
 	}
 
 	fmt.Printf("Complete.  %d/%d positions correct (%.2f%%)\n", successPositions, totalPositions,
@@ -68,14 +69,14 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 	return false, nil
 }
 
-func RunTacticsFen(fen string, options TacticsOptions) (string, error) {
+func RunTacticsFen(fen string, options TacticsOptions) (string, SearchResult, error) {
 	boardState, err := CreateBoardStateFromFENString(fen)
 
 	if err != nil {
-		return "", err
+		return "", SearchResult{}, err
 	}
 
-	ch := make(chan Move)
+	ch := make(chan SearchResult)
 	thinkingChan := make(chan ThinkingOutput)
 	output := bufio.NewWriter(os.Stderr)
 
@@ -94,7 +95,7 @@ func RunTacticsFen(fen string, options TacticsOptions) (string, error) {
 	config.isDebug = options.tacticsDebug
 
 	go thinkAndChooseMove(&boardState, options.thinkingtimeMs, config, ch, thinkingChan)
-	move := <-ch
+	result := <-ch
 
-	return MoveToPrettyString(move, &boardState), nil
+	return MoveToPrettyString(result.move, &boardState), result, nil
 }
