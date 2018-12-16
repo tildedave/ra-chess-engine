@@ -42,6 +42,13 @@ func Max(x, y int) int {
 	return x
 }
 
+func MaxUint(x, y uint) uint {
+	if x < y {
+		return y
+	}
+	return x
+}
+
 // FlipBoardColors switches all white/black pieces and resets the piece to move.
 // Used for the tests.
 func FlipBoardColors(boardState *BoardState) {

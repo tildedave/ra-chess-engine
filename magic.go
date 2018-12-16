@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math"
 	"math/bits"
 	"math/rand"
 	"os"
@@ -378,8 +377,9 @@ func GenerateSlidingMoves(
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
 			sq := idx(col, row)
-			rookAttacks[sq] = make([]SquareAttacks, math.MaxInt16)
-			bishopAttacks[sq] = make([]SquareAttacks, math.MaxInt16)
+
+			rookAttacks[sq] = make([]SquareAttacks, 1<<(rookMagics[sq].Bits+1))
+			bishopAttacks[sq] = make([]SquareAttacks, 1<<(bishopMagics[sq].Bits+1))
 
 			GenerateRookSlidingMoves(sq, rookMagics[sq], rookAttacks[sq])
 			GenerateBishopSlidingMoves(sq, bishopMagics[sq], bishopAttacks[sq])
