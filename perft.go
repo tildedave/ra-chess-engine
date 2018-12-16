@@ -76,7 +76,9 @@ func RunPerft(startingFen string, depth uint, options PerftOptions) (bool, error
 
 		if err == nil {
 			options.depth = i
-			fmt.Println(Perft(&board, i, options, MoveSizeHint{}))
+			start := time.Now()
+			result := Perft(&board, i, options, MoveSizeHint{})
+			fmt.Printf("%d\t%10d\t%s\n", i, result.nodes, time.Since(start))
 		} else {
 			fmt.Println(err)
 		}
