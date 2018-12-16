@@ -13,13 +13,14 @@ var CHECK_FLAG byte = 0x20
 var THREEFOLD_REP_FLAG byte = 0x10
 
 type SearchResult struct {
-	move  Move
-	value int
-	flags byte
-	nodes uint
-	time  int64
-	depth uint
-	pv    string
+	move        Move
+	value       int
+	flags       byte
+	nodes       uint
+	hashCutoffs uint
+	time        int64
+	depth       uint
+	pv          string
 }
 
 type SearchConfig struct {
@@ -80,6 +81,8 @@ func searchAlphaBeta(
 	}
 
 	var nodes uint
+	var hashCutoffs uint
+
 	listing, hint := GenerateMoveListing(boardState, hint)
 	var bestResult *SearchResult
 
@@ -128,6 +131,7 @@ func searchAlphaBeta(
 				result.move = move
 				result.depth++
 				nodes += result.nodes
+				hashCutoffs += result.hashCutoffs
 
 				if bestResult == nil {
 					bestResult = &result
@@ -152,6 +156,9 @@ func searchAlphaBeta(
 			boardState.UnapplyMove(move)
 
 			if searchConfig.alpha >= searchConfig.beta {
+				if i == 0 {
+					hashCutoffs++
+				}
 				break
 			}
 		}
@@ -165,6 +172,7 @@ func searchAlphaBeta(
 	}
 
 	bestResult.nodes = nodes
+	bestResult.hashCutoffs = hashCutoffs
 	StoreTranspositionTable(boardState, bestResult, depth)
 
 	return *bestResult

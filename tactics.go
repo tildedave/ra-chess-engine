@@ -56,8 +56,8 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 		} else {
 			res = "\033[1;31mFAIL\033[0m"
 		}
-		fmt.Printf("[%s - %s] expected=%s result=%s (score=%d, nodes=%d, depth=%d)\n",
-			name, res, bestMove, prettyMove, result.value, result.nodes, result.depth)
+		fmt.Printf("[%s - %s] expected=%s result=%s (score=%d, nodes=%d, cutoffs=%d, depth=%d)\n",
+			name, res, bestMove, prettyMove, result.value, result.nodes, result.hashCutoffs, result.depth)
 	}
 
 	fmt.Printf("Complete.  %d/%d positions correct (%.2f%%)\n", successPositions, totalPositions,
