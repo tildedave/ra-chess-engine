@@ -29,8 +29,8 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	}
 
 	if move.IsCapture() {
-		boardState.bitboards.color[otherOffset] = UnsetBitboard(boardState.bitboards.color[otherOffset], move.to)
-		boardState.bitboards.piece[capturedPiece&0x0F] = UnsetBitboard(boardState.bitboards.piece[capturedPiece&0x0F], move.to)
+		boardState.bitboards.color[otherOffset] = FlipBitboard(boardState.bitboards.color[otherOffset], move.to)
+		boardState.bitboards.piece[capturedPiece&0x0F] = FlipBitboard(boardState.bitboards.piece[capturedPiece&0x0F], move.to)
 	}
 
 	boardState.bitboards.piece[p&0x0F] = FlipBitboard2(boardState.bitboards.piece[p&0x0F], move.from, move.to)
@@ -45,11 +45,13 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.board[SQUARE_A1] = EMPTY_SQUARE
 			boardState.board[SQUARE_D1] = WHITE_MASK | ROOK_MASK
 
-			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_A1),
+			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = FlipBitboard2(
+				boardState.bitboards.piece[BITBOARD_ROOK_OFFSET],
+				SQUARE_A1,
 				SQUARE_D1)
-			boardState.bitboards.color[WHITE_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[WHITE_OFFSET], SQUARE_A1),
+			boardState.bitboards.color[WHITE_OFFSET] = FlipBitboard2(
+				boardState.bitboards.color[WHITE_OFFSET],
+				SQUARE_A1,
 				SQUARE_D1)
 
 			boardState.boardInfo.whiteCanCastleKingside = false
@@ -59,11 +61,13 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.board[SQUARE_A8] = EMPTY_SQUARE
 			boardState.board[SQUARE_D8] = BLACK_MASK | ROOK_MASK
 
-			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_A8),
+			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = FlipBitboard2(
+				boardState.bitboards.piece[BITBOARD_ROOK_OFFSET],
+				SQUARE_A8,
 				SQUARE_D8)
-			boardState.bitboards.color[BLACK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[BLACK_OFFSET], SQUARE_A8),
+			boardState.bitboards.color[BLACK_OFFSET] = FlipBitboard2(
+				boardState.bitboards.color[BLACK_OFFSET],
+				SQUARE_A8,
 				SQUARE_D8)
 
 			boardState.boardInfo.blackCanCastleKingside = false
@@ -75,11 +79,13 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.board[SQUARE_H1] = EMPTY_SQUARE
 			boardState.board[SQUARE_F1] = WHITE_MASK | ROOK_MASK
 
-			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_H1),
+			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = FlipBitboard2(
+				boardState.bitboards.piece[BITBOARD_ROOK_OFFSET],
+				SQUARE_H1,
 				SQUARE_F1)
-			boardState.bitboards.color[WHITE_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[WHITE_OFFSET], SQUARE_H1),
+			boardState.bitboards.color[WHITE_OFFSET] = FlipBitboard2(
+				boardState.bitboards.color[WHITE_OFFSET],
+				SQUARE_H1,
 				SQUARE_F1)
 
 			boardState.boardInfo.whiteCanCastleKingside = false
@@ -89,11 +95,13 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.board[SQUARE_H8] = EMPTY_SQUARE
 			boardState.board[SQUARE_F8] = BLACK_MASK | ROOK_MASK
 
-			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_H8),
+			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = FlipBitboard2(
+				boardState.bitboards.piece[BITBOARD_ROOK_OFFSET],
+				SQUARE_H8,
 				SQUARE_F8)
-			boardState.bitboards.color[BLACK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[BLACK_OFFSET], SQUARE_H8),
+			boardState.bitboards.color[BLACK_OFFSET] = FlipBitboard2(
+				boardState.bitboards.color[BLACK_OFFSET],
+				SQUARE_H8,
 				SQUARE_F8)
 
 			boardState.boardInfo.blackCanCastleKingside = false
@@ -145,14 +153,17 @@ func (boardState *BoardState) ApplyMove(move Move) {
 				}
 
 				// captureStack is wrong in this case (it has a 0 on it) so we need to fix it
+				// other piece bitboards are also wrong b/c we flipped the to square :(
+
 				// better to do this check now than above because EP is not common
 				boardState.captureStack.Pop()
 				boardState.captureStack.Push(boardState.board[pos])
 				boardState.board[pos] = 0x00
-				boardState.bitboards.color[otherOffset] = UnsetBitboard(
+				boardState.bitboards.color[otherOffset] = FlipBitboard2(
 					boardState.bitboards.color[otherOffset],
-					pos)
-				boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = UnsetBitboard(
+					pos,
+					move.to)
+				boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = FlipBitboard(
 					boardState.bitboards.piece[BITBOARD_PAWN_OFFSET],
 					pos)
 			}
@@ -161,7 +172,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 				promotionPiece := move.GetPromotionPiece()
 				boardState.board[move.to] = promotionPiece | offsetToMoveToColorMask(boardState.offsetToMove)
 
-				boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = UnsetBitboard(
+				boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = FlipBitboard(
 					boardState.bitboards.piece[BITBOARD_PAWN_OFFSET],
 					move.to)
 
@@ -280,11 +291,13 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.board[SQUARE_D1] = 0x00
 			boardState.board[SQUARE_A1] = WHITE_MASK | ROOK_MASK
 
-			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_D1),
+			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = FlipBitboard2(
+				boardState.bitboards.piece[BITBOARD_ROOK_OFFSET],
+				SQUARE_D1,
 				SQUARE_A1)
-			boardState.bitboards.color[WHITE_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[WHITE_OFFSET], SQUARE_D1),
+			boardState.bitboards.color[WHITE_OFFSET] = FlipBitboard2(
+				boardState.bitboards.color[WHITE_OFFSET],
+				SQUARE_D1,
 				SQUARE_A1)
 
 			boardState.boardInfo.whiteCanCastleQueenside = true
@@ -293,11 +306,13 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.board[SQUARE_D8] = 0x00
 			boardState.board[SQUARE_A8] = BLACK_MASK | ROOK_MASK
 
-			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_D8),
+			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = FlipBitboard2(
+				boardState.bitboards.piece[BITBOARD_ROOK_OFFSET],
+				SQUARE_D8,
 				SQUARE_A8)
-			boardState.bitboards.color[BLACK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[BLACK_OFFSET], SQUARE_D8),
+			boardState.bitboards.color[BLACK_OFFSET] = FlipBitboard2(
+				boardState.bitboards.color[BLACK_OFFSET],
+				SQUARE_D8,
 				SQUARE_A8)
 
 			boardState.boardInfo.blackCanCastleQueenside = true
@@ -308,11 +323,11 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.board[SQUARE_F1] = 0x00
 			boardState.board[SQUARE_H1] = WHITE_MASK | ROOK_MASK
 
-			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_F1),
+			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = FlipBitboard2(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET],
+				SQUARE_F1,
 				SQUARE_H1)
-			boardState.bitboards.color[WHITE_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[WHITE_OFFSET], SQUARE_F1),
+			boardState.bitboards.color[WHITE_OFFSET] = FlipBitboard2(boardState.bitboards.color[WHITE_OFFSET],
+				SQUARE_F1,
 				SQUARE_H1)
 
 			boardState.boardInfo.whiteCanCastleKingside = true
@@ -321,11 +336,13 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.board[SQUARE_F8] = 0x00
 			boardState.board[SQUARE_H8] = BLACK_MASK | ROOK_MASK
 
-			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.piece[BITBOARD_ROOK_OFFSET], SQUARE_F8),
+			boardState.bitboards.piece[BITBOARD_ROOK_OFFSET] = FlipBitboard2(
+				boardState.bitboards.piece[BITBOARD_ROOK_OFFSET],
+				SQUARE_F8,
 				SQUARE_H8)
-			boardState.bitboards.color[BLACK_OFFSET] = SetBitboard(
-				UnsetBitboard(boardState.bitboards.color[BLACK_OFFSET], SQUARE_F8),
+			boardState.bitboards.color[BLACK_OFFSET] = FlipBitboard2(
+				boardState.bitboards.color[BLACK_OFFSET],
+				SQUARE_F8,
 				SQUARE_H8)
 
 			boardState.boardInfo.blackCanCastleKingside = true
@@ -379,7 +396,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			move.from)
 
 		offset := move.GetPromotionPiece() & 0x0F
-		boardState.bitboards.piece[offset] = UnsetBitboard(
+		boardState.bitboards.piece[offset] = FlipBitboard(
 			boardState.bitboards.piece[offset],
 			move.from)
 	}
