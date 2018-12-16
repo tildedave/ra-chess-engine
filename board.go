@@ -283,15 +283,16 @@ func CreateEmptyBoardState() BoardState {
 	}
 	b.halfmoveClock = 0
 	b.fullmoveNumber = 1
-	if moveBitboards == nil {
-		moveBoards := CreateMoveBitboards()
-		moveBitboards = &moveBoards
-	}
 	b.moveBitboards = moveBitboards
 	generateZobrishHashInfo(&b)
 	generateTranspositionTable(&b)
 
 	return b
+}
+
+func InitializeMoveBitboards() {
+	moveBoards := CreateMoveBitboards()
+	moveBitboards = &moveBoards
 }
 
 func generateZobrishHashInfo(boardState *BoardState) {
