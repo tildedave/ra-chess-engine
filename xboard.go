@@ -88,7 +88,7 @@ ReadLoop:
 		case ACTION_THINK_AND_MOVE:
 			sendBoardAsComment(output, state.boardState)
 
-			ch := make(chan Move)
+			ch := make(chan SearchResult)
 			thinkingChan := make(chan ThinkingOutput)
 
 			go func() {
@@ -100,7 +100,8 @@ ReadLoop:
 			}()
 
 			go thinkAndChooseMove(state.boardState, 5000, ExternalSearchConfig{}, ch, thinkingChan)
-			move := <-ch
+			result := <-ch
+			move := result.move
 
 			sendStringMessage(output, fmt.Sprintf("move %s\n", MoveToXboardString(move)))
 
@@ -149,7 +150,7 @@ func thinkAndChooseMove(
 	boardState *BoardState,
 	thinkingTimeMs uint,
 	config ExternalSearchConfig,
-	ch chan Move,
+	ch chan SearchResult,
 	thinkingChan chan ThinkingOutput,
 ) {
 	searchQuit := make(chan bool)
@@ -202,7 +203,7 @@ func thinkAndChooseMove(
 			}
 		}
 
-		ch <- bestResult.move
+		ch <- bestResult
 		close(ch)
 		close(thinkingChan)
 		searchQuit <- true

@@ -86,8 +86,9 @@ func main() {
 		if *tacticsEpdFile != "" {
 			success, err = RunTacticsFile(*tacticsEpdFile, options)
 		} else if *tacticsFen != "" {
-			prettyMove, err := RunTacticsFen(*tacticsFen, options)
+			prettyMove, result, err := RunTacticsFen(*tacticsFen, options)
 			if err != nil {
+				fmt.Println(SearchResultToString(result))
 				fmt.Printf("Move: %s\n", prettyMove)
 			}
 		}

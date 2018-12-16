@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
+	"time"
 )
 
 type PerftSpecification struct {
@@ -47,12 +48,15 @@ func RunPerftJson(perftJsonFile string, options PerftOptions) (bool, error) {
 			fmt.Println(err)
 			continue
 		}
+
+		start := time.Now()
 		perftResult := Perft(&board, spec.Depth, options, MoveSizeHint{})
+		elapsed := time.Since(start)
 		if perftResult.nodes != spec.Nodes {
-			fmt.Printf("NOT OK: %s (depth=%d, expected nodes=%d, actual nodes=%d)\n", spec.Fen, spec.Depth, spec.Nodes, perftResult.nodes)
+			fmt.Printf("NOT OK: %s (depth=%d, expected nodes=%d, actual nodes=%d; duration=%s)\n", spec.Fen, spec.Depth, spec.Nodes, perftResult.nodes, elapsed)
 			allSuccess = false
 		} else {
-			fmt.Printf("OK: %s (depth=%d, nodes=%d)\n", spec.Fen, spec.Depth, spec.Nodes)
+			fmt.Printf("OK: %s (depth=%d, nodes=%d; duration=%s)\n", spec.Fen, spec.Depth, spec.Nodes, elapsed)
 		}
 	}
 
