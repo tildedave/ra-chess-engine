@@ -84,7 +84,7 @@ func RunPerft(startingFen string, depth uint, options PerftOptions) (bool, error
 func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 	var perftInfo PerftInfo
 
-	if options.checks && boardState.IsInCheck(boardState.whiteToMove) {
+	if options.checks && boardState.IsInCheck(boardState.offsetToMove) {
 		perftInfo.checks += 1
 	}
 
@@ -114,7 +114,14 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 			boardState.ApplyMove(move)
 
 			wasValid := false
-			if !boardState.IsInCheck(!boardState.whiteToMove) {
+			var otherOffset int
+			switch boardState.offsetToMove {
+			case WHITE_OFFSET:
+				otherOffset = BLACK_OFFSET
+			case BLACK_OFFSET:
+				otherOffset = WHITE_OFFSET
+			}
+			if !boardState.IsInCheck(otherOffset) {
 				wasValid = true
 
 				if move.IsCapture() {

@@ -63,5 +63,5 @@ func FlipBoardColors(boardState *BoardState) {
 		}
 	}
 
-	boardState.whiteToMove = !boardState.whiteToMove
+	boardState.offsetToMove = oppositeColorOffset(boardState.offsetToMove)
 }

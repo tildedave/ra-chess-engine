@@ -11,7 +11,7 @@ type HashInfo struct {
 	// this is a sparse array - will be indexed by offset and piece type
 	content                 [255][255]uint64
 	enpassant               [255]uint64 // indexed by offset
-	whiteToMove             uint64
+	offsetToMove            uint64
 	whiteCanCastleKingside  uint64
 	whiteCanCastleQueenside uint64
 	blackCanCastleKingside  uint64
@@ -40,7 +40,7 @@ func CreateHashInfo(r *rand.Rand) HashInfo {
 	}
 	// target square 0 is used for a 'clear' EP target
 	hashInfo.enpassant[0] = r.Uint64()
-	hashInfo.whiteToMove = r.Uint64()
+	hashInfo.offsetToMove = r.Uint64()
 	hashInfo.whiteCanCastleKingside = r.Uint64()
 	hashInfo.whiteCanCastleQueenside = r.Uint64()
 	hashInfo.blackCanCastleKingside = r.Uint64()
@@ -52,8 +52,8 @@ func CreateHashInfo(r *rand.Rand) HashInfo {
 func (boardState *BoardState) CreateHashKey(info *HashInfo) uint64 {
 	var key uint64
 
-	if boardState.whiteToMove {
-		key ^= info.whiteToMove
+	if boardState.offsetToMove == WHITE_OFFSET {
+		key ^= info.offsetToMove
 	}
 	for i := byte(0); i < 8; i++ {
 		for j := byte(0); j < 8; j++ {
@@ -90,7 +90,7 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo Board
 
 		if move.IsEnPassantCapture() {
 			var pos uint8
-			if !boardState.whiteToMove {
+			if boardState.offsetToMove == BLACK_OFFSET {
 				pos = move.to - 8
 			} else {
 				pos = move.to + 8
@@ -105,7 +105,7 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo Board
 	var fromPiece uint8
 
 	if move.IsPromotion() {
-		colorMask := whiteToMoveToColorMask(!boardState.whiteToMove)
+		colorMask := offsetToMoveToColorMask(oppositeColorOffset(boardState.offsetToMove))
 		pieceMask := move.GetPromotionPiece()
 		toPiece = colorMask | pieceMask
 		fromPiece = colorMask | PAWN_MASK
@@ -116,9 +116,9 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo Board
 
 	key ^= info.content[move.to][toPiece]
 	key ^= info.content[move.from][fromPiece]
-	key ^= info.whiteToMove
+	key ^= info.offsetToMove
 
-	if !boardState.whiteToMove {
+	if boardState.offsetToMove == BLACK_OFFSET {
 		if move.IsKingsideCastle() {
 			key ^= info.content[SQUARE_H1][WHITE_MASK|ROOK_MASK]
 			key ^= info.content[SQUARE_F1][WHITE_MASK|ROOK_MASK]
@@ -165,7 +165,7 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo Boa
 		// we've already put back the piece since this is done after move is unapplied
 		if move.IsEnPassantCapture() {
 			var pos uint8
-			if boardState.whiteToMove {
+			if boardState.offsetToMove == WHITE_OFFSET {
 				pos = move.to - 8
 			} else {
 				pos = move.to + 8
@@ -180,7 +180,7 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo Boa
 	var fromPiece uint8
 
 	if move.IsPromotion() {
-		colorMask := whiteToMoveToColorMask(boardState.whiteToMove)
+		colorMask := offsetToMoveToColorMask(boardState.offsetToMove)
 		pieceMask := move.GetPromotionPiece()
 		toPiece = colorMask | pieceMask
 		fromPiece = colorMask | PAWN_MASK
@@ -191,9 +191,9 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo Boa
 
 	key ^= info.content[move.to][toPiece]
 	key ^= info.content[move.from][fromPiece]
-	key ^= info.whiteToMove
+	key ^= info.offsetToMove
 
-	if boardState.whiteToMove {
+	if boardState.offsetToMove == WHITE_OFFSET {
 		if move.IsKingsideCastle() {
 			key ^= info.content[SQUARE_H1][WHITE_MASK|ROOK_MASK]
 			key ^= info.content[SQUARE_F1][WHITE_MASK|ROOK_MASK]

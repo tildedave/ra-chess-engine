@@ -115,7 +115,7 @@ func TestMoveGenerationFromPawnPromotion(t *testing.T) {
 func TestMoveGenerationFromPawnPromotionBlack(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_A2, BLACK_MASK|PAWN_MASK)
-	testBoard.whiteToMove = false
+	testBoard.offsetToMove = BLACK_OFFSET
 
 	moves := GenerateMoves(&testBoard)
 	assert.Equal(t, 4, len(moves))

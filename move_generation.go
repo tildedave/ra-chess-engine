@@ -221,18 +221,10 @@ func createMoveListing() MoveListing {
 func GenerateMoveListing(boardState *BoardState) MoveListing {
 	listing := createMoveListing()
 
-	var isWhite = boardState.whiteToMove
-	var offset int
-	if isWhite {
-		offset = WHITE_OFFSET
-	} else {
-		offset = BLACK_OFFSET
-	}
-
-	occupancy := boardState.bitboards.color[offset]
+	occupancy := boardState.bitboards.color[boardState.offsetToMove]
 	for occupancy != 0 {
 		sq := byte(bits.TrailingZeros64(occupancy))
-		GenerateMovesFromSquare(boardState, sq, isWhite, &listing)
+		GenerateMovesFromSquare(boardState, sq, boardState.offsetToMove, &listing)
 
 		occupancy ^= 1 << sq
 	}
@@ -240,12 +232,12 @@ func GenerateMoveListing(boardState *BoardState) MoveListing {
 	return listing
 }
 
-func GenerateMovesFromSquare(boardState *BoardState, sq byte, isWhite bool, listing *MoveListing) {
+func GenerateMovesFromSquare(boardState *BoardState, sq byte, offset int, listing *MoveListing) {
 	p := boardState.board[sq]
 	if !isPawn(p) {
-		generatePieceMoves(boardState, p, sq, isWhite, listing)
+		generatePieceMoves(boardState, p, sq, offset, listing)
 	} else {
-		generatePawnMoves(boardState, p, sq, isWhite, listing)
+		generatePawnMoves(boardState, p, sq, offset, listing)
 	}
 }
 
@@ -265,7 +257,7 @@ func GenerateMoves(boardState *BoardState) []Move {
 	return moves
 }
 
-func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, listing *MoveListing) {
+func generatePieceMoves(boardState *BoardState, p byte, sq byte, offset int, listing *MoveListing) {
 	// 8 possible directions to go (for the queen + king + knight)
 	// 4 directions for bishop + rook
 	// queen, bishop, and rook will continue along a "ray" until they find
@@ -273,13 +265,10 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 	// Knight = 2, Bishop = 3, Rook = 4, Queen = 5, King = 6
 
 	pieceType := p & 0x0F
-	var offset int
 	var otherOffset int
-	if isWhite {
-		offset = WHITE_OFFSET
+	if offset == WHITE_OFFSET {
 		otherOffset = BLACK_OFFSET
 	} else {
-		offset = BLACK_OFFSET
 		otherOffset = WHITE_OFFSET
 	}
 
@@ -331,7 +320,7 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 	// this doesn't have the provision against 'castle through check' or
 	// 'castle outside of check' which we'll do later outside of move generation
 	if p&0x0F == KING_MASK {
-		if boardState.whiteToMove {
+		if boardState.offsetToMove == WHITE_OFFSET {
 			if boardState.boardInfo.whiteCanCastleKingside &&
 				boardState.board[SQUARE_F1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_G1] == EMPTY_SQUARE &&
@@ -363,15 +352,15 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, isWhite bool, l
 	}
 }
 
-func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, listing *MoveListing) {
+func generatePawnMoves(boardState *BoardState, p byte, sq byte, offset int, listing *MoveListing) {
 	var otherOffset int
-	var offset int
-	if isWhite {
-		offset = WHITE_OFFSET
+	var isWhite bool
+	if offset == WHITE_OFFSET {
 		otherOffset = BLACK_OFFSET
+		isWhite = true
 	} else {
-		offset = BLACK_OFFSET
 		otherOffset = WHITE_OFFSET
+		isWhite = false
 	}
 
 	otherOccupancies := boardState.bitboards.color[otherOffset]
@@ -383,7 +372,7 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, li
 
 	for _, capture := range captures {
 		var destRank = Rank(capture.to)
-		if (isWhite && destRank == RANK_8) || (!isWhite && destRank == RANK_1) {
+		if (offset == WHITE_OFFSET && destRank == RANK_8) || (offset == BLACK_OFFSET && destRank == RANK_1) {
 			// promotion time
 			var flags byte = PROMOTION_MASK | CAPTURE_MASK
 			capture.flags = flags | QUEEN_MASK
@@ -404,7 +393,7 @@ func generatePawnMoves(boardState *BoardState, p byte, sq byte, isWhite bool, li
 
 	// TODO: must handle the double moves and being blocked by another piece
 	var sqOffset int8
-	if isWhite {
+	if offset == WHITE_OFFSET {
 		sqOffset = 8
 	} else {
 		sqOffset = -8

@@ -13,7 +13,7 @@ func TestNotInCheck(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|KING_MASK)
 
-	assert.False(t, testBoard.IsInCheck(true))
+	assert.False(t, testBoard.IsInCheck(WHITE_OFFSET))
 }
 
 func TestInCheckBishop(t *testing.T) {
@@ -21,7 +21,7 @@ func TestInCheckBishop(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_G8, BLACK_MASK|BISHOP_MASK)
 
-	assert.True(t, testBoard.IsInCheck(true))
+	assert.True(t, testBoard.IsInCheck(WHITE_OFFSET))
 }
 
 func TestInCheckBishopAsBlack(t *testing.T) {
@@ -30,7 +30,7 @@ func TestInCheckBishopAsBlack(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_A2, BLACK_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_G8, WHITE_MASK|BISHOP_MASK)
 
-	assert.True(t, testBoard.IsInCheck(false))
+	assert.True(t, testBoard.IsInCheck(BLACK_OFFSET))
 }
 
 func TestInCheckRook(t *testing.T) {
@@ -38,7 +38,7 @@ func TestInCheckRook(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A8, BLACK_MASK|ROOK_MASK)
 
-	assert.True(t, testBoard.IsInCheck(true))
+	assert.True(t, testBoard.IsInCheck(WHITE_OFFSET))
 }
 
 func TestInCheckKnight(t *testing.T) {
@@ -46,7 +46,7 @@ func TestInCheckKnight(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_B4, BLACK_MASK|KNIGHT_MASK)
 
-	assert.True(t, testBoard.IsInCheck(true))
+	assert.True(t, testBoard.IsInCheck(WHITE_OFFSET))
 }
 
 func TestInCheckPawn(t *testing.T) {
@@ -54,7 +54,7 @@ func TestInCheckPawn(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_B3, BLACK_MASK|PAWN_MASK)
 
-	assert.True(t, testBoard.IsInCheck(true))
+	assert.True(t, testBoard.IsInCheck(WHITE_OFFSET))
 }
 
 func TestBlackKingDoesNotCheckWhiteKing(t *testing.T) {
@@ -63,7 +63,7 @@ func TestBlackKingDoesNotCheckWhiteKing(t *testing.T) {
 
 	testBoard.ApplyMove(CreateCapture(SQUARE_H7, SQUARE_H4))
 
-	assert.False(t, testBoard.IsInCheck(false))
+	assert.False(t, testBoard.IsInCheck(BLACK_OFFSET))
 }
 
 func TestKingsCheckEachOther(t *testing.T) {
@@ -71,8 +71,8 @@ func TestKingsCheckEachOther(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A3, BLACK_MASK|KING_MASK)
 
-	assert.True(t, testBoard.IsInCheck(true))
-	assert.True(t, testBoard.IsInCheck(false))
+	assert.True(t, testBoard.IsInCheck(WHITE_OFFSET))
+	assert.True(t, testBoard.IsInCheck(BLACK_OFFSET))
 }
 
 func TestEnPassantRemovesCheck(t *testing.T) {
@@ -81,5 +81,5 @@ func TestEnPassantRemovesCheck(t *testing.T) {
 
 	testBoard.ApplyMove(CreateCapture(SQUARE_C4, SQUARE_D3))
 
-	assert.False(t, testBoard.IsInCheck(false))
+	assert.False(t, testBoard.IsInCheck(BLACK_OFFSET))
 }

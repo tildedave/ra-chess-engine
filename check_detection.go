@@ -7,32 +7,21 @@ import (
 
 var _ = fmt.Println
 
-func (boardState *BoardState) IsInCheck(whiteInCheck bool) bool {
+func (boardState *BoardState) IsInCheck(offset int) bool {
 	var kingSq byte
-	var oppositeColorMask byte
-	if whiteInCheck {
+	var oppositeColorOffset int
+	if offset == WHITE_OFFSET {
 		kingSq = byte(bits.TrailingZeros64(boardState.bitboards.color[WHITE_OFFSET] & boardState.bitboards.piece[KING_MASK]))
-		oppositeColorMask = BLACK_MASK
+		oppositeColorOffset = BLACK_OFFSET
 	} else {
 		kingSq = byte(bits.TrailingZeros64(boardState.bitboards.color[BLACK_OFFSET] & boardState.bitboards.piece[KING_MASK]))
-		oppositeColorMask = WHITE_MASK
+		oppositeColorOffset = WHITE_OFFSET
 	}
 
-	return boardState.IsSquareUnderAttack(kingSq, oppositeColorMask)
+	return boardState.IsSquareUnderAttack(kingSq, oppositeColorOffset, offset)
 }
 
-func (boardState *BoardState) IsSquareUnderAttack(sq byte, colorMask byte) bool {
-	// var offset int
-	var offset int
-	var offsetForOurColor int
-	if colorMask == WHITE_MASK {
-		offset = WHITE_OFFSET
-		offsetForOurColor = BLACK_OFFSET
-	} else {
-		offset = BLACK_OFFSET
-		offsetForOurColor = WHITE_OFFSET
-	}
-
+func (boardState *BoardState) IsSquareUnderAttack(sq byte, offset int, offsetForOurColor int) bool {
 	occupancy := boardState.bitboards.color[offset]
 
 	if boardState.moveBitboards.knightAttacks[sq].board&boardState.bitboards.piece[KNIGHT_MASK]&occupancy != 0 {
@@ -68,25 +57,25 @@ func (boardState *BoardState) IsSquareUnderAttack(sq byte, colorMask byte) bool 
 }
 
 func (boardState *BoardState) TestCastleLegality(move Move) bool {
-	if boardState.whiteToMove {
+	if boardState.offsetToMove == WHITE_OFFSET {
 		if move.IsKingsideCastle() {
 			// test	if F1 is being attacked
-			return !boardState.IsSquareUnderAttack(SQUARE_F1, BLACK_MASK) &&
-				!boardState.IsSquareUnderAttack(SQUARE_E1, BLACK_MASK)
+			return !boardState.IsSquareUnderAttack(SQUARE_F1, BLACK_OFFSET, WHITE_OFFSET) &&
+				!boardState.IsSquareUnderAttack(SQUARE_E1, BLACK_OFFSET, WHITE_OFFSET)
 		}
 
 		// test	if B1 or C1 are being attacked
-		return !boardState.IsSquareUnderAttack(SQUARE_D1, BLACK_MASK) &&
-			!boardState.IsSquareUnderAttack(SQUARE_C1, BLACK_MASK) &&
-			!boardState.IsSquareUnderAttack(SQUARE_E1, BLACK_MASK)
+		return !boardState.IsSquareUnderAttack(SQUARE_D1, BLACK_OFFSET, WHITE_OFFSET) &&
+			!boardState.IsSquareUnderAttack(SQUARE_C1, BLACK_OFFSET, WHITE_OFFSET) &&
+			!boardState.IsSquareUnderAttack(SQUARE_E1, BLACK_OFFSET, WHITE_OFFSET)
 	}
 
 	if move.IsKingsideCastle() {
-		return !boardState.IsSquareUnderAttack(SQUARE_F8, WHITE_MASK) &&
-			!boardState.IsSquareUnderAttack(SQUARE_E8, WHITE_MASK)
+		return !boardState.IsSquareUnderAttack(SQUARE_F8, WHITE_OFFSET, BLACK_OFFSET) &&
+			!boardState.IsSquareUnderAttack(SQUARE_E8, WHITE_OFFSET, BLACK_OFFSET)
 	}
 
-	return !boardState.IsSquareUnderAttack(SQUARE_D8, WHITE_MASK) &&
-		!boardState.IsSquareUnderAttack(SQUARE_C8, WHITE_MASK) &&
-		!boardState.IsSquareUnderAttack(SQUARE_E8, WHITE_MASK)
+	return !boardState.IsSquareUnderAttack(SQUARE_D8, WHITE_OFFSET, BLACK_OFFSET) &&
+		!boardState.IsSquareUnderAttack(SQUARE_C8, WHITE_OFFSET, BLACK_OFFSET) &&
+		!boardState.IsSquareUnderAttack(SQUARE_E8, WHITE_OFFSET, BLACK_OFFSET)
 }
