@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"time"
 )
 
 var _ = fmt.Println
@@ -46,11 +47,15 @@ func main() {
 		options.sanityCheck = *perftSanityCheck
 		options.perftPrintMoves = *perftPrintMoves
 
+		start := time.Now()
 		if *perftJSONFile != "" {
 			success, err = RunPerftJson(*perftJSONFile, options)
 		} else {
 			success, err = RunPerft(*startingFen, *perftDepth, options)
 		}
+
+		fmt.Printf("Total time: %s\n", time.Since(start))
+
 	} else if *isTactics || *tacticsEpdFile != "" || *tacticsFen != "" {
 		var options TacticsOptions
 		options.thinkingtimeMs = *tacticsThinkingTime

@@ -87,69 +87,70 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 		return perftInfo
 	}
 
-	moves := GenerateMoves(boardState)
+	listing := GenerateMoveListing(boardState)
 	captures := uint(0)
 	castles := uint(0)
 	promotions := uint(0)
 
-	for _, move := range moves {
-		var originalHashKey uint32
-		if options.sanityCheck {
-			testMoveLegality(boardState, move)
-			originalHashKey = boardState.hashKey
-		}
-
-		if move.IsCastle() && !boardState.TestCastleLegality(move) {
-			continue
-		}
-
-		boardState.ApplyMove(move)
-
-		if options.sanityCheck {
-			if boardState.board[boardState.lookupInfo.whiteKingSquare] != WHITE_MASK|KING_MASK {
-				fmt.Println(boardState.ToString())
-				panic("white king not at expected position")
-			}
-			if boardState.board[boardState.lookupInfo.blackKingSquare] != BLACK_MASK|KING_MASK {
-				fmt.Println(boardState.ToString())
-				panic("black king not at expected position")
-			}
-		}
-
-		wasValid := false
-		if !boardState.IsInCheck(!boardState.whiteToMove) {
-			wasValid = true
-
-			if move.IsCapture() {
-				captures++
-			}
-			if move.IsKingsideCastle() || move.IsQueensideCastle() {
-				castles++
-			}
-			if move.IsPromotion() {
-				promotions++
+	for _, moveList := range [][]Move{listing.captures, listing.moves, listing.promotions} {
+		for _, move := range moveList {
+			var originalHashKey uint32
+			if options.sanityCheck {
+				testMoveLegality(boardState, move)
+				originalHashKey = boardState.hashKey
 			}
 
-			info := Perft(boardState, depth-1, options)
-			addPerftInfo(&perftInfo, info)
-		}
-
-		boardState.UnapplyMove(move)
-		if depth == 1 && options.perftPrintMoves {
-			if wasValid {
-				fmt.Println(MoveToPrettyString(move, boardState))
-			} else {
-				fmt.Println("ILLEGAL: " + MoveToPrettyString(move, boardState))
-			}
-		}
-		if options.sanityCheck {
-			if boardState.hashKey != originalHashKey {
-				fmt.Printf("Unapplying move did not restore original hash key: %s (%d vs %d)\n",
-					MoveToPrettyString(move, boardState),
-					boardState.hashKey,
-					originalHashKey)
+			if move.IsCastle() && !boardState.TestCastleLegality(move) {
+				continue
 			}
 
+			boardState.ApplyMove(move)
+
+			if options.sanityCheck {
+				if boardState.board[boardState.lookupInfo.whiteKingSquare] != WHITE_MASK|KING_MASK {
+					fmt.Println(boardState.ToString())
+					panic("white king not at expected position")
+				}
+				if boardState.board[boardState.lookupInfo.blackKingSquare] != BLACK_MASK|KING_MASK {
+					fmt.Println(boardState.ToString())
+					panic("black king not at expected position")
+				}
+			}
+
+			wasValid := false
+			if !boardState.IsInCheck(!boardState.whiteToMove) {
+				wasValid = true
+
+				if move.IsCapture() {
+					captures++
+				}
+				if move.IsKingsideCastle() || move.IsQueensideCastle() {
+					castles++
+				}
+				if move.IsPromotion() {
+					promotions++
+				}
+
+				info := Perft(boardState, depth-1, options)
+				addPerftInfo(&perftInfo, info)
+			}
+
+			boardState.UnapplyMove(move)
+			if depth == 1 && options.perftPrintMoves {
+				if wasValid {
+					fmt.Println(MoveToPrettyString(move, boardState))
+				} else {
+					fmt.Println("ILLEGAL: " + MoveToPrettyString(move, boardState))
+				}
+			}
+			if options.sanityCheck {
+				if boardState.hashKey != originalHashKey {
+					fmt.Printf("Unapplying move did not restore original hash key: %s (%d vs %d)\n",
+						MoveToPrettyString(move, boardState),
+						boardState.hashKey,
+						originalHashKey)
+				}
+			}
 		}
 	}
 
