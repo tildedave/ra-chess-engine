@@ -23,6 +23,12 @@ type SquareAttacks struct {
 	board uint64
 }
 
+type MoveSizeHint struct {
+	numMoves      int
+	numCaptures   int
+	numPromotions int
+}
+
 var moveBitboards *MoveBitboards
 
 type MoveBitboards struct {
@@ -217,17 +223,17 @@ func createPawnAttackBitboards(col byte, row byte) (uint64, uint64) {
 	return whitePawnAttackBitboard, blackPawnAttackBitboard
 }
 
-func createMoveListing() MoveListing {
+func createMoveListing(hint MoveSizeHint) MoveListing {
 	listing := MoveListing{}
-	listing.moves = make([]Move, 0)
-	listing.captures = make([]Move, 0)
-	listing.promotions = make([]Move, 0)
+	listing.moves = make([]Move, 0, hint.numMoves)
+	listing.captures = make([]Move, 0, hint.numCaptures)
+	listing.promotions = make([]Move, 0, hint.numPromotions)
 
 	return listing
 }
 
-func GenerateMoveListing(boardState *BoardState) MoveListing {
-	listing := createMoveListing()
+func GenerateMoveListing(boardState *BoardState, hint MoveSizeHint) (MoveListing, MoveSizeHint) {
+	listing := createMoveListing(hint)
 
 	precomputedInfo := PrecomputedInfo{}
 	switch boardState.offsetToMove {
@@ -250,7 +256,12 @@ func GenerateMoveListing(boardState *BoardState) MoveListing {
 		occupancy ^= 1 << sq
 	}
 
-	return listing
+	hint = MoveSizeHint{
+		numMoves:      len(listing.moves),
+		numCaptures:   len(listing.captures),
+		numPromotions: len(listing.promotions),
+	}
+	return listing, hint
 }
 
 func GenerateMovesFromSquare(
@@ -269,7 +280,7 @@ func GenerateMovesFromSquare(
 }
 
 func GenerateMoves(boardState *BoardState) []Move {
-	listing := GenerateMoveListing(boardState)
+	listing, _ := GenerateMoveListing(boardState, MoveSizeHint{})
 
 	l1 := len(listing.promotions)
 	l2 := len(listing.captures)
