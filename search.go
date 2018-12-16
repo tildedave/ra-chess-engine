@@ -63,6 +63,7 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 	var hashMove = make([]Move, 0)
 	if entry != nil {
 		if entry.depth >= depth {
+			// I guess move might be bogus so we shouldn't just trust this
 			return *entry.result
 		}
 
@@ -97,7 +98,7 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 				}
 
 				if !isLegal {
-					continue
+					break
 				}
 			}
 
@@ -106,12 +107,13 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 			}
 
 			boardState.ApplyMove(move)
+
 			if !boardState.IsInCheck(!boardState.whiteToMove) {
 				searchConfig.move = move
 				searchConfig.isDebug = false
 
 				searchDepth := depth - 1
-				if move.IsCapture() {
+				if move.IsCapture() || boardState.IsInCheck(boardState.whiteToMove) {
 					searchDepth++
 				}
 
@@ -152,10 +154,11 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 	if bestResult == nil {
 		result := getNoLegalMoveResult(boardState, depth, searchConfig)
 		bestResult = &result
+	} else {
+		bestResult.pv = MoveToPrettyString(bestResult.move, boardState) + " " + bestResult.pv
 	}
 
 	bestResult.nodes = nodes
-	bestResult.pv = MoveToPrettyString(bestResult.move, boardState) + " " + bestResult.pv
 	StoreTranspositionTable(boardState, bestResult, depth)
 
 	return *bestResult
