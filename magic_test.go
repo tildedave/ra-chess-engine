@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"math/bits"
 	"testing"
 
@@ -95,7 +96,7 @@ func TestGenerateRookSlidingMoves(t *testing.T) {
 		panic(err)
 	}
 
-	attacks := make(map[uint16]SquareAttacks)
+	attacks := make([]SquareAttacks, math.MaxInt16)
 
 	a1Magic := magics[SQUARE_A1]
 	GenerateRookSlidingMoves(SQUARE_A1, a1Magic, attacks)
@@ -117,7 +118,7 @@ func TestGenerateRookSlidingMoves(t *testing.T) {
 	assertMovePresent(t, attacks[key].moves, SQUARE_A1, SQUARE_F1)
 	assertMovePresent(t, attacks[key].moves, SQUARE_A1, SQUARE_G1)
 
-	attacks = make(map[uint16]SquareAttacks)
+	attacks = make([]SquareAttacks, math.MaxInt16)
 
 	d3Magic := magics[SQUARE_D3]
 	GenerateRookSlidingMoves(SQUARE_D3, d3Magic, attacks)
@@ -142,7 +143,7 @@ func TestGenerateBishopSlidingMoves(t *testing.T) {
 		panic(err)
 	}
 
-	attacks := make(map[uint16]SquareAttacks)
+	attacks := make([]SquareAttacks, math.MaxInt16)
 	d3Magic := magics[SQUARE_D3]
 	GenerateBishopSlidingMoves(SQUARE_D3, d3Magic, attacks)
 
