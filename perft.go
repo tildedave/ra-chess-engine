@@ -47,7 +47,7 @@ func RunPerftJson(perftJsonFile string, options PerftOptions) (bool, error) {
 			fmt.Println(err)
 			continue
 		}
-		perftResult := Perft(&board, spec.Depth, options)
+		perftResult := Perft(&board, spec.Depth, options, MoveSizeHint{})
 		if perftResult.nodes != spec.Nodes {
 			fmt.Printf("NOT OK: %s (depth=%d, expected nodes=%d, actual nodes=%d)\n", spec.Fen, spec.Depth, spec.Nodes, perftResult.nodes)
 			allSuccess = false
@@ -72,7 +72,7 @@ func RunPerft(startingFen string, depth uint, options PerftOptions) (bool, error
 
 		if err == nil {
 			options.depth = i
-			fmt.Println(Perft(&board, i, options))
+			fmt.Println(Perft(&board, i, options, MoveSizeHint{}))
 		} else {
 			fmt.Println(err)
 		}
@@ -81,7 +81,7 @@ func RunPerft(startingFen string, depth uint, options PerftOptions) (bool, error
 	return true, nil
 }
 
-func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
+func Perft(boardState *BoardState, depth uint, options PerftOptions, hint MoveSizeHint) PerftInfo {
 	var perftInfo PerftInfo
 
 	if options.checks && boardState.IsInCheck(boardState.offsetToMove) {
@@ -93,7 +93,7 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 		return perftInfo
 	}
 
-	listing := GenerateMoveListing(boardState)
+	listing, hint := GenerateMoveListing(boardState, hint)
 	captures := uint(0)
 	castles := uint(0)
 	promotions := uint(0)
@@ -134,7 +134,7 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 					promotions++
 				}
 
-				info := Perft(boardState, depth-1, options)
+				info := Perft(boardState, depth-1, options, hint)
 				if options.divide && depth == options.depth {
 					fmt.Printf("%s %d\n", MoveToString(move), info.nodes)
 				}

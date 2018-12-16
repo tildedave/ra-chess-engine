@@ -46,13 +46,19 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 		beta:          INFINITY,
 		isDebug:       config.isDebug,
 		startingDepth: depth,
-	})
+	}, MoveSizeHint{})
 	result.time = (time.Now().UnixNano() - startTime) / 10000000
 
 	return result
 }
 
-func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, searchConfig SearchConfig) SearchResult {
+func searchAlphaBeta(
+	boardState *BoardState,
+	depth uint,
+	currentDepth uint,
+	searchConfig SearchConfig,
+	hint MoveSizeHint,
+) SearchResult {
 	if depth == 0 {
 		return getTerminalResult(boardState, searchConfig)
 	}
@@ -74,7 +80,7 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 	}
 
 	var nodes uint
-	listing := GenerateMoveListing(boardState)
+	listing, hint := GenerateMoveListing(boardState, hint)
 	var bestResult *SearchResult
 
 	for i, moveList := range [][]Move{hashMove, listing.promotions, listing.captures, listing.moves} {
@@ -117,7 +123,7 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 					searchDepth++
 				}
 
-				result := searchAlphaBeta(boardState, searchDepth, currentDepth+1, searchConfig)
+				result := searchAlphaBeta(boardState, searchDepth, currentDepth+1, searchConfig, hint)
 
 				result.move = move
 				result.depth++
