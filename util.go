@@ -57,5 +57,4 @@ func FlipBoardColors(boardState *BoardState) {
 	}
 
 	boardState.whiteToMove = !boardState.whiteToMove
-	generateBoardLookupInfo(boardState)
 }

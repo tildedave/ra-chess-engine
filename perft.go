@@ -104,16 +104,6 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 			if options.sanityCheck {
 				testMoveLegality(boardState, move)
 				originalHashKey = boardState.hashKey
-
-				if boardState.board[boardState.lookupInfo.whiteKingSquare] != WHITE_MASK|KING_MASK {
-					fmt.Println(boardState.ToString())
-					panic("white king not at expected position")
-				}
-				if boardState.board[boardState.lookupInfo.blackKingSquare] != BLACK_MASK|KING_MASK {
-					fmt.Println(boardState.ToString())
-					panic("black king not at expected position")
-				}
-
 				sanityCheckBitboards(move, boardState)
 			}
 
@@ -122,17 +112,6 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 			}
 
 			boardState.ApplyMove(move)
-
-			if options.sanityCheck {
-				if boardState.board[boardState.lookupInfo.whiteKingSquare] != WHITE_MASK|KING_MASK {
-					fmt.Println(boardState.ToString())
-					panic("white king not at expected position")
-				}
-				if boardState.board[boardState.lookupInfo.blackKingSquare] != BLACK_MASK|KING_MASK {
-					fmt.Println(boardState.ToString())
-					panic("black king not at expected position")
-				}
-			}
 
 			wasValid := false
 			if !boardState.IsInCheck(!boardState.whiteToMove) {

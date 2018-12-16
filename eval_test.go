@@ -65,7 +65,6 @@ func TestEvalKingSafety(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_E1, 0x00)
 	testBoard.SetPieceAtSquare(SQUARE_F1, WHITE_MASK|ROOK_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_G1, WHITE_MASK|KING_MASK)
-	generateBoardLookupInfo(&testBoard)
 
 	boardEval, _ := Eval(&testBoard)
 

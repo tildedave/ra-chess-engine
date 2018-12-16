@@ -63,7 +63,6 @@ func (boardState *BoardState) ApplyMove(move Move) {
 
 			boardState.boardInfo.whiteCanCastleKingside = false
 			boardState.boardInfo.whiteCanCastleQueenside = false
-			boardState.lookupInfo.whiteKingSquare = SQUARE_C1
 			boardState.boardInfo.whiteHasCastled = true
 		} else {
 			boardState.board[SQUARE_A8] = EMPTY_SQUARE
@@ -78,7 +77,6 @@ func (boardState *BoardState) ApplyMove(move Move) {
 
 			boardState.boardInfo.blackCanCastleKingside = false
 			boardState.boardInfo.blackCanCastleQueenside = false
-			boardState.lookupInfo.blackKingSquare = SQUARE_C8
 			boardState.boardInfo.blackHasCastled = true
 		}
 	} else if move.IsKingsideCastle() {
@@ -95,7 +93,6 @@ func (boardState *BoardState) ApplyMove(move Move) {
 
 			boardState.boardInfo.whiteCanCastleKingside = false
 			boardState.boardInfo.whiteCanCastleQueenside = false
-			boardState.lookupInfo.whiteKingSquare = SQUARE_G1
 			boardState.boardInfo.whiteHasCastled = true
 		} else {
 			boardState.board[SQUARE_H8] = EMPTY_SQUARE
@@ -110,7 +107,6 @@ func (boardState *BoardState) ApplyMove(move Move) {
 
 			boardState.boardInfo.blackCanCastleKingside = false
 			boardState.boardInfo.blackCanCastleQueenside = false
-			boardState.lookupInfo.blackKingSquare = SQUARE_G8
 			boardState.boardInfo.blackHasCastled = true
 		}
 	} else {
@@ -119,11 +115,9 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			if boardState.whiteToMove {
 				boardState.boardInfo.whiteCanCastleKingside = false
 				boardState.boardInfo.whiteCanCastleQueenside = false
-				boardState.lookupInfo.whiteKingSquare = move.to
 			} else {
 				boardState.boardInfo.blackCanCastleKingside = false
 				boardState.boardInfo.blackCanCastleQueenside = false
-				boardState.lookupInfo.blackKingSquare = move.to
 			}
 		case ROOK_MASK:
 			if boardState.whiteToMove {
@@ -341,12 +335,6 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 	}
 
 	switch p & 0x0F {
-	case KING_MASK:
-		if boardState.whiteToMove {
-			boardState.lookupInfo.whiteKingSquare = move.from
-		} else {
-			boardState.lookupInfo.blackKingSquare = move.from
-		}
 	case PAWN_MASK:
 		if move.IsEnPassantCapture() {
 			var pos uint8

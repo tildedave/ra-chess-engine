@@ -216,11 +216,6 @@ type BoardInfo struct {
 	enPassantTargetSquare   uint8
 }
 
-type BoardLookupInfo struct {
-	whiteKingSquare byte
-	blackKingSquare byte
-}
-
 type BoardState struct {
 	board         []byte
 	bitboards     Bitboards
@@ -239,7 +234,6 @@ type BoardState struct {
 	captureStack     byteStack
 	boardInfoHistory [MAX_MOVES]BoardInfo
 	moveIndex        int // 0-based and increases after every move
-	lookupInfo       BoardLookupInfo
 
 	// Zobrist hash indices
 	hashInfo *HashInfo
@@ -283,25 +277,10 @@ func CreateEmptyBoardState() BoardState {
 		moveBitboards = &moveBoards
 	}
 	b.moveBitboards = moveBitboards
-	generateBoardLookupInfo(&b)
 	generateZobrishHashInfo(&b)
 	generateTranspositionTable(&b)
 
 	return b
-}
-
-func generateBoardLookupInfo(boardState *BoardState) {
-	for i := byte(0); i < 8; i++ {
-		for j := byte(0); j < 8; j++ {
-			sq := idx(j, i)
-			p := boardState.board[sq]
-			if p == BLACK_MASK|KING_MASK {
-				boardState.lookupInfo.blackKingSquare = sq
-			} else if p == WHITE_MASK|KING_MASK {
-				boardState.lookupInfo.whiteKingSquare = sq
-			}
-		}
-	}
 }
 
 func generateZobrishHashInfo(boardState *BoardState) {
@@ -440,8 +419,6 @@ func CreateBoardStateFromFENString(s string) (BoardState, error) {
 		boardState.halfmoveClock = uint(halfmoveClock)
 		boardState.fullmoveNumber = uint(fullmoveNumber)
 	}
-
-	generateBoardLookupInfo(&boardState)
 
 	return boardState, nil
 }
