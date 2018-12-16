@@ -33,15 +33,8 @@ func (boardState *BoardState) ApplyMove(move Move) {
 		boardState.bitboards.piece[capturedPiece&0x0F] = UnsetBitboard(boardState.bitboards.piece[capturedPiece&0x0F], move.to)
 	}
 
-	boardState.bitboards.piece[p&0x0F] = SetBitboard(
-		UnsetBitboard(boardState.bitboards.piece[p&0x0F], move.from),
-		move.to)
-
-	boardState.bitboards.color[offset] = SetBitboard(
-		UnsetBitboard(boardState.bitboards.color[offset], move.from),
-		move.to)
-
-	var epTargetSquare = boardState.boardInfo.enPassantTargetSquare
+	boardState.bitboards.piece[p&0x0F] = FlipBitboard2(boardState.bitboards.piece[p&0x0F], move.from, move.to)
+	boardState.bitboards.color[offset] = FlipBitboard2(boardState.bitboards.color[offset], move.from, move.to)
 
 	// TODO(perf) - less if statements/work when castling is over
 	boardState.boardInfo.enPassantTargetSquare = 0
@@ -140,7 +133,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 				} else if move.from-move.to > 8 {
 					boardState.boardInfo.enPassantTargetSquare = move.from - 8
 				}
-			} else if move.to == epTargetSquare && epTargetSquare > 0 {
+			} else if move.IsEnPassantCapture() {
 				var pos uint8
 				var otherOffset int
 				if boardState.offsetToMove == WHITE_OFFSET {
@@ -272,10 +265,9 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 		otherOffset = WHITE_OFFSET
 	}
 
-	boardState.bitboards.piece[p&0x0F] = SetBitboard(boardState.bitboards.piece[p&0x0F], move.from)
-	boardState.bitboards.color[offset] = SetBitboard(boardState.bitboards.color[offset], move.from)
-	boardState.bitboards.piece[p&0x0F] = UnsetBitboard(boardState.bitboards.piece[p&0x0F], move.to)
-	boardState.bitboards.color[offset] = UnsetBitboard(boardState.bitboards.color[offset], move.to)
+	boardState.bitboards.piece[p&0x0F] = FlipBitboard2(boardState.bitboards.piece[p&0x0F], move.from, move.to)
+	boardState.bitboards.color[offset] = FlipBitboard2(boardState.bitboards.color[offset], move.from, move.to)
+
 	if move.IsCapture() {
 		boardState.bitboards.color[otherOffset] = SetBitboard(boardState.bitboards.color[otherOffset], move.to)
 		boardState.bitboards.piece[capturedPiece&0x0F] = SetBitboard(boardState.bitboards.piece[capturedPiece&0x0F], move.to)

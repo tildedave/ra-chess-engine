@@ -79,7 +79,7 @@ func TestEnPassantRemovesCheck(t *testing.T) {
 	var fen string = "8/8/8/2k5/2pP4/8/B7/4K3 b - d3 5 3"
 	testBoard, _ := CreateBoardStateFromFENString(fen)
 
-	testBoard.ApplyMove(CreateCapture(SQUARE_C4, SQUARE_D3))
+	testBoard.ApplyMove(CreateEnPassantCapture(SQUARE_C4, SQUARE_D3))
 
 	assert.False(t, testBoard.IsInCheck(BLACK_OFFSET))
 }
