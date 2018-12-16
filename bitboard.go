@@ -32,6 +32,14 @@ func UnsetBitboard(bitboard uint64, sq byte) uint64 {
 	return (bitboard & (0xFFFFFFFFFFFFFFFF ^ (1 << sq)))
 }
 
+func FlipBitboard(bitboard uint64, sq byte) uint64 {
+	return (bitboard ^ (1 << sq))
+}
+
+func FlipBitboard2(bitboard uint64, sq1 byte, sq2 byte) uint64 {
+	return (bitboard ^ ((1 << sq1) | (1 << sq2)))
+}
+
 func IsBitboardSet(bitboard uint64, sq byte) bool {
 	return (bitboard & (1 << sq)) != 0
 }
