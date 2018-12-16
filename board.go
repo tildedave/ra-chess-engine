@@ -79,8 +79,8 @@ func pieceToString(p byte) byte {
 	panic(fmt.Sprintf("Passed invalid piece: %x", p))
 }
 
-func whiteToMoveToColorMask(whiteToMove bool) uint8 {
-	if whiteToMove {
+func offsetToMoveToColorMask(offsetToMove int) uint8 {
+	if offsetToMove == WHITE_OFFSET {
 		return WHITE_MASK
 	}
 
@@ -129,7 +129,7 @@ func (boardState *BoardState) ToFENString() string {
 		}
 	}
 
-	if boardState.whiteToMove {
+	if boardState.offsetToMove == WHITE_OFFSET {
 		s += "w "
 	} else {
 		s += "b "
@@ -220,7 +220,7 @@ type BoardState struct {
 	board         []byte
 	bitboards     Bitboards
 	moveBitboards *MoveBitboards
-	whiteToMove   bool
+	offsetToMove  int
 	boardInfo     BoardInfo
 
 	// number of moves since last capture or pawn advance
@@ -239,6 +239,17 @@ type BoardState struct {
 	hashInfo *HashInfo
 	// Transposition table
 	transpositionTable map[uint64]*TranspositionEntry
+}
+
+func oppositeColorOffset(offset int) int {
+	switch offset {
+	case WHITE_OFFSET:
+		return BLACK_OFFSET
+	case BLACK_OFFSET:
+		return WHITE_OFFSET
+	}
+
+	panic("Impossible")
 }
 
 func CopyBoardState(boardState *BoardState) BoardState {
@@ -262,7 +273,7 @@ func CreateEmptyBoardState() BoardState {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	}
 
-	b.whiteToMove = true
+	b.offsetToMove = WHITE_OFFSET
 	b.boardInfo = BoardInfo{
 		whiteCanCastleKingside:  false,
 		whiteCanCastleQueenside: false,
@@ -372,9 +383,9 @@ func CreateBoardStateFromFENString(s string) (BoardState, error) {
 
 	switch splits[1] {
 	case "w":
-		boardState.whiteToMove = true
+		boardState.offsetToMove = WHITE_OFFSET
 	case "b":
-		boardState.whiteToMove = false
+		boardState.offsetToMove = BLACK_OFFSET
 	default:
 		return boardState, errors.New("Invalid side-to-move specification: " + splits[1])
 	}

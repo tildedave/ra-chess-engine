@@ -108,12 +108,12 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 
 			boardState.ApplyMove(move)
 
-			if !boardState.IsInCheck(!boardState.whiteToMove) {
+			if !boardState.IsInCheck(oppositeColorOffset(boardState.offsetToMove)) {
 				searchConfig.move = move
 				searchConfig.isDebug = false
 
 				searchDepth := depth - 1
-				if move.IsCapture() || boardState.IsInCheck(boardState.whiteToMove) {
+				if move.IsCapture() || boardState.IsInCheck(boardState.offsetToMove) {
 					searchDepth++
 				}
 
@@ -126,8 +126,8 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 				if bestResult == nil {
 					bestResult = &result
 				} else {
-					if (!boardState.whiteToMove && result.value > bestResult.value) || // white move, maximize score
-						(boardState.whiteToMove && result.value < bestResult.value) { // black move, minimize score
+					if (boardState.offsetToMove == BLACK_OFFSET && result.value > bestResult.value) || // white move, maximize score
+						(boardState.offsetToMove == WHITE_OFFSET && result.value < bestResult.value) { // black move, minimize score
 						bestResult = &result
 					}
 				}
@@ -136,7 +136,7 @@ func searchAlphaBeta(boardState *BoardState, depth uint, currentDepth uint, sear
 					fmt.Printf("[%d; %s] result=%d\n", depth, MoveToString(move), result.value)
 				}
 
-				if !boardState.whiteToMove {
+				if boardState.offsetToMove == BLACK_OFFSET {
 					searchConfig.alpha = Max(searchConfig.alpha, bestResult.value)
 				} else {
 					searchConfig.beta = Min(searchConfig.beta, bestResult.value)
@@ -185,11 +185,11 @@ func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) Search
 }
 
 func getNoLegalMoveResult(boardState *BoardState, depth uint, searchConfig SearchConfig) SearchResult {
-	if boardState.IsInCheck(boardState.whiteToMove) {
+	if boardState.IsInCheck(boardState.offsetToMove) {
 		// moves to mate = startingDepth - depth
 		movesToMate := searchConfig.startingDepth - depth
 		score := CHECKMATE_SCORE - int(movesToMate)
-		if boardState.whiteToMove {
+		if boardState.offsetToMove == WHITE_OFFSET {
 			score = -score
 		}
 

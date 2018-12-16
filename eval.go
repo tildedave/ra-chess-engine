@@ -109,9 +109,9 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 		// D4, E4, D5, E5
 
 		for _, sq := range [4]byte{SQUARE_D4, SQUARE_E4, SQUARE_D5, SQUARE_E5} {
-			if boardState.IsSquareUnderAttack(sq, WHITE_MASK) {
+			if boardState.IsSquareUnderAttack(sq, WHITE_OFFSET, BLACK_OFFSET) {
 				centerControl += PIECE_ATTACKS_CENTER_EVAL_SCORE
-			} else if boardState.IsSquareUnderAttack(sq, BLACK_MASK) {
+			} else if boardState.IsSquareUnderAttack(sq, BLACK_OFFSET, WHITE_OFFSET) {
 				centerControl -= PIECE_ATTACKS_CENTER_EVAL_SCORE
 			}
 
