@@ -18,6 +18,7 @@ type SearchResult struct {
 	flags       byte
 	nodes       uint
 	hashCutoffs uint
+	cutoffs     uint
 	time        int64
 	depth       uint
 	pv          string
@@ -82,6 +83,7 @@ func searchAlphaBeta(
 
 	var nodes uint
 	var hashCutoffs uint
+	var cutoffs uint
 
 	listing, hint := GenerateMoveListing(boardState, hint)
 	var bestResult *SearchResult
@@ -132,6 +134,7 @@ func searchAlphaBeta(
 				result.depth++
 				nodes += result.nodes
 				hashCutoffs += result.hashCutoffs
+				cutoffs += result.cutoffs
 
 				if bestResult == nil {
 					bestResult = &result
@@ -159,6 +162,7 @@ func searchAlphaBeta(
 				if i == 0 {
 					hashCutoffs++
 				}
+				cutoffs++
 				break
 			}
 		}
@@ -173,6 +177,7 @@ func searchAlphaBeta(
 
 	bestResult.nodes = nodes
 	bestResult.hashCutoffs = hashCutoffs
+	bestResult.cutoffs = cutoffs
 	StoreTranspositionTable(boardState, bestResult, depth)
 
 	return *bestResult
@@ -224,5 +229,5 @@ func getNoLegalMoveResult(boardState *BoardState, depth uint, searchConfig Searc
 }
 
 func SearchResultToString(result SearchResult) string {
-	return fmt.Sprintf("%s (value=%d, nodes=%d)", MoveToString(result.move), result.value, result.nodes)
+	return fmt.Sprintf("%s (value=%d, nodes=%d, cutoffs=%d, hash cutoffs=%d)", MoveToString(result.move), result.value, result.nodes, result.cutoffs, result.hashCutoffs)
 }
