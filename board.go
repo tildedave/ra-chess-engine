@@ -76,7 +76,7 @@ func pieceToString(p byte) byte {
 		return 'k'
 	}
 
-	return '-'
+	panic(fmt.Sprintf("Passed invalid piece: %x", p))
 }
 
 func whiteToMoveToColorMask(whiteToMove bool) uint8 {
@@ -308,6 +308,7 @@ func generateZobrishHashInfo(boardState *BoardState) {
 	r := rand.New(rand.NewSource(0))
 	hashInfo := CreateHashInfo(r)
 	boardState.hashInfo = &hashInfo
+
 	// this factoring is dumb since we need to keep the hash
 	// info around to progressively change the hash key
 	boardState.hashKey = boardState.CreateHashKey(&hashInfo)
