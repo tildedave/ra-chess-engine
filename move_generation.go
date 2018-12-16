@@ -10,6 +10,14 @@ type MoveListing struct {
 	promotions []Move
 }
 
+type PrecomputedInfo struct {
+	offset         int
+	otherOffset    int
+	ourOccupancy   uint64
+	otherOccupancy uint64
+	allOccupancy   uint64
+}
+
 type SquareAttacks struct {
 	moves []Move
 	board uint64
@@ -221,10 +229,23 @@ func createMoveListing() MoveListing {
 func GenerateMoveListing(boardState *BoardState) MoveListing {
 	listing := createMoveListing()
 
-	occupancy := boardState.bitboards.color[boardState.offsetToMove]
+	precomputedInfo := PrecomputedInfo{}
+	switch boardState.offsetToMove {
+	case WHITE_OFFSET:
+		precomputedInfo.otherOffset = BLACK_OFFSET
+		precomputedInfo.ourOccupancy = boardState.bitboards.color[WHITE_OFFSET]
+		precomputedInfo.otherOccupancy = boardState.bitboards.color[BLACK_OFFSET]
+	case BLACK_OFFSET:
+		precomputedInfo.otherOffset = WHITE_OFFSET
+		precomputedInfo.ourOccupancy = boardState.bitboards.color[BLACK_OFFSET]
+		precomputedInfo.otherOccupancy = boardState.bitboards.color[WHITE_OFFSET]
+	}
+	precomputedInfo.allOccupancy = precomputedInfo.ourOccupancy | precomputedInfo.otherOccupancy
+
+	occupancy := precomputedInfo.ourOccupancy
 	for occupancy != 0 {
 		sq := byte(bits.TrailingZeros64(occupancy))
-		GenerateMovesFromSquare(boardState, sq, boardState.offsetToMove, &listing)
+		GenerateMovesFromSquare(boardState, sq, boardState.offsetToMove, &listing, &precomputedInfo)
 
 		occupancy ^= 1 << sq
 	}
@@ -232,12 +253,18 @@ func GenerateMoveListing(boardState *BoardState) MoveListing {
 	return listing
 }
 
-func GenerateMovesFromSquare(boardState *BoardState, sq byte, offset int, listing *MoveListing) {
+func GenerateMovesFromSquare(
+	boardState *BoardState,
+	sq byte,
+	offset int,
+	listing *MoveListing,
+	precomputedInfo *PrecomputedInfo,
+) {
 	p := boardState.board[sq]
 	if !isPawn(p) {
-		generatePieceMoves(boardState, p, sq, offset, listing)
+		generatePieceMoves(boardState, p, sq, offset, listing, precomputedInfo)
 	} else {
-		generatePawnMoves(boardState, p, sq, offset, listing)
+		generatePawnMoves(boardState, p, sq, offset, listing, precomputedInfo)
 	}
 }
 
@@ -257,7 +284,14 @@ func GenerateMoves(boardState *BoardState) []Move {
 	return moves
 }
 
-func generatePieceMoves(boardState *BoardState, p byte, sq byte, offset int, listing *MoveListing) {
+func generatePieceMoves(
+	boardState *BoardState,
+	p byte,
+	sq byte,
+	offset int,
+	listing *MoveListing,
+	precomputedInfo *PrecomputedInfo,
+) {
 	// 8 possible directions to go (for the queen + king + knight)
 	// 4 directions for bishop + rook
 	// queen, bishop, and rook will continue along a "ray" until they find
@@ -265,15 +299,7 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, offset int, lis
 	// Knight = 2, Bishop = 3, Rook = 4, Queen = 5, King = 6
 
 	pieceType := p & 0x0F
-	var otherOffset int
-	if offset == WHITE_OFFSET {
-		otherOffset = BLACK_OFFSET
-	} else {
-		otherOffset = WHITE_OFFSET
-	}
-
 	moveBitboards := boardState.moveBitboards
-	occupancy := boardState.bitboards.color[offset]
 
 	var moves []Move
 
@@ -283,20 +309,17 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, offset int, lis
 	case KNIGHT_MASK:
 		moves = moveBitboards.knightAttacks[sq].moves
 	case BISHOP_MASK:
-		otherOccupancy := boardState.bitboards.color[otherOffset]
 		magic := moveBitboards.bishopMagics[sq]
-		key := hashKey(occupancy|otherOccupancy, magic)
+		key := hashKey(precomputedInfo.allOccupancy, magic)
 		moves = moveBitboards.bishopAttacks[sq][key].moves
 	case ROOK_MASK:
-		otherOccupancy := boardState.bitboards.color[otherOffset]
 		magic := moveBitboards.rookMagics[sq]
-		key := hashKey(occupancy|otherOccupancy, magic)
+		key := hashKey(precomputedInfo.allOccupancy, magic)
 		moves = moveBitboards.rookAttacks[sq][key].moves
 	case QUEEN_MASK:
-		otherOccupancy := boardState.bitboards.color[otherOffset]
-		bishopKey := hashKey(occupancy|otherOccupancy, moveBitboards.bishopMagics[sq])
+		bishopKey := hashKey(precomputedInfo.allOccupancy, moveBitboards.bishopMagics[sq])
 		moves = moveBitboards.bishopAttacks[sq][bishopKey].moves
-		rookKey := hashKey(occupancy|otherOccupancy, moveBitboards.rookMagics[sq])
+		rookKey := hashKey(precomputedInfo.allOccupancy, moveBitboards.rookMagics[sq])
 		moves = append(moves, moveBitboards.rookAttacks[sq][rookKey].moves...)
 	}
 
@@ -352,18 +375,22 @@ func generatePieceMoves(boardState *BoardState, p byte, sq byte, offset int, lis
 	}
 }
 
-func generatePawnMoves(boardState *BoardState, p byte, sq byte, offset int, listing *MoveListing) {
-	var otherOffset int
+func generatePawnMoves(
+	boardState *BoardState,
+	p byte,
+	sq byte,
+	offset int,
+	listing *MoveListing,
+	precomputedInfo *PrecomputedInfo,
+) {
 	var isWhite bool
 	if offset == WHITE_OFFSET {
-		otherOffset = BLACK_OFFSET
 		isWhite = true
 	} else {
-		otherOffset = WHITE_OFFSET
 		isWhite = false
 	}
 
-	otherOccupancies := boardState.bitboards.color[otherOffset]
+	otherOccupancies := precomputedInfo.otherOccupancy
 	if boardState.boardInfo.enPassantTargetSquare != 0 {
 		otherOccupancies = SetBitboard(otherOccupancies, boardState.boardInfo.enPassantTargetSquare)
 	}
