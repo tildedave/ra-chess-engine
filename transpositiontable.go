@@ -5,10 +5,10 @@ type TranspositionEntry struct {
 	result *SearchResult
 }
 
-var hashArray map[uint32]*TranspositionEntry
+var hashArray map[uint64]*TranspositionEntry
 
 func generateTranspositionTable(boardState *BoardState) {
-	boardState.transpositionTable = make(map[uint32]*TranspositionEntry)
+	boardState.transpositionTable = make(map[uint64]*TranspositionEntry)
 }
 
 func ProbeTranspositionTable(boardState *BoardState) *TranspositionEntry {

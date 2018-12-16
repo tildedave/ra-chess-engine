@@ -233,7 +233,7 @@ type BoardState struct {
 	// starts at 1, incremented after Black moves
 	fullmoveNumber uint
 
-	hashKey uint32
+	hashKey uint64
 
 	// Internal structures to allow unmaking moves
 	captureStack     byteStack
@@ -244,7 +244,7 @@ type BoardState struct {
 	// Zobrist hash indices
 	hashInfo *HashInfo
 	// Transposition table
-	transpositionTable map[uint32]*TranspositionEntry
+	transpositionTable map[uint64]*TranspositionEntry
 }
 
 func CopyBoardState(boardState *BoardState) BoardState {
