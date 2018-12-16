@@ -14,7 +14,6 @@ func CreateMateInOneBoard() BoardState {
 	boardState.SetPieceAtSquare(SQUARE_D5, WHITE_MASK|QUEEN_MASK)
 	boardState.SetPieceAtSquare(SQUARE_B4, WHITE_MASK|KNIGHT_MASK)
 	boardState.SetPieceAtSquare(SQUARE_H8, WHITE_MASK|KING_MASK)
-	generateBoardLookupInfo(&boardState)
 
 	return boardState
 }
@@ -63,7 +62,6 @@ func TestSearchWhiteForcesPawnPromotion(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_B7, WHITE_MASK|PAWN_MASK)
 	boardState.SetPieceAtSquare(SQUARE_B8, BLACK_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_B5, WHITE_MASK|KING_MASK)
-	generateBoardLookupInfo(&boardState)
 
 	result := Search(&boardState, 5)
 
@@ -77,7 +75,6 @@ func TestSearchBlackStopsPromotion(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D5, WHITE_MASK|PAWN_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D6, BLACK_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D3, WHITE_MASK|KING_MASK)
-	generateBoardLookupInfo(&boardState)
 
 	result := Search(&boardState, 5)
 
@@ -89,7 +86,6 @@ func TestSearchWhiteForcesPromotion(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D6, WHITE_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D8, BLACK_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D4, WHITE_MASK|PAWN_MASK)
-	generateBoardLookupInfo(&boardState)
 
 	result := Search(&boardState, 12)
 

@@ -133,8 +133,9 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 		}
 
 		// prioritize king position
-		blackKingSq := boardState.lookupInfo.blackKingSquare
-		whiteKingSq := boardState.lookupInfo.whiteKingSquare
+		kings := boardState.bitboards.piece[KING_MASK]
+		blackKingSq := byte(bits.TrailingZeros64(boardState.bitboards.color[BLACK_OFFSET] & kings))
+		whiteKingSq := byte(bits.TrailingZeros64(boardState.bitboards.color[WHITE_OFFSET] & kings))
 
 		if blackKingSq > SQUARE_C8 && blackKingSq < SQUARE_G8 {
 			kingPosition += KING_IN_CENTER_EVAL_SCORE

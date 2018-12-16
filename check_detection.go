@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math/bits"
 )
 
 var _ = fmt.Println
@@ -10,10 +11,10 @@ func (boardState *BoardState) IsInCheck(whiteInCheck bool) bool {
 	var kingSq byte
 	var oppositeColorMask byte
 	if whiteInCheck {
-		kingSq = boardState.lookupInfo.whiteKingSquare
+		kingSq = byte(bits.TrailingZeros64(boardState.bitboards.color[WHITE_OFFSET] & boardState.bitboards.piece[KING_MASK]))
 		oppositeColorMask = BLACK_MASK
 	} else {
-		kingSq = boardState.lookupInfo.blackKingSquare
+		kingSq = byte(bits.TrailingZeros64(boardState.bitboards.color[BLACK_OFFSET] & boardState.bitboards.piece[KING_MASK]))
 		oppositeColorMask = WHITE_MASK
 	}
 
