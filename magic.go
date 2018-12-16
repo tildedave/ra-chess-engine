@@ -335,8 +335,8 @@ TrialAndError:
 // on an occupancy map for a given square.
 func GenerateMagicBitboards() error {
 	r := rand.New(rand.NewSource(time.Now().UnixNano()))
-	rookMagics := make(map[byte]Magic, 64)
-	bishopMagics := make(map[byte]Magic, 64)
+	var rookMagics [64]Magic
+	var bishopMagics [64]Magic
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
@@ -368,11 +368,11 @@ func GenerateMagicBitboards() error {
 }
 
 func GenerateSlidingMoves(
-	rookMagics map[byte]Magic,
-	bishopMagics map[byte]Magic,
-) (map[byte]map[uint16]SquareAttacks, map[byte]map[uint16]SquareAttacks) {
-	rookAttacks := make(map[byte]map[uint16]SquareAttacks, 0)
-	bishopAttacks := make(map[byte]map[uint16]SquareAttacks, 0)
+	rookMagics [64]Magic,
+	bishopMagics [64]Magic,
+) ([64]map[uint16]SquareAttacks, [64]map[uint16]SquareAttacks) {
+	var rookAttacks [64]map[uint16]SquareAttacks
+	var bishopAttacks [64]map[uint16]SquareAttacks
 
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
@@ -424,7 +424,7 @@ func hashKey(occupancy uint64, magic Magic) uint16 {
 	return uint16(((occupancy & magic.Mask) * magic.Magic) >> (64 - magic.Bits))
 }
 
-func outputMagicFile(magics map[byte]Magic, filename string) error {
+func outputMagicFile(magics [64]Magic, filename string) error {
 	magicJSON, err := json.Marshal(magics)
 	if err != nil {
 		return err
@@ -438,13 +438,15 @@ func outputMagicFile(magics map[byte]Magic, filename string) error {
 	return nil
 }
 
-func inputMagicFile(filename string) (map[byte]Magic, error) {
+func inputMagicFile(filename string) ([64]Magic, error) {
+	var magics [64]Magic
+
 	// Bad fix for finding the magic file in both xboard + test mode
 	_, err := os.Stat(filename)
 	if os.IsNotExist(err) {
 		ex, err := os.Executable()
 		if err != nil {
-			return nil, err
+			return magics, err
 		}
 		exPath := filepath.Dir(ex)
 
@@ -453,12 +455,10 @@ func inputMagicFile(filename string) (map[byte]Magic, error) {
 
 	b, err := ioutil.ReadFile(filename)
 	if err != nil {
-		return nil, err
+		return magics, err
 	}
 
-	var magics map[byte]Magic
 	json.Unmarshal(b, &magics)
-
 	return magics, nil
 }
 
