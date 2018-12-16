@@ -123,12 +123,6 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 
 			boardState.ApplyMove(move)
 
-			info := Perft(boardState, depth-1, options)
-			if options.divide && depth == options.depth {
-				fmt.Printf("%s %d\n", MoveToString(move), info.nodes)
-			}
-			addPerftInfo(&perftInfo, info)
-
 			if options.sanityCheck {
 				if boardState.board[boardState.lookupInfo.whiteKingSquare] != WHITE_MASK|KING_MASK {
 					fmt.Println(boardState.ToString())
@@ -155,6 +149,9 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions) PerftInfo {
 				}
 
 				info := Perft(boardState, depth-1, options)
+				if options.divide && depth == options.depth {
+					fmt.Printf("%s %d\n", MoveToString(move), info.nodes)
+				}
 				addPerftInfo(&perftInfo, info)
 			}
 
