@@ -42,6 +42,7 @@ func main() {
 	flag.Parse()
 
 	InitializeLogger()
+	InitializeMoveBitboards()
 	var success = true
 	var err error
 
