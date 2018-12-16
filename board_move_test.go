@@ -559,3 +559,14 @@ func TestFiddlingWithKingsideRooks(t *testing.T) {
 	testBoard.UnapplyMove(m1)
 	assert.True(t, testBoard.boardInfo.whiteCanCastleKingside)
 }
+
+func TestUnapplyPromotionCaptureToA1Square(t *testing.T) {
+	testBoard, _ := CreateBoardStateFromFENString("r2q4/1p4kp/3p1B2/5b2/2Q5/8/1p4PP/R5K1 b - - 0 4")
+
+	move := CreatePromotionCapture(SQUARE_B2, SQUARE_A1, QUEEN_MASK)
+
+	testBoard.ApplyMove(move)
+	testBoard.UnapplyMove(move)
+
+	assert.Equal(t, ROOK_MASK|WHITE_MASK, testBoard.board[SQUARE_A1])
+}

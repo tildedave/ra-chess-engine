@@ -148,7 +148,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 				} else if move.from-move.to > 8 {
 					boardState.boardInfo.enPassantTargetSquare = move.from - 8
 				}
-			} else if move.to == epTargetSquare {
+			} else if move.to == epTargetSquare && epTargetSquare > 0 {
 				var pos uint8
 				var otherOffset int
 				if boardState.whiteToMove {
