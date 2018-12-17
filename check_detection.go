@@ -56,6 +56,23 @@ func (boardState *BoardState) IsSquareUnderAttack(sq byte, offset int, offsetFor
 	return false
 }
 
+func (boardState *BoardState) GetSquareAttackersBoard(sq byte) uint64 {
+	whiteOccupancies := boardState.bitboards.color[WHITE_OFFSET]
+	blackOccupancies := boardState.bitboards.color[BLACK_OFFSET]
+	allOccupancies := whiteOccupancies | blackOccupancies
+	bishopKey := hashKey(allOccupancies, boardState.moveBitboards.bishopMagics[sq])
+	rookKey := hashKey(allOccupancies, boardState.moveBitboards.rookMagics[sq])
+	bishopQueens := boardState.bitboards.piece[BISHOP_MASK] | boardState.bitboards.piece[QUEEN_MASK]
+	rookQueens := boardState.bitboards.piece[BISHOP_MASK] | boardState.bitboards.piece[QUEEN_MASK]
+
+	return ((boardState.moveBitboards.knightAttacks[sq].board & boardState.bitboards.piece[KNIGHT_MASK]) |
+		(boardState.moveBitboards.kingAttacks[sq].board & boardState.bitboards.piece[KING_MASK]) |
+		(boardState.moveBitboards.bishopAttacks[sq][bishopKey].board & bishopQueens) |
+		(boardState.moveBitboards.bishopAttacks[sq][rookKey].board & rookQueens) |
+		(boardState.moveBitboards.pawnAttacks[WHITE_OFFSET][sq] & whiteOccupancies & boardState.bitboards.piece[PAWN_MASK]) |
+		(boardState.moveBitboards.pawnAttacks[BLACK_OFFSET][sq] & blackOccupancies & boardState.bitboards.piece[PAWN_MASK]))
+}
+
 func (boardState *BoardState) TestCastleLegality(move Move) bool {
 	if boardState.offsetToMove == WHITE_OFFSET {
 		if move.IsKingsideCastle() {
