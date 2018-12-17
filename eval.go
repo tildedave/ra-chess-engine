@@ -59,35 +59,24 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 	whiteHasPawns := false
 	hasMatingMaterial := true
 
-	for i := byte(0); i < 8; i++ {
-		for j := byte(0); j < 8; j++ {
-			p := boardState.PieceAtSquare(idx(j, i))
-			if p != 0x00 {
-				pieceMask := p & 0x0F
-				score := materialScore[pieceMask]
-				isBlack := p&0xF0 == BLACK_MASK
+	whiteOccupancy := boardState.bitboards.color[WHITE_OFFSET]
+	blackOccupancy := boardState.bitboards.color[BLACK_OFFSET]
 
-				if pieceMask != PAWN_MASK {
-					if isBlack {
-						blackMaterial += score
-					} else {
-						whiteMaterial += score
-					}
-				} else {
-					if isBlack {
-						blackHasPawns = true
-					} else {
-						whiteHasPawns = true
-					}
-				}
-				if isBlack {
-					material -= score
-				} else {
-					material += score
-				}
+	for pieceMask := byte(1); pieceMask <= 6; pieceMask++ {
+		pieceBoard := boardState.bitboards.piece[pieceMask]
+		whiteMaterial += bits.OnesCount64(whiteOccupancy&pieceBoard) * materialScore[pieceMask]
+		blackMaterial += bits.OnesCount64(blackOccupancy&pieceBoard) * materialScore[pieceMask]
+
+		if pieceMask == PAWN_MASK {
+			if pieceBoard&whiteOccupancy != 0 {
+				whiteHasPawns = true
+			} else if pieceBoard&blackOccupancy != 0 {
+				blackHasPawns = true
 			}
 		}
 	}
+
+	material = whiteMaterial - blackMaterial
 
 	// This isn't correct, bitboards will make this easier
 	if !blackHasPawns && !whiteHasPawns && blackMaterial <= KNIGHT_EVAL_SCORE && whiteMaterial <= KNIGHT_EVAL_SCORE {
