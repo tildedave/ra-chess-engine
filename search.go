@@ -96,6 +96,8 @@ func searchAlphaBeta(
 				// the hash move prior to generating the full move listing.  feels like this would be
 				// effective at pruning the search tree and also save a bunch of time computing the full
 				// move listing.
+				// NOTE - Apep doesn't generate move list, it uses hash move first and then something similar
+				// to IsMoveLegal to sanity check moves.
 
 				isLegal := false
 			CheckHashMoveLegality:
@@ -109,6 +111,11 @@ func searchAlphaBeta(
 				}
 
 				if !isLegal {
+					if _, err := boardState.IsMoveLegal(move); err == nil {
+						fmt.Println(boardState.ToString())
+						fmt.Println(MoveToPrettyString(move, boardState))
+						panic("hash move was not legal but IsMoveLegal says it is")
+					}
 					break
 				}
 			}
@@ -117,14 +124,15 @@ func searchAlphaBeta(
 				continue
 			}
 
+			searchDepth := depth - 1
+
 			boardState.ApplyMove(move)
 
 			if !boardState.IsInCheck(oppositeColorOffset(boardState.offsetToMove)) {
 				searchConfig.move = move
 				searchConfig.isDebug = false
 
-				searchDepth := depth - 1
-				if move.IsCapture() || boardState.IsInCheck(boardState.offsetToMove) {
+				if move.IsCapture() || boardState.IsInCheck(boardState.offsetToMove) || move.IsPromotion() {
 					searchDepth++
 				}
 
@@ -229,5 +237,17 @@ func getNoLegalMoveResult(boardState *BoardState, depth uint, searchConfig Searc
 }
 
 func SearchResultToString(result SearchResult) string {
-	return fmt.Sprintf("%s (value=%d, nodes=%d, cutoffs=%d, hash cutoffs=%d)", MoveToString(result.move), result.value, result.nodes, result.cutoffs, result.hashCutoffs)
+	return fmt.Sprintf("%s (value=%d, depth=%d, nodes=%d, cutoffs=%d, hash cutoffs=%d)",
+		MoveToString(result.move), result.value, result.depth, result.nodes, result.cutoffs, result.hashCutoffs)
+}
+
+// Used to determine if we should extend search
+func (m Move) IsQuiescentPawnPush(boardState *BoardState) bool {
+	movePiece := boardState.board[m.from]
+	if movePiece&0x0F != PAWN_MASK {
+		return false
+	}
+
+	rank := Rank(m.to)
+	return (movePiece == WHITE_MASK|PAWN_MASK && rank >= 6) || (rank <= 3)
 }
