@@ -36,7 +36,7 @@ func main() {
 	tacticsFen := flag.String("tacticsfen", "", "Tactics position in FEN format")
 	tacticsThinkingTime := flag.Uint("tacticsthinkingtime", 500, "Time to think per position (ms)")
 	tacticsRegex := flag.String("tacticsregex", "", "Run only tactics matching the given id")
-	tacticsDebug := flag.Bool("tacticsdebug", false, "Output more information during tactics")
+	tacticsDebug := flag.String("tacticsdebug", "", "Output more information during tactics if the move matches the string")
 	isMagic := flag.Bool("magic", false, "Generate magic bitboard constants (write to rook-magics.json and bishop-magics.json)")
 
 	flag.Parse()

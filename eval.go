@@ -52,6 +52,16 @@ var pawnSeventhRankBoard = [2]uint64{
 	0x000000000000FF00,
 }
 
+var pawnSixthRankBoard = [2]uint64{
+	0x0000FF0000000000,
+	0x0000000000FF0000,
+}
+
+var passedPawnBoard = [2]uint64{
+	0x000000FFFFFFFF00,
+	0x00FFFFFFFF000000,
+}
+
 func Eval(boardState *BoardState) (BoardEval, bool) {
 	material := 0
 	boardPhase := PHASE_OPENING
@@ -83,11 +93,33 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 			if whitePawns != 0 {
 				whiteHasPawns = true
 				whiteMaterial += bits.OnesCount64(whitePawns&pawnSeventhRankBoard[WHITE_OFFSET]) * PAWN_ON_SEVENTH_RANK_SCORE
+
+				var sixthRank = whitePawns & pawnSixthRankBoard[WHITE_OFFSET]
+				if sixthRank != 0 && (sixthRank == 0x00C0000000000000 ||
+					sixthRank == 0x0060000000000000 ||
+					sixthRank == 0x0030000000000000 ||
+					sixthRank == 0x001A000000000000 ||
+					sixthRank == 0x000C000000000000 ||
+					sixthRank == 0x0006000000000000 ||
+					sixthRank == 0x0003000000000000) {
+					whiteMaterial += ROOK_EVAL_SCORE
+				}
 			}
 
 			if blackPawns != 0 {
 				blackHasPawns = true
 				blackMaterial += bits.OnesCount64(blackPawns&pawnSeventhRankBoard[BLACK_OFFSET]) * PAWN_ON_SEVENTH_RANK_SCORE
+
+				var sixthRank = blackPawns & pawnSixthRankBoard[BLACK_OFFSET]
+				if sixthRank != 0 && (sixthRank == 0x0000000000C00000 ||
+					sixthRank == 0x0000000000600000 ||
+					sixthRank == 0x0000000000300000 ||
+					sixthRank == 0x00000000001A0000 ||
+					sixthRank == 0x00000000000C0000 ||
+					sixthRank == 0x0000000000060000 ||
+					sixthRank == 0x0000000000030000) {
+					blackMaterial += ROOK_EVAL_SCORE
+				}
 			}
 		}
 	}
