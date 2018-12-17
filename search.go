@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strings"
 	"time"
 )
 
@@ -29,11 +30,13 @@ type SearchConfig struct {
 	beta          int
 	move          Move
 	isDebug       bool
+	debugMoves    string
 	startingDepth uint
 }
 
 type ExternalSearchConfig struct {
-	isDebug bool
+	isDebug    bool
+	debugMoves string
 }
 
 func Search(boardState *BoardState, depth uint) SearchResult {
@@ -47,6 +50,7 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 		alpha:         -INFINITY,
 		beta:          INFINITY,
 		isDebug:       config.isDebug,
+		debugMoves:    config.debugMoves,
 		startingDepth: depth,
 	}, MoveSizeHint{})
 	result.time = (time.Now().UnixNano() - startTime) / 10000000
@@ -70,69 +74,40 @@ func searchAlphaBeta(
 	entry := ProbeTranspositionTable(boardState)
 	var hashMove = make([]Move, 0)
 	if entry != nil {
-		if entry.depth >= depth {
-			// I guess move might be bogus so we shouldn't just trust this
-			return *entry.result
-		}
-
 		move := entry.result.move
-		// Hash move might be bogus due to hash collision, so we need to validate
-		// that it's a legit move (later)
-		hashMove = append(hashMove, move)
+		if _, err := boardState.IsMoveLegal(move); err == nil {
+			if entry.depth >= depth {
+				return *entry.result
+			}
+
+			hashMove = append(hashMove, move)
+		}
 	}
 
 	var nodes uint
 	var hashCutoffs uint
 	var cutoffs uint
 
-	listing, hint := GenerateMoveListing(boardState, hint)
 	var bestResult *SearchResult
 
-	for i, moveList := range [][]Move{hashMove, listing.promotions, listing.captures, listing.moves} {
-		for _, move := range moveList {
-			if i == 0 {
-				// validate hash move is one of our generated moves
-				// TODO: is this the best way?  we could just generate the moves from the square in
-				// the hash move prior to generating the full move listing.  feels like this would be
-				// effective at pruning the search tree and also save a bunch of time computing the full
-				// move listing.
-				// NOTE - Apep doesn't generate move list, it uses hash move first and then something similar
-				// to IsMoveLegal to sanity check moves.
+	// We'll generate the other moves after we test the hash move
+	var moveOrdering [4][]Move
+	moveOrdering[0] = hashMove
 
-				isLegal := false
-			CheckHashMoveLegality:
-				for _, legalMoveListing := range [][]Move{listing.promotions, listing.captures, listing.moves} {
-					for _, legalMove := range legalMoveListing {
-						if move == legalMove {
-							isLegal = true
-							break CheckHashMoveLegality
-						}
-					}
-				}
-
-				if !isLegal {
-					if _, err := boardState.IsMoveLegal(move); err == nil {
-						fmt.Println(boardState.ToString())
-						fmt.Println(MoveToPrettyString(move, boardState))
-						panic("hash move was not legal but IsMoveLegal says it is")
-					}
-					break
-				}
-			}
-
+	for i := 0; i < len(moveOrdering); i++ {
+		for _, move := range moveOrdering[i] {
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
 				continue
 			}
 
 			searchDepth := depth - 1
-
 			boardState.ApplyMove(move)
 
 			if !boardState.IsInCheck(oppositeColorOffset(boardState.offsetToMove)) {
 				searchConfig.move = move
 				searchConfig.isDebug = false
 
-				if move.IsCapture() || boardState.IsInCheck(boardState.offsetToMove) || move.IsPromotion() {
+				if move.IsCapture() || boardState.IsInCheck(boardState.offsetToMove) {
 					searchDepth++
 				}
 
@@ -153,7 +128,8 @@ func searchAlphaBeta(
 					}
 				}
 
-				if isDebug {
+				if isDebug && (strings.Contains(MoveToString(move), searchConfig.debugMoves) ||
+					strings.Contains(bestResult.pv, searchConfig.debugMoves)) {
 					fmt.Printf("[%d; %s] value=%d, result=%s, pv=%s\n", depth,
 						MoveToString(move), result.value, SearchResultToString(result), result.pv)
 				}
@@ -174,6 +150,15 @@ func searchAlphaBeta(
 				cutoffs++
 				break
 			}
+		}
+
+		if i == 0 {
+			// add the other moves now that we're done with hash move
+			var listing MoveListing
+			listing, hint = GenerateMoveListing(boardState, hint)
+			moveOrdering[1] = listing.captures
+			moveOrdering[2] = listing.promotions
+			moveOrdering[3] = listing.moves
 		}
 	}
 
@@ -250,5 +235,5 @@ func (m Move) IsQuiescentPawnPush(boardState *BoardState) bool {
 	}
 
 	rank := Rank(m.to)
-	return (movePiece == WHITE_MASK|PAWN_MASK && rank >= 6) || (rank <= 3)
+	return (movePiece == WHITE_MASK|PAWN_MASK && rank == 7) || (rank == 2)
 }

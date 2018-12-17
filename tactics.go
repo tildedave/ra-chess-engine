@@ -11,7 +11,7 @@ import (
 type TacticsOptions struct {
 	thinkingtimeMs uint
 	tacticsRegex   string
-	tacticsDebug   bool
+	tacticsDebug   string
 }
 
 func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
@@ -92,7 +92,8 @@ func RunTacticsFen(fen string, options TacticsOptions) (string, SearchResult, er
 	}()
 
 	config := ExternalSearchConfig{}
-	config.isDebug = options.tacticsDebug
+	config.isDebug = options.tacticsDebug != ""
+	config.debugMoves = options.tacticsDebug
 
 	go thinkAndChooseMove(&boardState, options.thinkingtimeMs, config, ch, thinkingChan)
 	result := <-ch
