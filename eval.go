@@ -21,6 +21,7 @@ const KING_CASTLED_EVAL_SCORE = 30
 const PAWN_IN_CENTER_EVAL_SCORE = 40
 const PIECE_IN_CENTER_EVAL_SCORE = 25
 const PIECE_ATTACKS_CENTER_EVAL_SCORE = 15
+const PAWN_ON_SEVENTH_RANK_SCORE = 300
 
 const (
 	PHASE_OPENING    = iota
@@ -46,6 +47,11 @@ var pawnProtectionBoard = [2]uint64{
 	0x00FF000000000000,
 }
 
+var pawnSeventhRankBoard = [2]uint64{
+	0x00FF000000000000,
+	0x000000000000FF00,
+}
+
 func Eval(boardState *BoardState) (BoardEval, bool) {
 	material := 0
 	boardPhase := PHASE_OPENING
@@ -68,10 +74,20 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 		blackMaterial += bits.OnesCount64(blackOccupancy&pieceBoard) * materialScore[pieceMask]
 
 		if pieceMask == PAWN_MASK {
-			if pieceBoard&whiteOccupancy != 0 {
+			whitePawns := pieceBoard & whiteOccupancy
+			blackPawns := pieceBoard & blackOccupancy
+
+			// TODO: pawn checks beyond 7th rank checks need to verify that they're passed pawns
+			// or we're going to get some weird behavior in the engine
+
+			if whitePawns != 0 {
 				whiteHasPawns = true
-			} else if pieceBoard&blackOccupancy != 0 {
+				whiteMaterial += bits.OnesCount64(whitePawns&pawnSeventhRankBoard[WHITE_OFFSET]) * PAWN_ON_SEVENTH_RANK_SCORE
+			}
+
+			if blackPawns != 0 {
 				blackHasPawns = true
+				blackMaterial += bits.OnesCount64(blackPawns&pawnSeventhRankBoard[BLACK_OFFSET]) * PAWN_ON_SEVENTH_RANK_SCORE
 			}
 		}
 	}
