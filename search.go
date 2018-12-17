@@ -91,7 +91,12 @@ func searchAlphaBeta(
 	var bestResult *SearchResult
 
 	// We'll generate the other moves after we test the hash move
-	var moveOrdering [4][]Move
+	// 0 = hash
+	// 1 = captures
+	// 2 = promotions
+	// 3 = checks
+	// 4 = moves
+	var moveOrdering [5][]Move
 	moveOrdering[0] = hashMove
 
 	for i := 0; i < len(moveOrdering); i++ {
@@ -158,7 +163,15 @@ func searchAlphaBeta(
 			listing, hint = GenerateMoveListing(boardState, hint)
 			moveOrdering[1] = listing.captures
 			moveOrdering[2] = listing.promotions
-			moveOrdering[3] = listing.moves
+			moveOrdering[4] = listing.moves
+		}
+
+		if i == 2 {
+			// time for check detection
+			// must put all the moves in moveOrdering[4] that check the enemy king in moveOrdering[3]
+
+			// enemy king position:
+			moveOrdering[3] = boardState.FilterChecks(moveOrdering[4])
 		}
 	}
 
