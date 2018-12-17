@@ -154,7 +154,8 @@ func searchAlphaBeta(
 				}
 
 				if isDebug {
-					fmt.Printf("[%d; %s] result=%d\n", depth, MoveToString(move), result.value)
+					fmt.Printf("[%d; %s] value=%d, result=%s, pv=%s\n", depth,
+						MoveToString(move), result.value, SearchResultToString(result), result.pv)
 				}
 
 				if boardState.offsetToMove == BLACK_OFFSET {
