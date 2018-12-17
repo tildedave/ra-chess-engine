@@ -83,3 +83,18 @@ func TestEnPassantRemovesCheck(t *testing.T) {
 
 	assert.False(t, testBoard.IsInCheck(BLACK_OFFSET))
 }
+
+func TestFilterChecks(t *testing.T) {
+	var testBoard BoardState = CreateEmptyBoardState()
+	testBoard.SetPieceAtSquare(SQUARE_A1, WHITE_MASK|KING_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_A3, BLACK_MASK|KING_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_H2, WHITE_MASK|QUEEN_MASK)
+
+	moves := GenerateMoves(&testBoard)
+	checks := testBoard.FilterChecks(moves)
+
+	assertMovePresent(t, checks, SQUARE_H2, SQUARE_H3)
+	assertMovePresent(t, checks, SQUARE_H2, SQUARE_G3)
+	assertMovePresent(t, checks, SQUARE_H2, SQUARE_D6)
+	assertMovePresent(t, checks, SQUARE_H2, SQUARE_B2)
+}
