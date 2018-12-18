@@ -27,11 +27,21 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 
 	for scanner.Scan() {
 		line := strings.Split(scanner.Text(), ";")
-		fenWithMove, nameWithID := line[0], line[1]
-		arr := strings.Split(fenWithMove, "bm")
-		fen, bestMove := strings.Trim(arr[0], " "), strings.Trim(arr[1], " ")
-		arr2 := strings.Split(nameWithID, "id")
-		name := strings.Trim(arr2[1], " \"")
+		var fen string
+		var bestMove string
+		var name string
+
+		if len(line) == 1 {
+			// no answers
+			fen = line[0]
+			name = fmt.Sprintf("position-%d", (totalPositions + 1))
+		} else {
+			fenWithMove, nameWithID := line[0], line[1]
+			arr := strings.Split(fenWithMove, "bm")
+			fen, bestMove = strings.Trim(arr[0], " "), strings.Trim(arr[1], " ")
+			arr2 := strings.Split(nameWithID, "id")
+			name = strings.Trim(arr2[1], " \"")
+		}
 
 		if options.tacticsRegex != "" {
 			res, err := regexp.MatchString(options.tacticsRegex, name)
@@ -50,7 +60,12 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 
 		var res string
 		totalPositions++
-		if strings.Contains(bestMove, prettyMove) {
+		if prettyMove != "" && (bestMove != "" &&
+			(strings.Contains(bestMove, prettyMove) ||
+				strings.Contains(bestMove, MoveToString(result.move)) ||
+				strings.Contains(bestMove, SquareToAlgebraicString(result.move.from)+SquareToAlgebraicString(result.move.to)))) ||
+			// for now assume no move specified means checkmate is the result
+			(bestMove == "" && result.flags == CHECKMATE_FLAG) {
 			res = "\033[1;32mOK\033[0m"
 			successPositions++
 		} else {
@@ -97,6 +112,11 @@ func RunTacticsFen(fen string, options TacticsOptions) (string, SearchResult, er
 
 	go thinkAndChooseMove(&boardState, options.thinkingtimeMs, config, ch, thinkingChan)
 	result := <-ch
+
+	if (result.move == Move{}) {
+		// no result was given in thinking time :(
+		return "", result, nil
+	}
 
 	return MoveToPrettyString(result.move, &boardState), result, nil
 }
