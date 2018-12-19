@@ -175,7 +175,7 @@ func searchAlphaBeta(
 			// add the other moves now that we're done with hash move
 			listing, hint = GenerateMoveListing(boardState, hint)
 
-			// You need to be allowed to leave check if quiescent phase
+			// You need to be allowed to leave check in quiescent phase
 			if phase == SEARCH_PHASE_QUIESCENT && !boardState.IsInCheck(boardState.offsetToMove) {
 				listing.moves = boardState.FilterChecks(listing.moves)
 			}
@@ -192,7 +192,14 @@ func searchAlphaBeta(
 	}
 
 	if bestResult == nil {
-		result := getNoLegalMoveResult(boardState, currentDepth, searchConfig)
+		var result SearchResult
+		if phase == SEARCH_PHASE_INITIAL {
+			result = getNoLegalMoveResult(boardState, currentDepth, searchConfig)
+		} else {
+			// This means we don't check for checkmates/stalemates in quiescent search
+			// and just evaluate the board.
+			result = getTerminalResult(boardState, searchConfig)
+		}
 		bestResult = &result
 	} else {
 		bestResult.pv = MoveToPrettyString(bestResult.move, boardState) + " " + bestResult.pv
@@ -229,7 +236,7 @@ func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) Search
 func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfig SearchConfig) SearchResult {
 	if boardState.IsInCheck(boardState.offsetToMove) {
 		// moves to mate = currentDepth
-		score := CHECKMATE_SCORE - int(currentDepth)
+		score := CHECKMATE_SCORE - int(currentDepth) + 1
 		if boardState.offsetToMove == WHITE_OFFSET {
 			score = -score
 		}
@@ -251,8 +258,8 @@ func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfi
 }
 
 func SearchResultToString(result SearchResult) string {
-	return fmt.Sprintf("%s (value=%d, depth=%d, nodes=%d, cutoffs=%d, hash cutoffs=%d)",
-		MoveToString(result.move), result.value, result.depth, result.nodes, result.cutoffs, result.hashCutoffs)
+	return fmt.Sprintf("%s (value=%d, depth=%d, nodes=%d, cutoffs=%d, hash cutoffs=%d, pv=%s)",
+		MoveToString(result.move), result.value, result.depth, result.nodes, result.cutoffs, result.hashCutoffs, result.pv)
 }
 
 // Used to determine if we should extend search
