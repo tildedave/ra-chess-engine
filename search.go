@@ -25,6 +25,13 @@ type SearchResult struct {
 	pv          string
 }
 
+const (
+	SEARCH_PHASE_INITIAL   = iota
+	SEARCH_PHASE_QUIESCENT = iota
+)
+
+const QUIESCENT_SEARCH_DEPTH = 3
+
 type SearchConfig struct {
 	alpha         int
 	beta          int
@@ -32,6 +39,7 @@ type SearchConfig struct {
 	isDebug       bool
 	debugMoves    string
 	startingDepth uint
+	phase         int
 }
 
 type ExternalSearchConfig struct {
@@ -52,6 +60,7 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 		isDebug:       config.isDebug,
 		debugMoves:    config.debugMoves,
 		startingDepth: depth,
+		phase:         SEARCH_PHASE_INITIAL,
 	}, MoveSizeHint{})
 	result.time = (time.Now().UnixNano() - startTime) / 10000000
 
@@ -65,7 +74,8 @@ func searchAlphaBeta(
 	searchConfig SearchConfig,
 	hint MoveSizeHint,
 ) SearchResult {
-	if depth == 0 {
+	// fmt.Printf("phase=%d depth left=%d current depth=%d\n", searchConfig.phase, depth, currentDepth)
+	if depth == 0 && searchConfig.phase == SEARCH_PHASE_QUIESCENT {
 		return getTerminalResult(boardState, searchConfig)
 	}
 
@@ -76,7 +86,7 @@ func searchAlphaBeta(
 	if entry != nil {
 		move := entry.result.move
 		if _, err := boardState.IsMoveLegal(move); err == nil {
-			if entry.depth >= depth {
+			if entry.depth >= depth && entry.searchPhase <= searchConfig.phase {
 				return *entry.result
 			}
 
@@ -99,22 +109,25 @@ func searchAlphaBeta(
 	var moveOrdering [5][]Move
 	moveOrdering[0] = hashMove
 
+	// phase will change below
+	phase := searchConfig.phase
+	searchDepth := depth - 1
+	if searchDepth == 0 && phase == SEARCH_PHASE_INITIAL {
+		searchConfig.phase = SEARCH_PHASE_QUIESCENT
+		// just do this for now
+		searchDepth = QUIESCENT_SEARCH_DEPTH
+	}
+
 	for i := 0; i < len(moveOrdering); i++ {
 		for _, move := range moveOrdering[i] {
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
 				continue
 			}
 
-			searchDepth := depth - 1
 			boardState.ApplyMove(move)
-
 			if !boardState.IsInCheck(oppositeColorOffset(boardState.offsetToMove)) {
 				searchConfig.move = move
 				searchConfig.isDebug = false
-
-				if move.IsCapture() || boardState.IsInCheck(boardState.offsetToMove) {
-					searchDepth++
-				}
 
 				result := searchAlphaBeta(boardState, searchDepth, currentDepth+1, searchConfig, hint)
 
@@ -158,25 +171,28 @@ func searchAlphaBeta(
 		}
 
 		if i == 0 {
-			// add the other moves now that we're done with hash move
 			var listing MoveListing
+			// add the other moves now that we're done with hash move
 			listing, hint = GenerateMoveListing(boardState, hint)
+
+			// You need to be allowed to leave check if quiescent phase
+			if phase == SEARCH_PHASE_QUIESCENT && !boardState.IsInCheck(boardState.offsetToMove) {
+				listing.moves = boardState.FilterChecks(listing.moves)
+			}
+
 			moveOrdering[1] = listing.captures
 			moveOrdering[2] = listing.promotions
 			moveOrdering[4] = listing.moves
 		}
 
-		if i == 2 {
-			// time for check detection
-			// must put all the moves in moveOrdering[4] that check the enemy king in moveOrdering[3]
-
-			// enemy king position:
+		// Quiescent search already only returns checks in listing.moves
+		if i == 2 && phase == SEARCH_PHASE_INITIAL {
 			moveOrdering[3] = boardState.FilterChecks(moveOrdering[4])
 		}
 	}
 
 	if bestResult == nil {
-		result := getNoLegalMoveResult(boardState, depth, searchConfig)
+		result := getNoLegalMoveResult(boardState, currentDepth, searchConfig)
 		bestResult = &result
 	} else {
 		bestResult.pv = MoveToPrettyString(bestResult.move, boardState) + " " + bestResult.pv
@@ -185,7 +201,7 @@ func searchAlphaBeta(
 	bestResult.nodes = nodes
 	bestResult.hashCutoffs = hashCutoffs
 	bestResult.cutoffs = cutoffs
-	StoreTranspositionTable(boardState, bestResult, depth)
+	StoreTranspositionTable(boardState, bestResult, depth, searchConfig.phase)
 
 	return *bestResult
 }
@@ -210,11 +226,10 @@ func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) Search
 	}
 }
 
-func getNoLegalMoveResult(boardState *BoardState, depth uint, searchConfig SearchConfig) SearchResult {
+func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfig SearchConfig) SearchResult {
 	if boardState.IsInCheck(boardState.offsetToMove) {
-		// moves to mate = startingDepth - depth
-		movesToMate := searchConfig.startingDepth - depth
-		score := CHECKMATE_SCORE - int(movesToMate)
+		// moves to mate = currentDepth
+		score := CHECKMATE_SCORE - int(currentDepth)
 		if boardState.offsetToMove == WHITE_OFFSET {
 			score = -score
 		}
