@@ -234,7 +234,24 @@ func createMoveListing(hint MoveSizeHint) MoveListing {
 
 func GenerateMoveListing(boardState *BoardState, hint MoveSizeHint) (MoveListing, MoveSizeHint) {
 	listing := createMoveListing(hint)
+	precomputedInfo := generatePrecomputedInfo(boardState)
+	occupancy := precomputedInfo.ourOccupancy
+	for occupancy != 0 {
+		sq := byte(bits.TrailingZeros64(occupancy))
+		GenerateMovesFromSquare(boardState, sq, boardState.offsetToMove, &listing, precomputedInfo)
 
+		occupancy ^= 1 << sq
+	}
+
+	hint = MoveSizeHint{
+		numMoves:      len(listing.moves),
+		numCaptures:   len(listing.captures),
+		numPromotions: len(listing.promotions),
+	}
+	return listing, hint
+}
+
+func generatePrecomputedInfo(boardState *BoardState) *PrecomputedInfo {
 	precomputedInfo := PrecomputedInfo{}
 	switch boardState.offsetToMove {
 	case WHITE_OFFSET:
@@ -248,20 +265,7 @@ func GenerateMoveListing(boardState *BoardState, hint MoveSizeHint) (MoveListing
 	}
 	precomputedInfo.allOccupancy = precomputedInfo.ourOccupancy | precomputedInfo.otherOccupancy
 
-	occupancy := precomputedInfo.ourOccupancy
-	for occupancy != 0 {
-		sq := byte(bits.TrailingZeros64(occupancy))
-		GenerateMovesFromSquare(boardState, sq, boardState.offsetToMove, &listing, &precomputedInfo)
-
-		occupancy ^= 1 << sq
-	}
-
-	hint = MoveSizeHint{
-		numMoves:      len(listing.moves),
-		numCaptures:   len(listing.captures),
-		numPromotions: len(listing.promotions),
-	}
-	return listing, hint
+	return &precomputedInfo
 }
 
 func GenerateMovesFromSquare(
