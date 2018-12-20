@@ -84,7 +84,7 @@ func searchAlphaBeta(
 	hint MoveSizeHint,
 ) SearchResult {
 	// fmt.Printf("phase=%d depth left=%d current depth=%d\n", searchConfig.phase, depth, currentDepth)
-	if depth == 0 && searchConfig.phase == SEARCH_PHASE_QUIESCENT {
+	if (depth == 0 && searchConfig.phase == SEARCH_PHASE_QUIESCENT) || boardState.shouldAbort {
 		return getTerminalResult(boardState, searchConfig)
 	}
 

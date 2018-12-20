@@ -118,5 +118,6 @@ func RunTacticsFen(fen string, options TacticsOptions) (string, SearchResult, er
 		return "", result, nil
 	}
 
+	boardState.shouldAbort = true
 	return MoveToPrettyString(result.move, &boardState), result, nil
 }
