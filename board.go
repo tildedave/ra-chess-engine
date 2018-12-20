@@ -239,6 +239,7 @@ type BoardState struct {
 	hashInfo *HashInfo
 	// Transposition table
 	transpositionTable map[uint64]*TranspositionEntry
+	shouldAbort        bool
 }
 
 func oppositeColorOffset(offset int) int {
