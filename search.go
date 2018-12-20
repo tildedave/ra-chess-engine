@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -23,6 +24,14 @@ type SearchResult struct {
 	time        int64
 	depth       uint
 	pv          string
+}
+
+func (result *SearchResult) IsCheckmate() bool {
+	return result.flags&CHECKMATE_FLAG == CHECKMATE_FLAG
+}
+
+func (result *SearchResult) IsStalemate() bool {
+	return result.flags&STALEMATE_FLAG == STALEMATE_FLAG
 }
 
 const (
@@ -258,8 +267,31 @@ func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfi
 }
 
 func SearchResultToString(result SearchResult) string {
-	return fmt.Sprintf("%s (value=%d, depth=%d, nodes=%d, cutoffs=%d, hash cutoffs=%d, pv=%s)",
-		MoveToString(result.move), result.value, result.depth, result.nodes, result.cutoffs, result.hashCutoffs, result.pv)
+	return fmt.Sprintf("%s (value=%s, depth=%d, nodes=%d, cutoffs=%d, hash cutoffs=%d, pv=%s)",
+		MoveToString(result.move),
+		SearchValueToString(result),
+		result.depth,
+		result.nodes,
+		result.cutoffs,
+		result.hashCutoffs,
+		result.pv)
+}
+
+func SearchValueToString(result SearchResult) string {
+	if result.IsCheckmate() {
+		score := result.value
+		if score < 0 {
+			score = -score
+		}
+		movesToCheckmate := CHECKMATE_SCORE - score
+		return fmt.Sprintf("Mate(%d)", movesToCheckmate)
+	}
+
+	if result.IsStalemate() {
+		return fmt.Sprintf("Stalemate")
+	}
+
+	return strconv.Itoa(result.value)
 }
 
 // Used to determine if we should extend search
