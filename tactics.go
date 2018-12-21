@@ -10,7 +10,7 @@ import (
 
 type TacticsOptions struct {
 	thinkingtimeMs uint
-	tacticsRegex   string
+	epdRegex       string
 	tacticsDebug   string
 }
 
@@ -43,8 +43,8 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 			name = strings.Trim(arr2[1], " \"")
 		}
 
-		if options.tacticsRegex != "" {
-			res, err := regexp.MatchString(options.tacticsRegex, name)
+		if options.epdRegex != "" {
+			res, err := regexp.MatchString(options.epdRegex, name)
 			if err != nil {
 				return false, err
 			}

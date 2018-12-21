@@ -25,6 +25,8 @@ func InitializeLogger() {
 func main() {
 	startingFen := flag.String("fen", "", "Fen board")
 	epdFile := flag.String("epd", "", "Position file in EPD format")
+	epdRegex := flag.String("epdregex", "", "Run only positions matching the given id")
+	cpuProfile := flag.String("cpuprofile", "", "File to write CPU profile to")
 	isPerft := flag.Bool("perft", false, "Perft mode")
 	perftDepth := flag.Uint("perftdepth", 5, "Perft depth to search")
 	perftChecks := flag.Bool("perftchecks", false, "Perft: count check positions (slower)")
@@ -32,10 +34,8 @@ func main() {
 	perftJSONFile := flag.String("perftjson", "", "JSON specification")
 	perftPrintMoves := flag.Bool("printmoves", false, "Perft: print all generates moves at final depth")
 	perftDivide := flag.Bool("perftdivide", false, "Perft: print divide of all moves at top depth")
-	perftCpuProfile := flag.String("perftcpuprofile", "", "Perft: file to write CPU profile to")
 	isTactics := flag.Bool("tactics", false, "Tactics mode")
 	tacticsThinkingTime := flag.Uint("tacticsthinkingtime", 500, "Time to think per position (ms)")
-	tacticsRegex := flag.String("tacticsregex", "", "Run only tactics matching the given id")
 	tacticsDebug := flag.String("tacticsdebug", "", "Output more information during tactics if the move matches the string")
 	isMagic := flag.Bool("magic", false, "Generate magic bitboard constants (write to rook-magics.json and bishop-magics.json)")
 
@@ -46,6 +46,17 @@ func main() {
 	var success = true
 	var err error
 
+	var f *os.File
+	if *cpuProfile != "" {
+		f, err = os.Create(*cpuProfile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+	}
+
 	if *isPerft || *perftJSONFile != "" {
 		var options PerftOptions
 		options.checks = *perftChecks
@@ -53,17 +64,6 @@ func main() {
 		options.perftPrintMoves = *perftPrintMoves
 		options.divide = *perftDivide
 		options.depth = *perftDepth
-
-		var f *os.File
-		if *perftCpuProfile != "" {
-			f, err = os.Create(*perftCpuProfile)
-			if err != nil {
-				log.Fatal("could not create CPU profile: ", err)
-			}
-			if err := pprof.StartCPUProfile(f); err != nil {
-				log.Fatal("could not start CPU profile: ", err)
-			}
-		}
 
 		start := time.Now()
 		if *perftJSONFile != "" {
@@ -75,16 +75,11 @@ func main() {
 			success, err = RunPerft(*startingFen, *perftDepth, options)
 		}
 
-		if f != nil {
-			pprof.StopCPUProfile()
-			f.Close()
-		}
 		fmt.Printf("Total time: %s\n", time.Since(start))
-
 	} else if *isTactics {
 		var options TacticsOptions
 		options.thinkingtimeMs = *tacticsThinkingTime
-		options.tacticsRegex = *tacticsRegex
+		options.epdRegex = *epdRegex
 		options.tacticsDebug = *tacticsDebug
 
 		if *epdFile != "" {
@@ -106,6 +101,11 @@ func main() {
 		output := bufio.NewWriter(os.Stdout)
 
 		success, err = RunXboard(scanner, output)
+	}
+
+	if f != nil {
+		pprof.StopCPUProfile()
+		f.Close()
 	}
 
 	if err != nil {
