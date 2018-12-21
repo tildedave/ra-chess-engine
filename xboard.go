@@ -484,7 +484,6 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 
 // Parse a move command given from xboard: https://www.gnu.org/software/xboard/engine-intf.html#4
 // Doesn't test move legality (e.g. would put the moving player in check, castle is legal, etc)
-
 func ParseXboardMove(command string, boardState *BoardState) (Move, error) {
 	var move Move
 
