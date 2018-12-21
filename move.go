@@ -213,7 +213,7 @@ func ParsePrettyMove(moveStr string, boardState *BoardState) (Move, error) {
 	if len(promotionSplits) == 2 {
 		isPromotion = true
 		moveStr = promotionSplits[0]
-		promotionPiece = CharToPieceMask(promotionSplits[1][1])
+		promotionPiece = CharToPieceMask(promotionSplits[1][0])
 	}
 
 	if moveStr == "O-O" {
