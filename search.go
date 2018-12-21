@@ -211,7 +211,11 @@ func searchAlphaBeta(
 		}
 		bestResult = &result
 	} else {
-		bestResult.pv = MoveToPrettyString(bestResult.move, boardState) + " " + bestResult.pv
+		separator := " "
+		if phase != searchConfig.phase {
+			separator = " <Q> "
+		}
+		bestResult.pv = MoveToPrettyString(bestResult.move, boardState) + separator + bestResult.pv
 	}
 
 	bestResult.nodes = nodes
@@ -261,7 +265,7 @@ func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfi
 	return SearchResult{
 		value: 0,
 		flags: STALEMATE_FLAG,
-		pv:    "1/2-1/2",
+		pv:    "1/2-1/2 (no legal moves)",
 	}
 
 }
