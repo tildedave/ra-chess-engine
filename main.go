@@ -24,6 +24,7 @@ func InitializeLogger() {
 
 func main() {
 	startingFen := flag.String("fen", "", "Fen board")
+	variation := flag.String("variation", "", "Variation to apply prior to perft/tactics/eval (pair with --fen)")
 	epdFile := flag.String("epd", "", "Position file in EPD format")
 	epdRegex := flag.String("epdregex", "", "Run only positions matching the given id")
 	cpuProfile := flag.String("cpuprofile", "", "File to write CPU profile to")
@@ -35,7 +36,7 @@ func main() {
 	perftPrintMoves := flag.Bool("printmoves", false, "Perft: print all generates moves at final depth")
 	perftDivide := flag.Bool("perftdivide", false, "Perft: print divide of all moves at top depth")
 	isTactics := flag.Bool("tactics", false, "Tactics mode")
-	tacticsThinkingTime := flag.Uint("tacticsthinkingtime", 500, "Time to think per position (ms)")
+	tacticsThinkingTime := flag.Uint("tacticsthinkingtime", 1500, "Time to think per position (ms)")
 	tacticsDebug := flag.String("tacticsdebug", "", "Output more information during tactics if the move matches the string")
 	isMagic := flag.Bool("magic", false, "Generate magic bitboard constants (write to rook-magics.json and bishop-magics.json)")
 
@@ -72,7 +73,7 @@ func main() {
 			if *startingFen == "" {
 				*startingFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
 			}
-			success, err = RunPerft(*startingFen, *perftDepth, options)
+			success, err = RunPerft(*startingFen, *variation, *perftDepth, options)
 		}
 
 		fmt.Printf("Total time: %s\n", time.Since(start))
@@ -85,10 +86,9 @@ func main() {
 		if *epdFile != "" {
 			success, err = RunTacticsFile(*epdFile, options)
 		} else if *startingFen != "" {
-			prettyMove, result, err := RunTacticsFen(*startingFen, options)
-			if err != nil {
-				fmt.Println(SearchResultToString(result))
-				fmt.Printf("Move: %s\n", prettyMove)
+			prettyMove, result, err := RunTacticsFen(*startingFen, *variation, options)
+			if err == nil {
+				fmt.Printf("move=%s result=%s\n", prettyMove, SearchResultToString(result))
 			}
 		} else {
 			err = errors.New("Must specify either an EPD file or a fen argument")

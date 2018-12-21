@@ -53,7 +53,7 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 			}
 		}
 
-		prettyMove, result, err := RunTacticsFen(fen, options)
+		prettyMove, result, err := RunTacticsFen(fen, "", options)
 		if err != nil {
 			return false, err
 		}
@@ -84,8 +84,19 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 	return false, nil
 }
 
-func RunTacticsFen(fen string, options TacticsOptions) (string, SearchResult, error) {
+func RunTacticsFen(fen string, variation string, options TacticsOptions) (string, SearchResult, error) {
 	boardState, err := CreateBoardStateFromFENString(fen)
+	if variation != "" {
+		moveList, err := VariationToMoveList(variation, &boardState)
+		if err != nil {
+			fmt.Println(err)
+			return "", SearchResult{}, err
+		}
+
+		for _, move := range moveList {
+			boardState.ApplyMove(move)
+		}
+	}
 
 	if err != nil {
 		return "", SearchResult{}, err
