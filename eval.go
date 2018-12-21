@@ -45,6 +45,7 @@ type BoardEval struct {
 	whiteKingPosition int
 	blackKingPosition int
 	passedPawns       int
+	hasMatingMaterial bool
 }
 
 var materialScore = [7]int{
@@ -74,7 +75,7 @@ var passedPawnBoard = [2]uint64{
 var edges uint64 = 0xFF818181818181FF
 var nextToEdges uint64 = 0x007E424242427E00
 
-func Eval(boardState *BoardState) (BoardEval, bool) {
+func Eval(boardState *BoardState) BoardEval {
 	boardPhase := PHASE_OPENING
 	if boardState.fullmoveNumber > 8 {
 		boardPhase = PHASE_MIDDLEGAME
@@ -251,7 +252,8 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 		whiteKingPosition: whiteKingPosition,
 		blackKingPosition: blackKingPosition,
 		centerControl:     centerControl,
-	}, hasMatingMaterial
+		hasMatingMaterial: hasMatingMaterial,
+	}
 }
 
 func (eval BoardEval) value() int {
@@ -308,9 +310,7 @@ func RunEvalFen(fen string, variation string, options EvalOptions) (BoardEval, e
 
 	fmt.Println(boardState.ToString())
 
-	// isOver should be in the Eval struct dude
-	eval, _ := Eval(&boardState)
-	return eval, nil
+	return Eval(&boardState), nil
 }
 
 // TODO: incrementally update evaluation as a result of a move

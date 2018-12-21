@@ -226,8 +226,8 @@ FindBestMove:
 func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) SearchResult {
 	// TODO(perf): use an incremental evaluation state passed in as an argument
 
-	e, hasMatingMaterial := Eval(boardState)
-	if !hasMatingMaterial {
+	e := Eval(boardState)
+	if !e.hasMatingMaterial {
 		return SearchResult{
 			value: 0,
 			flags: STALEMATE_FLAG,
