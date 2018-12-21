@@ -436,6 +436,26 @@ func CreateBoardStateFromFENString(s string) (BoardState, error) {
 	return boardState, nil
 }
 
+func CreateBoardStateFromFENStringWithVariation(fen string, variation string) (BoardState, error) {
+	boardState, err := CreateBoardStateFromFENString(fen)
+	if err != nil {
+		return boardState, err
+	}
+
+	if variation != "" {
+		moveList, err := VariationToMoveList(variation, &boardState)
+		if err != nil {
+			return boardState, err
+		}
+
+		for _, move := range moveList {
+			boardState.ApplyMove(move)
+		}
+	}
+
+	return boardState, nil
+}
+
 func ParseAlgebraicSquare(sq string) (uint8, error) {
 	var col byte
 	var row byte

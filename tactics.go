@@ -4,7 +4,6 @@ import (
 	"bufio"
 	"fmt"
 	"os"
-	"regexp"
 	"strings"
 )
 
@@ -14,46 +13,23 @@ type TacticsOptions struct {
 	tacticsDebug   string
 }
 
-func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
-	file, err := os.Open(epdFile)
-	if err != nil {
-		return false, err
-	}
-	scanner := bufio.NewScanner(file)
-	defer file.Close()
-
+func RunTacticsFile(epdFile string, variation string, options TacticsOptions) (bool, error) {
 	successPositions := 0
 	totalPositions := 0
 
-	for scanner.Scan() {
-		line := strings.Split(scanner.Text(), ";")
-		var fen string
-		var bestMove string
-		var name string
+	lines, err := ParseAndFilterEpdFile(epdFile, options.epdRegex)
+	if err != nil {
+		return false, err
+	}
 
-		if len(line) == 1 {
-			// no answers
-			fen = line[0]
-			name = fmt.Sprintf("position-%d", (totalPositions + 1))
-		} else {
-			fenWithMove, nameWithID := line[0], line[1]
-			arr := strings.Split(fenWithMove, "bm")
-			fen, bestMove = strings.Trim(arr[0], " "), strings.Trim(arr[1], " ")
-			arr2 := strings.Split(nameWithID, "id")
-			name = strings.Trim(arr2[1], " \"")
-		}
+	if variation != "" && len(lines) > 1 {
+		return false, fmt.Errorf("Can only specify variation if regex filters to 1 positions, got %d", len(lines))
+	}
 
-		if options.epdRegex != "" {
-			res, err := regexp.MatchString(options.epdRegex, name)
-			if err != nil {
-				return false, err
-			}
-			if !res {
-				continue
-			}
-		}
+	for _, line := range lines {
+		bestMove := line.bestMove
 
-		prettyMove, result, err := RunTacticsFen(fen, "", options)
+		prettyMove, result, err := RunTacticsFen(line.fen, variation, options)
 		if err != nil {
 			return false, err
 		}
@@ -72,7 +48,7 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 			res = "\033[1;31mFAIL\033[0m"
 		}
 		fmt.Printf("[%s - %s] expected=%s move=%s result=%s\n",
-			name, res, bestMove, prettyMove, SearchResultToString(result))
+			line.name, res, bestMove, prettyMove, SearchResultToString(result))
 	}
 
 	fmt.Printf("Complete.  %d/%d positions correct (%.2f%%)\n", successPositions, totalPositions,
@@ -85,19 +61,7 @@ func RunTacticsFile(epdFile string, options TacticsOptions) (bool, error) {
 }
 
 func RunTacticsFen(fen string, variation string, options TacticsOptions) (string, SearchResult, error) {
-	boardState, err := CreateBoardStateFromFENString(fen)
-	if variation != "" {
-		moveList, err := VariationToMoveList(variation, &boardState)
-		if err != nil {
-			fmt.Println(err)
-			return "", SearchResult{}, err
-		}
-
-		for _, move := range moveList {
-			boardState.ApplyMove(move)
-		}
-	}
-
+	boardState, err := CreateBoardStateFromFENStringWithVariation(fen, variation)
 	if err != nil {
 		return "", SearchResult{}, err
 	}
