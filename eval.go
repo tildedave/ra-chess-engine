@@ -5,7 +5,9 @@ import (
 	"math/bits"
 )
 
-var _ = fmt.Println
+type EvalOptions struct {
+	epdRegex string
+}
 
 const ENDGAME_MATERIAL_THRESHOLD = 1500
 
@@ -33,6 +35,8 @@ type BoardEval struct {
 	material      int
 	phase         int
 	centerControl int
+	whiteMaterial int
+	blackMaterial int
 	development   int
 	kingPosition  int
 	passedPawns   int
@@ -208,6 +212,8 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 	return BoardEval{
 		phase:         boardPhase,
 		material:      material,
+		blackMaterial: blackMaterial,
+		whiteMaterial: whiteMaterial,
 		kingPosition:  kingPosition,
 		centerControl: centerControl,
 	}, hasMatingMaterial
@@ -215,6 +221,61 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 
 func (eval BoardEval) value() int {
 	return eval.material + eval.kingPosition + eval.centerControl
+}
+
+func BoardEvalToString(eval BoardEval) string {
+	var phaseString string
+	switch eval.phase {
+	case PHASE_ENDGAME:
+		phaseString = "endgame"
+	case PHASE_MIDDLEGAME:
+		phaseString = "middlegame"
+	case PHASE_OPENING:
+		phaseString = "opening"
+	}
+
+	return fmt.Sprintf("phase=%s, material=%d (white: %d, black: %d), kingPosition=%d, centerControl=%d",
+		phaseString,
+		eval.material,
+		eval.whiteMaterial,
+		eval.blackMaterial,
+		eval.kingPosition,
+		eval.centerControl)
+}
+
+func RunEvalFile(epdFile string, variation string, options EvalOptions) (bool, error) {
+	lines, err := ParseAndFilterEpdFile(epdFile, options.epdRegex)
+	if err != nil {
+		return false, err
+	}
+
+	if variation != "" && len(lines) > 1 {
+		return false, fmt.Errorf("Can only specify variation if regex filters to 1 positions, got %d", len(lines))
+	}
+
+	for _, line := range lines {
+		boardEval, err := RunEvalFen(line.fen, variation, options)
+		if err != nil {
+			return false, err
+		}
+
+		fmt.Println(BoardEvalToString(boardEval))
+	}
+
+	return true, nil
+}
+
+func RunEvalFen(fen string, variation string, options EvalOptions) (BoardEval, error) {
+	boardState, err := CreateBoardStateFromFENStringWithVariation(fen, variation)
+	if err != nil {
+		return BoardEval{}, nil
+	}
+
+	fmt.Println(boardState.ToString())
+
+	// isOver should be in the Eval struct dude
+	eval, _ := Eval(&boardState)
+	return eval, nil
 }
 
 // TODO: incrementally update evaluation as a result of a move

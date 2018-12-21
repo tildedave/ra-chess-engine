@@ -39,6 +39,7 @@ func main() {
 	tacticsThinkingTime := flag.Uint("tacticsthinkingtime", 1500, "Time to think per position (ms)")
 	tacticsDebug := flag.String("tacticsdebug", "", "Output more information during tactics if the move matches the string")
 	isMagic := flag.Bool("magic", false, "Generate magic bitboard constants (write to rook-magics.json and bishop-magics.json)")
+	isEval := flag.Bool("eval", false, "Run evaluation on the specified position or positions (no search)")
 
 	flag.Parse()
 
@@ -84,7 +85,7 @@ func main() {
 		options.tacticsDebug = *tacticsDebug
 
 		if *epdFile != "" {
-			success, err = RunTacticsFile(*epdFile, options)
+			success, err = RunTacticsFile(*epdFile, *variation, options)
 		} else if *startingFen != "" {
 			prettyMove, result, err := RunTacticsFen(*startingFen, *variation, options)
 			if err == nil {
@@ -95,6 +96,19 @@ func main() {
 		}
 	} else if *isMagic {
 		GenerateMagicBitboards()
+	} else if *isEval {
+		var options EvalOptions
+		options.epdRegex = *epdRegex
+
+		if *epdFile != "" {
+			success, err = RunEvalFile(*epdFile, *variation, options)
+		} else if *startingFen != "" {
+			var eval BoardEval
+			eval, err = RunEvalFen(*startingFen, *variation, options)
+			fmt.Println(eval)
+		} else {
+			err = errors.New("Must specify either an EPD file or a fen argument")
+		}
 	} else {
 		// xboard mode
 		scanner := bufio.NewScanner(os.Stdin)

@@ -67,27 +67,21 @@ func RunPerftJson(perftJsonFile string, options PerftOptions) (bool, error) {
 	return false, nil
 }
 
-func RunPerft(startingFen string, variation string, depth uint, options PerftOptions) (bool, error) {
+func RunPerft(fen string, variation string, depth uint, options PerftOptions) (bool, error) {
 	for i := uint(0); i <= depth; i++ {
-		board, err := CreateBoardStateFromFENString(startingFen)
-		if variation != "" {
-			moveList, err := VariationToMoveList(variation, &board)
-			if err != nil {
-				return false, err
-			}
-
-			for _, move := range moveList {
-				board.ApplyMove(move)
-			}
+		boardState, err := CreateBoardStateFromFENStringWithVariation(fen, variation)
+		if err != nil {
+			return false, err
 		}
+
 		if i == uint(0) {
-			fmt.Println(board.ToString())
+			fmt.Println(boardState.ToString())
 		}
 
 		if err == nil {
 			options.depth = i
 			start := time.Now()
-			result := Perft(&board, i, options, MoveSizeHint{})
+			result := Perft(&boardState, i, options, MoveSizeHint{})
 			fmt.Printf("%d\t%10d\t%s\n", i, result.nodes, time.Since(start))
 		} else {
 			fmt.Println(err)
