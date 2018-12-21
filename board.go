@@ -487,6 +487,23 @@ func PieceToColorOffset(p byte) int {
 	}
 }
 
+func CharToPieceMask(r byte) byte {
+	switch r {
+	case 'N':
+		return KNIGHT_MASK
+	case 'B':
+		return BISHOP_MASK
+	case 'R':
+		return ROOK_MASK
+	case 'Q':
+		return QUEEN_MASK
+	case 'K':
+		return KING_MASK
+	default:
+		panic(fmt.Sprintf("Invalid piece: %x", r))
+	}
+}
+
 // SetPieceAtSquare should only be used in non-performance critical places.
 func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 	boardState.board[sq] = p

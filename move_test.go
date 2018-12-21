@@ -63,3 +63,36 @@ func TestMoveToPrettyString(t *testing.T) {
 	assert.Equal(t, "a4", MoveToPrettyString(CreateMove(SQUARE_A2, SQUARE_A4), &boardState))
 	assert.Equal(t, "Nxg7", MoveToPrettyString(CreateCapture(SQUARE_F5, SQUARE_G7), &boardState))
 }
+
+func TestParsePrettyMoveFromInitial(t *testing.T) {
+	var boardState BoardState = CreateInitialBoardState()
+
+	move, err := ParsePrettyMove("Nf3", &boardState)
+	assert.Nil(t, err)
+	assert.Equal(t, Move{from: SQUARE_G1, to: SQUARE_F3}, move)
+
+	move, err = ParsePrettyMove("e4", &boardState)
+	assert.Nil(t, err)
+	assert.Equal(t, Move{from: SQUARE_E2, to: SQUARE_E4}, move)
+
+	move, err = ParsePrettyMove("e6", &boardState)
+	assert.NotNil(t, err)
+}
+
+func TestParsePrettyMoveCastle(t *testing.T) {
+	var boardState BoardState = CreateEmptyBoardState()
+	boardState.boardInfo.whiteCanCastleKingside = true
+	boardState.boardInfo.whiteCanCastleQueenside = true
+
+	boardState.SetPieceAtSquare(SQUARE_E1, KING_MASK|WHITE_MASK)
+	boardState.SetPieceAtSquare(SQUARE_A1, ROOK_MASK|WHITE_MASK)
+	boardState.SetPieceAtSquare(SQUARE_H1, ROOK_MASK|WHITE_MASK)
+
+	move, err := ParsePrettyMove("O-O", &boardState)
+	assert.Nil(t, err)
+	assert.True(t, move.IsKingsideCastle())
+
+	move, err = ParsePrettyMove("O-O-O", &boardState)
+	assert.Nil(t, err)
+	assert.True(t, move.IsQueensideCastle())
+}

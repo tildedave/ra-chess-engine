@@ -1,5 +1,11 @@
 package main
 
+import (
+	"errors"
+	"fmt"
+	"strings"
+)
+
 // Move will be encoded as 32 bits - should still be fast
 // Eventually consider trying a smaller representation
 type Move struct {
@@ -179,4 +185,71 @@ func MoveArrayToPrettyString(moveArr []Move, boardState *BoardState) string {
 	}
 
 	return s
+}
+
+func ParsePrettyMove(moveStr string, boardState *BoardState) (Move, error) {
+	move := Move{}
+
+	var err error
+	var toSquare byte
+	var isCapture bool
+	var isPromotion bool
+	var isKingsideCastle bool
+	var isQueensideCastle bool
+	var promotionPiece byte
+	var piece byte
+
+	// capture
+	captureSplits := strings.Split(moveStr, "x")
+	if len(captureSplits) == 2 {
+		isCapture = true
+		moveStr = strings.Replace(moveStr, "x", "", 1)
+	} else if len(captureSplits) > 2 {
+		return move, errors.New("String contained multiple captures")
+	}
+
+	// promotion
+	promotionSplits := strings.Split(moveStr, "=")
+	if len(promotionSplits) == 2 {
+		isPromotion = true
+		moveStr = promotionSplits[0]
+		promotionPiece = CharToPieceMask(promotionSplits[1][1])
+	}
+
+	if moveStr == "O-O" {
+		piece = KING_MASK
+		isKingsideCastle = true
+	} else if moveStr == "O-O-O" {
+		piece = KING_MASK
+		isQueensideCastle = true
+	} else if len(moveStr) == 2 {
+		piece = PAWN_MASK
+		toSquare, err = ParseAlgebraicSquare(moveStr)
+		if err != nil {
+			return move, err
+		}
+	} else {
+		piece = CharToPieceMask(moveStr[0])
+		// TODO: handle disambiguating moves (Nbd2 R1f7 etc)
+
+		toSquare, err = ParseAlgebraicSquare(moveStr[1:])
+		if err != nil {
+			return move, err
+		}
+	}
+
+	for _, candidateMove := range GenerateMoves(boardState) {
+		p := boardState.PieceAtSquare(candidateMove.from) & 0x0F
+		if (candidateMove.to == toSquare || isKingsideCastle || isQueensideCastle) &&
+			p == piece &&
+			isCapture == candidateMove.IsCapture() &&
+			isPromotion == candidateMove.IsPromotion() &&
+			isKingsideCastle == candidateMove.IsKingsideCastle() &&
+			isQueensideCastle == candidateMove.IsQueensideCastle() &&
+			(!isPromotion || candidateMove.GetPromotionPiece() == promotionPiece) {
+			return candidateMove, nil
+		}
+	}
+
+	return move, errors.New(fmt.Sprintf("Could not find move %s in list of generated moves", moveStr))
 }
