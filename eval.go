@@ -19,6 +19,9 @@ const BISHOP_EVAL_SCORE = 300
 const KING_IN_CENTER_EVAL_SCORE = 50
 const KING_PAWN_COVER_EVAL_SCORE = 20
 const KING_CANNOT_CASTLE_EVAL_SCORE = 70
+const ENDGAME_KING_ON_EDGE_PENALTY = 100
+const ENDGAME_KING_NEAR_EDGE_PENALTY = 50
+const ENDGAME_QUEEN_BONUS_SCORE = 400
 const KING_CASTLED_EVAL_SCORE = 30
 const PAWN_IN_CENTER_EVAL_SCORE = 40
 const PIECE_IN_CENTER_EVAL_SCORE = 25
@@ -32,14 +35,16 @@ const (
 )
 
 type BoardEval struct {
-	material      int
-	phase         int
-	centerControl int
-	whiteMaterial int
-	blackMaterial int
-	development   int
-	kingPosition  int
-	passedPawns   int
+	material          int
+	phase             int
+	centerControl     int
+	whiteMaterial     int
+	blackMaterial     int
+	development       int
+	kingPosition      int
+	whiteKingPosition int
+	blackKingPosition int
+	passedPawns       int
 }
 
 var materialScore = [7]int{
@@ -66,8 +71,10 @@ var passedPawnBoard = [2]uint64{
 	0x00FFFFFFFF000000,
 }
 
+var edges uint64 = 0xFF818181818181FF
+var nextToEdges uint64 = 0x007E424242427E00
+
 func Eval(boardState *BoardState) (BoardEval, bool) {
-	material := 0
 	boardPhase := PHASE_OPENING
 	if boardState.fullmoveNumber > 8 {
 		boardPhase = PHASE_MIDDLEGAME
@@ -77,6 +84,8 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 	whiteMaterial := 0
 	blackHasPawns := false
 	whiteHasPawns := false
+	whiteHasQueen := false
+	blackHasQueen := false
 	hasMatingMaterial := true
 
 	whiteOccupancy := boardState.bitboards.color[WHITE_OFFSET]
@@ -84,8 +93,10 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 
 	for pieceMask := byte(1); pieceMask <= 6; pieceMask++ {
 		pieceBoard := boardState.bitboards.piece[pieceMask]
-		whiteMaterial += bits.OnesCount64(whiteOccupancy&pieceBoard) * materialScore[pieceMask]
-		blackMaterial += bits.OnesCount64(blackOccupancy&pieceBoard) * materialScore[pieceMask]
+		whitePieceBoard := whiteOccupancy & pieceBoard
+		blackPieceBoard := blackOccupancy & pieceBoard
+		whiteMaterial += bits.OnesCount64(whitePieceBoard) * materialScore[pieceMask]
+		blackMaterial += bits.OnesCount64(blackPieceBoard) * materialScore[pieceMask]
 
 		if pieceMask == PAWN_MASK {
 			whitePawns := pieceBoard & whiteOccupancy
@@ -125,24 +136,31 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 					blackMaterial += ROOK_EVAL_SCORE
 				}
 			}
+		} else if pieceMask == QUEEN_MASK {
+			whiteHasQueen = whitePieceBoard != 0
+			blackHasQueen = blackPieceBoard != 0
 		}
 	}
-
-	material = whiteMaterial - blackMaterial
 
 	// This isn't correct, bitboards will make this easier
 	if !blackHasPawns && !whiteHasPawns && blackMaterial <= KNIGHT_EVAL_SCORE && whiteMaterial <= KNIGHT_EVAL_SCORE {
 		hasMatingMaterial = false
 	}
 
+	// TODO: pawns probably shouldn't count for this
 	if blackMaterial < ENDGAME_MATERIAL_THRESHOLD && whiteMaterial < ENDGAME_MATERIAL_THRESHOLD {
 		boardPhase = PHASE_ENDGAME
 	}
 
 	// TODO - endgame: determine passed pawns and prioritize them
 
-	kingPosition := 0
+	blackKingPosition := 0
+	whiteKingPosition := 0
 	centerControl := 0
+
+	kings := boardState.bitboards.piece[KING_MASK]
+	blackKingSq := byte(bits.TrailingZeros64(boardState.bitboards.color[BLACK_OFFSET] & kings))
+	whiteKingSq := byte(bits.TrailingZeros64(boardState.bitboards.color[WHITE_OFFSET] & kings))
 
 	if boardPhase != PHASE_ENDGAME {
 		// prioritize center control
@@ -172,50 +190,67 @@ func Eval(boardState *BoardState) (BoardEval, bool) {
 			}
 		}
 
-		// prioritize king position
-		kings := boardState.bitboards.piece[KING_MASK]
-		blackKingSq := byte(bits.TrailingZeros64(boardState.bitboards.color[BLACK_OFFSET] & kings))
-		whiteKingSq := byte(bits.TrailingZeros64(boardState.bitboards.color[WHITE_OFFSET] & kings))
-
+		// penalize king position
 		if blackKingSq > SQUARE_C8 && blackKingSq < SQUARE_G8 {
-			kingPosition += KING_IN_CENTER_EVAL_SCORE
+			blackKingPosition -= KING_IN_CENTER_EVAL_SCORE
 		}
 		if whiteKingSq > SQUARE_C1 && whiteKingSq < SQUARE_G1 {
-			kingPosition -= KING_IN_CENTER_EVAL_SCORE
+			whiteKingPosition -= KING_IN_CENTER_EVAL_SCORE
 		}
 		if !boardState.boardInfo.whiteHasCastled && !boardState.boardInfo.whiteCanCastleKingside && !boardState.boardInfo.whiteCanCastleQueenside {
-			kingPosition -= KING_CANNOT_CASTLE_EVAL_SCORE
+			whiteKingPosition -= KING_CANNOT_CASTLE_EVAL_SCORE
 		}
 		if !boardState.boardInfo.blackHasCastled && !boardState.boardInfo.blackCanCastleKingside && !boardState.boardInfo.blackCanCastleQueenside {
-			kingPosition += KING_CANNOT_CASTLE_EVAL_SCORE
+			blackKingPosition -= KING_CANNOT_CASTLE_EVAL_SCORE
 		}
 		if boardState.boardInfo.whiteHasCastled {
-			kingPosition += KING_CASTLED_EVAL_SCORE
+			whiteKingPosition += KING_CASTLED_EVAL_SCORE
 		}
 		if boardState.boardInfo.blackHasCastled {
-			kingPosition -= KING_CASTLED_EVAL_SCORE
+			blackKingPosition += KING_CASTLED_EVAL_SCORE
 		}
 		if whiteKingSq == SQUARE_G1 || whiteKingSq == SQUARE_C1 || whiteKingSq == SQUARE_B1 {
 			pawns := bits.OnesCount64(boardState.moveBitboards.kingAttacks[whiteKingSq].board &
 				pawnProtectionBoard[WHITE_OFFSET])
-			kingPosition += pawns * KING_PAWN_COVER_EVAL_SCORE
+			whiteKingPosition += pawns * KING_PAWN_COVER_EVAL_SCORE
 		}
 		if blackKingSq == SQUARE_G8 || blackKingSq == SQUARE_C8 || blackKingSq == SQUARE_B8 {
 			pawns := bits.OnesCount64(boardState.moveBitboards.kingAttacks[blackKingSq].board &
 				pawnProtectionBoard[BLACK_OFFSET])
-			kingPosition -= pawns * KING_PAWN_COVER_EVAL_SCORE
+			blackKingPosition += pawns * KING_PAWN_COVER_EVAL_SCORE
 		}
 	} else {
 		// prioritize king position
+
+		if IsBitboardSet(edges, whiteKingSq) {
+			whiteKingPosition -= ENDGAME_KING_ON_EDGE_PENALTY
+		} else if IsBitboardSet(nextToEdges, whiteKingSq) {
+			whiteKingPosition -= ENDGAME_KING_NEAR_EDGE_PENALTY
+		}
+
+		if IsBitboardSet(edges, blackKingSq) {
+			blackKingPosition -= ENDGAME_KING_ON_EDGE_PENALTY
+		} else if IsBitboardSet(nextToEdges, blackKingSq) {
+			blackKingPosition -= ENDGAME_KING_NEAR_EDGE_PENALTY
+		}
+
+		// if you have a queen and enemy doesn't that's a good thing
+		if whiteHasQueen && !blackHasQueen {
+			whiteMaterial += ENDGAME_QUEEN_BONUS_SCORE
+		} else if blackHasQueen && !whiteHasQueen {
+			blackMaterial += ENDGAME_QUEEN_BONUS_SCORE
+		}
 	}
 
 	return BoardEval{
-		phase:         boardPhase,
-		material:      material,
-		blackMaterial: blackMaterial,
-		whiteMaterial: whiteMaterial,
-		kingPosition:  kingPosition,
-		centerControl: centerControl,
+		phase:             boardPhase,
+		material:          whiteMaterial - blackMaterial,
+		blackMaterial:     blackMaterial,
+		whiteMaterial:     whiteMaterial,
+		kingPosition:      whiteKingPosition - blackKingPosition,
+		whiteKingPosition: whiteKingPosition,
+		blackKingPosition: blackKingPosition,
+		centerControl:     centerControl,
 	}, hasMatingMaterial
 }
 
