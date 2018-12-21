@@ -251,5 +251,28 @@ func ParsePrettyMove(moveStr string, boardState *BoardState) (Move, error) {
 		}
 	}
 
-	return move, errors.New(fmt.Sprintf("Could not find move %s in list of generated moves", moveStr))
+	return move, fmt.Errorf("Could not find move %s in list of generated moves", moveStr)
+}
+
+func VariationToMoveList(variation string, boardState *BoardState) ([]Move, error) {
+	moves := make([]Move, 0)
+	var err error
+
+	for _, moveStr := range strings.Split(variation, " ") {
+		var move Move
+		move, err = ParsePrettyMove(moveStr, boardState)
+
+		if err != nil {
+			break
+		} else {
+			moves = append(moves, move)
+			boardState.ApplyMove(move)
+		}
+	}
+
+	for i := len(moves) - 1; i >= 0; i-- {
+		boardState.UnapplyMove(moves[i])
+	}
+
+	return moves, err
 }
