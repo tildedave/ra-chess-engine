@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"errors"
 	"flag"
 	"fmt"
 	"log"
@@ -22,7 +23,8 @@ func InitializeLogger() {
 }
 
 func main() {
-	startingFen := flag.String("fen", "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", "Fen board")
+	startingFen := flag.String("fen", "", "Fen board")
+	epdFile := flag.String("epd", "", "Position file in EPD format")
 	isPerft := flag.Bool("perft", false, "Perft mode")
 	perftDepth := flag.Uint("perftdepth", 5, "Perft depth to search")
 	perftChecks := flag.Bool("perftchecks", false, "Perft: count check positions (slower)")
@@ -32,8 +34,6 @@ func main() {
 	perftDivide := flag.Bool("perftdivide", false, "Perft: print divide of all moves at top depth")
 	perftCpuProfile := flag.String("perftcpuprofile", "", "Perft: file to write CPU profile to")
 	isTactics := flag.Bool("tactics", false, "Tactics mode")
-	tacticsEpdFile := flag.String("tacticsepd", "", "Tactics file in EPD format")
-	tacticsFen := flag.String("tacticsfen", "", "Tactics position in FEN format")
 	tacticsThinkingTime := flag.Uint("tacticsthinkingtime", 500, "Time to think per position (ms)")
 	tacticsRegex := flag.String("tacticsregex", "", "Run only tactics matching the given id")
 	tacticsDebug := flag.String("tacticsdebug", "", "Output more information during tactics if the move matches the string")
@@ -69,6 +69,9 @@ func main() {
 		if *perftJSONFile != "" {
 			success, err = RunPerftJson(*perftJSONFile, options)
 		} else {
+			if *startingFen == "" {
+				*startingFen = "rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1"
+			}
 			success, err = RunPerft(*startingFen, *perftDepth, options)
 		}
 
@@ -78,20 +81,22 @@ func main() {
 		}
 		fmt.Printf("Total time: %s\n", time.Since(start))
 
-	} else if *isTactics || *tacticsEpdFile != "" || *tacticsFen != "" {
+	} else if *isTactics {
 		var options TacticsOptions
 		options.thinkingtimeMs = *tacticsThinkingTime
 		options.tacticsRegex = *tacticsRegex
 		options.tacticsDebug = *tacticsDebug
 
-		if *tacticsEpdFile != "" {
-			success, err = RunTacticsFile(*tacticsEpdFile, options)
-		} else if *tacticsFen != "" {
-			prettyMove, result, err := RunTacticsFen(*tacticsFen, options)
+		if *epdFile != "" {
+			success, err = RunTacticsFile(*epdFile, options)
+		} else if *startingFen != "" {
+			prettyMove, result, err := RunTacticsFen(*startingFen, options)
 			if err != nil {
 				fmt.Println(SearchResultToString(result))
 				fmt.Printf("Move: %s\n", prettyMove)
 			}
+		} else {
+			err = errors.New("Must specify either an EPD file or a fen argument")
 		}
 	} else if *isMagic {
 		GenerateMagicBitboards()
