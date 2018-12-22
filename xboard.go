@@ -157,7 +157,10 @@ func thinkAndChooseMove(
 	resultCh := make(chan SearchResult)
 
 	go func() {
-		i := 1
+		var i uint = 1
+		if config.onlySearchDepth > 0 {
+			i = config.onlySearchDepth
+		}
 		var res SearchResult
 
 		for {
@@ -200,6 +203,11 @@ func thinkAndChooseMove(
 
 				if bestResult.flags == CHECKMATE_FLAG || bestResult.flags == DRAW_FLAG {
 					logger.Println("Best result is terminal, time to stop thinking")
+					break ThinkingLoop
+				}
+
+				if bestResult.move.from != bestResult.move.to && config.onlySearchDepth > 0 {
+					logger.Printf("Only wanted to search depth %d, done", config.onlySearchDepth)
 					break ThinkingLoop
 				}
 
