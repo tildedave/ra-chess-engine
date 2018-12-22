@@ -177,11 +177,11 @@ FindBestMove:
 					bestResult = &result
 				}
 
-				if isDebug && (strings.Contains(MoveToString(move), searchConfig.debugMoves) ||
-					strings.Contains(bestResult.pv, searchConfig.debugMoves) ||
+				if isDebug && (strings.Contains(MoveToPrettyString(move, boardState), searchConfig.debugMoves) ||
+					strings.Contains(result.pv, searchConfig.debugMoves) ||
 					searchConfig.debugMoves == "*") {
 					fmt.Printf("[%d; %s] value=%d, result=%s, pv=%s\n", depth,
-						MoveToString(move), -result.value, SearchResultToString(result), result.pv)
+						MoveToString(move), result.value, SearchResultToString(result), result.pv)
 				}
 
 				alpha = Max(alpha, result.value)
