@@ -216,6 +216,14 @@ type BoardInfo struct {
 	enPassantTargetSquare   uint8
 }
 
+type RepetitionInfo struct {
+	// 3-fold repetition detection
+	occurredHashes [MAX_MOVES]uint64
+	// metadata on if the given move (to get to this position) changed the position
+	// so that we shouldn't look further back in the occurredHashes
+	pawnMoveOrCapture [MAX_MOVES]bool
+}
+
 type BoardState struct {
 	board         []byte
 	bitboards     Bitboards
@@ -239,7 +247,11 @@ type BoardState struct {
 	hashInfo *HashInfo
 	// Transposition table
 	transpositionTable map[uint64]*TranspositionEntry
-	shouldAbort        bool
+
+	// Argument to abort search during tactics module
+	shouldAbort bool
+
+	repetitionInfo RepetitionInfo
 }
 
 func oppositeColorOffset(offset int) int {
@@ -304,6 +316,7 @@ func generateZobrishHashInfo(boardState *BoardState) {
 	// this factoring is dumb since we need to keep the hash
 	// info around to progressively change the hash key
 	boardState.hashKey = boardState.CreateHashKey(&hashInfo)
+	boardState.repetitionInfo.occurredHashes[boardState.moveIndex] = boardState.hashKey
 }
 
 func CreateInitialBoardState() BoardState {
@@ -541,6 +554,23 @@ func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 			boardState.bitboards.piece[pieceOffset] = UnsetBitboard(boardState.bitboards.piece[pieceOffset], sq)
 		}
 	}
+}
+
+func (boardState *BoardState) IsThreefoldRepetition() bool {
+	currentHash := boardState.hashKey
+	num := 0
+
+	for i := boardState.moveIndex; i >= 0 && !boardState.repetitionInfo.pawnMoveOrCapture[i]; i-- {
+		if boardState.repetitionInfo.occurredHashes[i] == currentHash {
+			num++
+		}
+
+		if num >= 3 {
+			return true
+		}
+	}
+
+	return num >= 3
 }
 
 // CreateMovesFromBitboard transforms a bitboard and a square to a slice of moves.

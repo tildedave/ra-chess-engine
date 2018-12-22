@@ -15,6 +15,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	}
 
 	var p = boardState.board[move.from]
+	var movePiece byte = p & 0x0F
 	boardState.board[move.from] = 0x00
 	boardState.board[move.to] = p
 	// unset
@@ -33,7 +34,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 		boardState.bitboards.piece[capturedPiece&0x0F] = FlipBitboard(boardState.bitboards.piece[capturedPiece&0x0F], move.to)
 	}
 
-	boardState.bitboards.piece[p&0x0F] = FlipBitboard2(boardState.bitboards.piece[p&0x0F], move.from, move.to)
+	boardState.bitboards.piece[movePiece] = FlipBitboard2(boardState.bitboards.piece[movePiece], move.from, move.to)
 	boardState.bitboards.color[offset] = FlipBitboard2(boardState.bitboards.color[offset], move.from, move.to)
 
 	// TODO(perf) - less if statements/work when castling is over
@@ -109,7 +110,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.boardInfo.blackHasCastled = true
 		}
 	} else {
-		switch p & 0x0F {
+		switch movePiece {
 		case KING_MASK:
 			if boardState.offsetToMove == WHITE_OFFSET {
 				boardState.boardInfo.whiteCanCastleKingside = false
@@ -199,6 +200,8 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	}
 
 	boardState.hashKey = boardState.UpdateHashApplyMove(boardState.hashKey, oldBoardInfo, move)
+	boardState.repetitionInfo.occurredHashes[boardState.moveIndex] = boardState.hashKey
+	boardState.repetitionInfo.pawnMoveOrCapture[boardState.moveIndex] = movePiece == PAWN_MASK || capturedPiece != 0
 }
 
 func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
@@ -256,6 +259,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 	boardState.boardInfo = boardState.boardInfoHistory[boardState.moveIndex]
 
 	var p = boardState.board[move.to]
+	var movePiece = p & 0x0F
 
 	var capturedPiece byte
 	if move.IsCapture() {
@@ -276,7 +280,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 		otherOffset = WHITE_OFFSET
 	}
 
-	boardState.bitboards.piece[p&0x0F] = FlipBitboard2(boardState.bitboards.piece[p&0x0F], move.from, move.to)
+	boardState.bitboards.piece[movePiece] = FlipBitboard2(boardState.bitboards.piece[movePiece], move.from, move.to)
 	boardState.bitboards.color[offset] = FlipBitboard2(boardState.bitboards.color[offset], move.from, move.to)
 
 	if move.IsCapture() {
@@ -350,7 +354,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 		}
 	}
 
-	switch p & 0x0F {
+	switch movePiece {
 	case PAWN_MASK:
 		if move.IsEnPassantCapture() {
 			var pos uint8

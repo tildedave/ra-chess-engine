@@ -119,3 +119,44 @@ func TestParseAlgebraicSquare(t *testing.T) {
 	assert.NotNil(t, err)
 	assert.Equal(t, "Algebraic square was not two characters: a12", err.Error())
 }
+
+func TestThreefoldRepetition(t *testing.T) {
+	boardState := CreateEmptyBoardState()
+	boardState.SetPieceAtSquare(SQUARE_A1, KING_MASK|WHITE_MASK)
+	boardState.SetPieceAtSquare(SQUARE_H8, KING_MASK|BLACK_MASK)
+
+	for i := 0; i < 2; i++ {
+		assert.False(t, boardState.IsThreefoldRepetition())
+
+		boardState.ApplyMove(CreateMove(SQUARE_A1, SQUARE_B1))
+		boardState.ApplyMove(CreateMove(SQUARE_H8, SQUARE_H7))
+		assert.False(t, boardState.IsThreefoldRepetition())
+
+		boardState.ApplyMove(CreateMove(SQUARE_B1, SQUARE_A1))
+		boardState.ApplyMove(CreateMove(SQUARE_H7, SQUARE_H8))
+	}
+
+	assert.True(t, boardState.IsThreefoldRepetition())
+}
+
+func TestPawnMovePreventsThreefoldRepetition(t *testing.T) {
+	boardState := CreateEmptyBoardState()
+	boardState.SetPieceAtSquare(SQUARE_A1, KING_MASK|WHITE_MASK)
+	boardState.SetPieceAtSquare(SQUARE_H8, KING_MASK|BLACK_MASK)
+	boardState.offsetToMove = BLACK_OFFSET
+	boardState.SetPieceAtSquare(SQUARE_H6, PAWN_MASK|BLACK_MASK)
+	boardState.ApplyMove(CreateMove(SQUARE_H6, SQUARE_H5))
+
+	for i := 0; i < 2; i++ {
+		assert.False(t, boardState.IsThreefoldRepetition())
+
+		boardState.ApplyMove(CreateMove(SQUARE_A1, SQUARE_B1))
+		boardState.ApplyMove(CreateMove(SQUARE_H8, SQUARE_H7))
+		assert.False(t, boardState.IsThreefoldRepetition())
+
+		boardState.ApplyMove(CreateMove(SQUARE_B1, SQUARE_A1))
+		boardState.ApplyMove(CreateMove(SQUARE_H7, SQUARE_H8))
+	}
+
+	assert.False(t, boardState.IsThreefoldRepetition())
+}
