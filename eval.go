@@ -35,6 +35,7 @@ const (
 )
 
 type BoardEval struct {
+	offsetToMove      int
 	material          int
 	phase             int
 	centerControl     int
@@ -244,6 +245,7 @@ func Eval(boardState *BoardState) BoardEval {
 	}
 
 	return BoardEval{
+		offsetToMove:      boardState.offsetToMove,
 		phase:             boardPhase,
 		material:          whiteMaterial - blackMaterial,
 		blackMaterial:     blackMaterial,
@@ -257,7 +259,11 @@ func Eval(boardState *BoardState) BoardEval {
 }
 
 func (eval BoardEval) value() int {
-	return eval.material + eval.kingPosition + eval.centerControl
+	score := eval.material + eval.kingPosition + eval.centerControl
+	if eval.offsetToMove == BLACK_OFFSET {
+		return -score
+	}
+	return score
 }
 
 func BoardEvalToString(eval BoardEval) string {
