@@ -243,7 +243,7 @@ FindBestMove:
 			hasLegalMove := false
 			for _, move := range allMoves {
 				boardState.ApplyMove(move)
-				inCheck := boardState.IsInCheck(boardState.offsetToMove)
+				inCheck := boardState.IsInCheck(oppositeColorOffset(boardState.offsetToMove))
 				boardState.UnapplyMove(move)
 				if !inCheck {
 					hasLegalMove = true
