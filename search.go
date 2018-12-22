@@ -127,6 +127,7 @@ func searchAlphaBeta(
 		searchDepth = QUIESCENT_SEARCH_DEPTH
 	}
 
+FindBestMove:
 	for i := 0; i < len(moveOrdering); i++ {
 		for _, move := range moveOrdering[i] {
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
@@ -175,7 +176,7 @@ func searchAlphaBeta(
 					hashCutoffs++
 				}
 				cutoffs++
-				break
+				break FindBestMove
 			}
 		}
 
