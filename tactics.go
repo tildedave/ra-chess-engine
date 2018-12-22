@@ -27,8 +27,6 @@ func RunTacticsFile(epdFile string, variation string, options TacticsOptions) (b
 	}
 
 	for _, line := range lines {
-		bestMove := line.bestMove
-
 		prettyMove, result, err := RunTacticsFen(line.fen, variation, options)
 		if err != nil {
 			return false, err
@@ -36,19 +34,41 @@ func RunTacticsFile(epdFile string, variation string, options TacticsOptions) (b
 
 		var res string
 		totalPositions++
-		if prettyMove != "" && (bestMove != "" &&
-			(strings.Contains(bestMove, prettyMove) ||
-				strings.Contains(bestMove, MoveToString(result.move)) ||
-				strings.Contains(bestMove, SquareToAlgebraicString(result.move.from)+SquareToAlgebraicString(result.move.to)))) ||
-			// for now assume no move specified means checkmate is the result
-			(bestMove == "" && result.flags == CHECKMATE_FLAG) {
+
+		var moveToCheck string
+		var wantMatch bool
+
+		if line.bestMove != "" {
+			moveToCheck = line.bestMove
+			wantMatch = true
+		} else if line.avoidMove != "" {
+			moveToCheck = line.avoidMove
+			wantMatch = false
+		}
+
+		var success bool
+		if moveToCheck != "" {
+			var moveMatches bool
+			if strings.Contains(moveToCheck, prettyMove) ||
+				strings.Contains(moveToCheck, MoveToString(result.move)) ||
+				strings.Contains(moveToCheck, SquareToAlgebraicString(result.move.from)+SquareToAlgebraicString(result.move.to)) {
+				moveMatches = true
+			}
+			success = moveMatches == wantMatch
+		} else {
+			// for now assume no move specified means checkmate is the desired result
+			moveToCheck = "Mate"
+			success = result.flags == CHECKMATE_FLAG
+		}
+
+		if prettyMove != "" && success {
 			res = "\033[1;32mOK\033[0m"
 			successPositions++
 		} else {
 			res = "\033[1;31mFAIL\033[0m"
 		}
 		fmt.Printf("[%s - %s] expected=%s move=%s result=%s\n",
-			line.name, res, bestMove, prettyMove, SearchResultToString(result))
+			line.name, res, moveToCheck, prettyMove, SearchResultToString(result))
 	}
 
 	fmt.Printf("Complete.  %d/%d positions correct (%.2f%%)\n", successPositions, totalPositions,
