@@ -8,4 +8,4 @@ after_success:
   - go build
   - ./ra-chess-engine -perftjson perft-test-positions.json
   - ./ra-chess-engine -perftjson perft-starting-position.json
-  - ./ra-chess-engine --tactics --tacticsepd test-suites/basic.epd --tacticsthinkingtime 5000 || true
+  - ./ra-chess-engine --tactics --epd test-suites/basic.epd --tacticsthinkingtime 5000 || true
