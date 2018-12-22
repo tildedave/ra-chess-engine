@@ -532,6 +532,22 @@ func CharToPieceMask(r byte) byte {
 		return QUEEN_MASK
 	case 'K':
 		return KING_MASK
+	case 'a':
+		fallthrough
+	case 'b':
+		fallthrough
+	case 'c':
+		fallthrough
+	case 'd':
+		fallthrough
+	case 'e':
+		fallthrough
+	case 'f':
+		fallthrough
+	case 'g':
+		fallthrough
+	case 'h':
+		return PAWN_MASK
 	default:
 		panic(fmt.Sprintf("Invalid piece: %x", r))
 	}
