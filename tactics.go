@@ -11,6 +11,7 @@ type TacticsOptions struct {
 	thinkingtimeMs uint
 	epdRegex       string
 	tacticsDebug   string
+	tacticsDepth   uint
 }
 
 func RunTacticsFile(epdFile string, variation string, options TacticsOptions) (bool, error) {
@@ -104,9 +105,12 @@ func RunTacticsFen(fen string, variation string, options TacticsOptions) (string
 	config := ExternalSearchConfig{}
 	config.isDebug = options.tacticsDebug != ""
 	config.debugMoves = options.tacticsDebug
+	config.onlySearchDepth = options.tacticsDepth
 
 	go thinkAndChooseMove(&boardState, options.thinkingtimeMs, config, ch, thinkingChan)
 	result := <-ch
+
+	output.Flush()
 
 	if (result.move == Move{}) {
 		// no result was given in thinking time :(
