@@ -10,7 +10,7 @@ import (
 var _ = fmt.Println
 
 var CHECKMATE_FLAG byte = 0x80
-var STALEMATE_FLAG byte = 0x40
+var DRAW_FLAG byte = 0x40
 var CHECK_FLAG byte = 0x20
 var THREEFOLD_REP_FLAG byte = 0x10
 
@@ -30,8 +30,8 @@ func (result *SearchResult) IsCheckmate() bool {
 	return result.flags&CHECKMATE_FLAG == CHECKMATE_FLAG
 }
 
-func (result *SearchResult) IsStalemate() bool {
-	return result.flags&STALEMATE_FLAG == STALEMATE_FLAG
+func (result *SearchResult) IsDraw() bool {
+	return result.flags&DRAW_FLAG == DRAW_FLAG
 }
 
 const (
@@ -87,7 +87,7 @@ func searchAlphaBeta(
 	if boardState.IsThreefoldRepetition() {
 		return SearchResult{
 			value: 0,
-			flags: STALEMATE_FLAG,
+			flags: DRAW_FLAG,
 			pv:    "1/2-1/2 (Threefold Repetition)",
 		}
 	}
@@ -242,7 +242,7 @@ func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) Search
 	if !e.hasMatingMaterial {
 		return SearchResult{
 			value: 0,
-			flags: STALEMATE_FLAG,
+			flags: DRAW_FLAG,
 			pv:    "1/2-1/2 (Insufficient mating material)",
 		}
 	}
@@ -273,7 +273,7 @@ func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfi
 	// Stalemate
 	return SearchResult{
 		value: 0,
-		flags: STALEMATE_FLAG,
+		flags: DRAW_FLAG,
 		pv:    "1/2-1/2 (no legal moves)",
 	}
 
@@ -300,8 +300,8 @@ func SearchValueToString(result SearchResult) string {
 		return fmt.Sprintf("Mate(%d)", movesToCheckmate)
 	}
 
-	if result.IsStalemate() {
-		return fmt.Sprintf("Stalemate")
+	if result.IsDraw() {
+		return fmt.Sprintf("Draw")
 	}
 
 	return strconv.Itoa(result.value)

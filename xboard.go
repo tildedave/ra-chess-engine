@@ -197,7 +197,8 @@ func thinkAndChooseMove(
 					nodes: bestResult.nodes,
 					pv:    bestResult.pv,
 				}
-				if bestResult.flags == CHECKMATE_FLAG || bestResult.flags == STALEMATE_FLAG {
+
+				if bestResult.flags == CHECKMATE_FLAG || bestResult.flags == DRAW_FLAG {
 					logger.Println("Best result is terminal, time to stop thinking")
 					break ThinkingLoop
 				}
