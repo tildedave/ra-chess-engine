@@ -179,6 +179,11 @@ func thinkAndChooseMove(
 
 	go func() {
 		var bestResult SearchResult
+
+		startTime := time.Now()
+		// after no output for 50ms we check the value
+		checkInterval := 50
+
 	ThinkingLoop:
 		for {
 			select {
@@ -192,14 +197,15 @@ func thinkAndChooseMove(
 					nodes: bestResult.nodes,
 					pv:    bestResult.pv,
 				}
-
 				if bestResult.flags == CHECKMATE_FLAG || bestResult.flags == STALEMATE_FLAG {
 					logger.Println("Best result is terminal, time to stop thinking")
 					break ThinkingLoop
 				}
 
-			case <-time.After(time.Duration(thinkingTimeMs) * time.Millisecond):
-				break ThinkingLoop
+			case <-time.After(time.Duration(checkInterval) * time.Millisecond):
+				if time.Since(startTime) > time.Duration(thinkingTimeMs)*time.Millisecond {
+					break ThinkingLoop
+				}
 			}
 		}
 
