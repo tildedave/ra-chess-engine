@@ -87,10 +87,7 @@ func TestSearchWhiteForcesPromotion(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D8, BLACK_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D4, WHITE_MASK|PAWN_MASK)
 
-	fmt.Println(boardState.ToString())
-
 	result := Search(&boardState, 12)
-	fmt.Println(SearchResultToString(result))
 
 	assert.True(t, result.value > QUEEN_EVAL_SCORE)
 }

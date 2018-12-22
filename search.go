@@ -113,16 +113,19 @@ func searchAlphaBeta(
 		return getLeafResult(boardState, currentDepth, searchConfig)
 	}
 
+	var nodeResult SearchResult
 	if searchConfig.phase == SEARCH_PHASE_QUIESCENT && !boardState.IsInCheck(boardState.offsetToMove) {
 		// TODO constructing the result is likely expensive-ish
-		result := getLeafResult(boardState, currentDepth, searchConfig)
+		nodeResult = getLeafResult(boardState, currentDepth, searchConfig)
 
-		alpha = Max(alpha, result.value)
-		if alpha >= beta {
-			result.stats.qcutoffs = 1
-			result.stats.cutoffs = 1
-			return result
+		if nodeResult.value >= beta {
+			nodeResult.value = beta
+			nodeResult.stats.quiescentCutoffs = 1
+			nodeResult.stats.cutoffs = 1
+			return nodeResult
 		}
+
+		alpha = Max(alpha, nodeResult.value)
 	}
 
 	isDebug := searchConfig.isDebug
@@ -200,6 +203,7 @@ FindBestMove:
 			}
 
 			if alpha >= beta {
+				bestResult.value = beta
 				if i == 0 {
 					searchStats.hashCutoffs++
 				}
@@ -252,7 +256,11 @@ FindBestMove:
 			}
 
 			if hasLegalMove {
+<<<<<<< HEAD
 				result = getLeafResult(boardState, currentDepth, searchConfig)
+=======
+				result = nodeResult
+>>>>>>> Search: quiscent search improving, still wrong
 			} else {
 				result = getNoLegalMoveResult(boardState, currentDepth, searchConfig)
 			}
