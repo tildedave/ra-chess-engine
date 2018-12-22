@@ -14,16 +14,20 @@ var DRAW_FLAG byte = 0x40
 var CHECK_FLAG byte = 0x20
 var THREEFOLD_REP_FLAG byte = 0x10
 
-type SearchResult struct {
-	move        Move
-	value       int
-	flags       byte
-	nodes       uint
+type SearchStats struct {
 	hashCutoffs uint
 	cutoffs     uint
-	time        int64
-	depth       uint
-	pv          string
+}
+
+type SearchResult struct {
+	move  Move
+	value int
+	flags byte
+	nodes uint
+	time  int64
+	depth uint
+	stats SearchStats
+	pv    string
 }
 
 func (result *SearchResult) IsCheckmate() bool {
@@ -69,10 +73,21 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 		phase:         SEARCH_PHASE_INITIAL,
 	}, MoveSizeHint{})
 	result.time = (time.Now().UnixNano() - startTime) / 10000000
+	if boardState.offsetToMove == BLACK_OFFSET {
+		result.value = -result.value
+	}
 
 	return result
 }
 
+// searchAlphaBeta runs an alpha-beta search over the boardState
+//
+// - depth, when positive, is the number of levels until quiescent search begins.
+//   when negative it is the number of levels deep in quiescent search.
+// - currentDepth is the total depth of the search tree, including quiescent levels.
+//  - alpha: minimum score that player to move can achieve
+//  - black: maximum score that opponent can achieve
+//
 func searchAlphaBeta(
 	boardState *BoardState,
 	depth uint,
@@ -146,37 +161,32 @@ FindBestMove:
 				searchConfig.move = move
 				searchConfig.isDebug = false
 
-				result := searchAlphaBeta(boardState, searchDepth, currentDepth+1, alpha, beta, searchConfig, hint)
+				result := searchAlphaBeta(boardState, searchDepth, currentDepth+1, -beta, -alpha, searchConfig, hint)
+				boardState.UnapplyMove(move)
 
+				result.value = -result.value
 				result.move = move
 				result.depth++
 				nodes += result.nodes
-				hashCutoffs += result.hashCutoffs
-				cutoffs += result.cutoffs
+				hashCutoffs += result.stats.hashCutoffs
+				cutoffs += result.stats.cutoffs
 
 				if bestResult == nil {
 					bestResult = &result
-				} else {
-					if (boardState.offsetToMove == BLACK_OFFSET && result.value > bestResult.value) || // white move, maximize score
-						(boardState.offsetToMove == WHITE_OFFSET && result.value < bestResult.value) { // black move, minimize score
-						bestResult = &result
-					}
+				} else if result.value > bestResult.value {
+					bestResult = &result
 				}
 
 				if isDebug && (strings.Contains(MoveToString(move), searchConfig.debugMoves) ||
 					strings.Contains(bestResult.pv, searchConfig.debugMoves)) {
 					fmt.Printf("[%d; %s] value=%d, result=%s, pv=%s\n", depth,
-						MoveToString(move), result.value, SearchResultToString(result), result.pv)
+						MoveToString(move), -result.value, SearchResultToString(result), result.pv)
 				}
 
-				if boardState.offsetToMove == BLACK_OFFSET {
-					alpha = Max(alpha, bestResult.value)
-				} else {
-					beta = Min(beta, bestResult.value)
-				}
+				alpha = Max(alpha, result.value)
+			} else {
+				boardState.UnapplyMove(move)
 			}
-
-			boardState.UnapplyMove(move)
 
 			if alpha >= beta {
 				if i == 0 {
@@ -227,8 +237,8 @@ FindBestMove:
 	}
 
 	bestResult.nodes = nodes
-	bestResult.hashCutoffs = hashCutoffs
-	bestResult.cutoffs = cutoffs
+	bestResult.stats.hashCutoffs = hashCutoffs
+	bestResult.stats.cutoffs = cutoffs
 	StoreTranspositionTable(boardState, bestResult, depth, searchConfig.phase)
 
 	return *bestResult
@@ -257,13 +267,8 @@ func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) Search
 func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfig SearchConfig) SearchResult {
 	if boardState.IsInCheck(boardState.offsetToMove) {
 		// moves to mate = currentDepth
-		score := CHECKMATE_SCORE - int(currentDepth) + 1
-		if boardState.offsetToMove == WHITE_OFFSET {
-			score = -score
-		}
-
 		return SearchResult{
-			value: score,
+			value: -(CHECKMATE_SCORE - int(currentDepth) + 1),
 			flags: CHECKMATE_FLAG,
 			pv:    "#",
 		}
@@ -279,13 +284,12 @@ func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfi
 }
 
 func SearchResultToString(result SearchResult) string {
-	return fmt.Sprintf("%s (value=%s, depth=%d, nodes=%d, cutoffs=%d, hash cutoffs=%d, pv=%s)",
+	return fmt.Sprintf("%s (value=%s, depth=%d, nodes=%d, stats=%s, pv=%s)",
 		MoveToString(result.move),
 		SearchValueToString(result),
 		result.depth,
 		result.nodes,
-		result.cutoffs,
-		result.hashCutoffs,
+		SearchStatsToString(result.stats),
 		result.pv)
 }
 
@@ -304,6 +308,10 @@ func SearchValueToString(result SearchResult) string {
 	}
 
 	return strconv.Itoa(result.value)
+}
+
+func SearchStatsToString(stats SearchStats) string {
+	return fmt.Sprintf("[cutoffs=%d, hash cutoffs=%d]", stats.cutoffs, stats.hashCutoffs)
 }
 
 // Used to determine if we should extend search
