@@ -107,7 +107,7 @@ func main() {
 		} else if *startingFen != "" {
 			var eval BoardEval
 			eval, err = RunEvalFen(*startingFen, *variation, options)
-			fmt.Println(eval)
+			fmt.Println(BoardEvalToString(eval))
 		} else {
 			err = errors.New("Must specify either an EPD file or a fen argument")
 		}
