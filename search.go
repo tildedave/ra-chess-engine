@@ -42,8 +42,6 @@ const (
 const QUIESCENT_SEARCH_DEPTH = 3
 
 type SearchConfig struct {
-	alpha         int
-	beta          int
 	move          Move
 	isDebug       bool
 	debugMoves    string
@@ -64,9 +62,7 @@ func Search(boardState *BoardState, depth uint) SearchResult {
 func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchConfig) SearchResult {
 	startTime := time.Now().UnixNano()
 
-	result := searchAlphaBeta(boardState, depth, 0, SearchConfig{
-		alpha:         -INFINITY,
-		beta:          INFINITY,
+	result := searchAlphaBeta(boardState, depth, 0, -INFINITY, INFINITY, SearchConfig{
 		isDebug:       config.isDebug,
 		debugMoves:    config.debugMoves,
 		startingDepth: depth,
@@ -81,6 +77,8 @@ func searchAlphaBeta(
 	boardState *BoardState,
 	depth uint,
 	currentDepth uint,
+	alpha int,
+	beta int,
 	searchConfig SearchConfig,
 	hint MoveSizeHint,
 ) SearchResult {
@@ -148,7 +146,7 @@ FindBestMove:
 				searchConfig.move = move
 				searchConfig.isDebug = false
 
-				result := searchAlphaBeta(boardState, searchDepth, currentDepth+1, searchConfig, hint)
+				result := searchAlphaBeta(boardState, searchDepth, currentDepth+1, alpha, beta, searchConfig, hint)
 
 				result.move = move
 				result.depth++
@@ -173,15 +171,15 @@ FindBestMove:
 				}
 
 				if boardState.offsetToMove == BLACK_OFFSET {
-					searchConfig.alpha = Max(searchConfig.alpha, bestResult.value)
+					alpha = Max(alpha, bestResult.value)
 				} else {
-					searchConfig.beta = Min(searchConfig.beta, bestResult.value)
+					beta = Min(beta, bestResult.value)
 				}
 			}
 
 			boardState.UnapplyMove(move)
 
-			if searchConfig.alpha >= searchConfig.beta {
+			if alpha >= beta {
 				if i == 0 {
 					hashCutoffs++
 				}
