@@ -191,7 +191,7 @@ FindBestMove:
 					strings.Contains(result.pv, searchConfig.debugMoves) ||
 					searchConfig.debugMoves == "*") {
 					fmt.Printf("[%d; %s] value=%d, result=%s, pv=%s\n", depthLeft,
-						MoveToString(move), result.value, SearchResultToString(result), result.pv)
+						MoveToPrettyString(move, boardState), result.value, SearchResultToString(result), result.pv)
 				}
 
 				alpha = Max(alpha, result.value)
