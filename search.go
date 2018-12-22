@@ -166,7 +166,8 @@ FindBestMove:
 				}
 
 				if isDebug && (strings.Contains(MoveToString(move), searchConfig.debugMoves) ||
-					strings.Contains(bestResult.pv, searchConfig.debugMoves)) {
+					strings.Contains(bestResult.pv, searchConfig.debugMoves) ||
+					searchConfig.debugMoves == "*") {
 					fmt.Printf("[%d; %s] value=%d, result=%s, pv=%s\n", depth,
 						MoveToString(move), result.value, SearchResultToString(result), result.pv)
 				}
