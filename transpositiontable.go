@@ -1,7 +1,7 @@
 package main
 
 type TranspositionEntry struct {
-	depth       uint
+	depth       int
 	result      *SearchResult
 	searchPhase int
 }
@@ -16,13 +16,10 @@ func ProbeTranspositionTable(boardState *BoardState) *TranspositionEntry {
 	return boardState.transpositionTable[boardState.hashKey]
 }
 
-func StoreTranspositionTable(boardState *BoardState, result *SearchResult, depth uint, searchPhase int) {
+func StoreTranspositionTable(boardState *BoardState, result *SearchResult, depth int, searchPhase int) {
 	entry := TranspositionEntry{result: result, depth: depth, searchPhase: searchPhase}
-
 	e := boardState.transpositionTable[boardState.hashKey]
-
-	// Don't overwrite regular hash tables with quiescent results
-	if e == nil || (e.depth < depth && searchPhase <= e.searchPhase) {
+	if e == nil || searchPhase < e.searchPhase {
 		boardState.transpositionTable[boardState.hashKey] = &entry
 	}
 }

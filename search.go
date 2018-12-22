@@ -20,6 +20,7 @@ type SearchStats struct {
 	qBranchNodes uint
 	hashCutoffs  uint
 	cutoffs      uint
+	qcutoffs     uint
 }
 
 type SearchResult struct {
@@ -45,7 +46,7 @@ const (
 	SEARCH_PHASE_QUIESCENT = iota
 )
 
-const QUIESCENT_SEARCH_DEPTH = 3
+const QUIESCENT_CHECK_DEPTH = 3
 
 type SearchConfig struct {
 	move          Move
@@ -68,7 +69,7 @@ func Search(boardState *BoardState, depth uint) SearchResult {
 func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchConfig) SearchResult {
 	startTime := time.Now().UnixNano()
 
-	result := searchAlphaBeta(boardState, depth, 0, -INFINITY, INFINITY, SearchConfig{
+	result := searchAlphaBeta(boardState, int(depth), 0, -INFINITY, INFINITY, SearchConfig{
 		isDebug:       config.isDebug,
 		debugMoves:    config.debugMoves,
 		startingDepth: depth,
@@ -84,7 +85,7 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 
 // searchAlphaBeta runs an alpha-beta search over the boardState
 //
-// - depth, when positive, is the number of levels until quiescent search begins.
+// - depthLeft, when positive, is the number of levels until quiescent search begins.
 //   when negative it is the number of levels deep in quiescent search.
 // - currentDepth is the total depth of the search tree, including quiescent levels.
 //  - alpha: minimum score that player to move can achieve
@@ -92,37 +93,45 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 //
 func searchAlphaBeta(
 	boardState *BoardState,
-	depth uint,
+	depthLeft int,
 	currentDepth uint,
 	alpha int,
 	beta int,
 	searchConfig SearchConfig,
 	hint MoveSizeHint,
 ) SearchResult {
-	// fmt.Printf("phase=%d depth left=%d current depth=%d\n", searchConfig.phase, depth, currentDepth)
 	if boardState.IsThreefoldRepetition() {
 		return SearchResult{
 			value: 0,
 			flags: DRAW_FLAG,
+			depth: currentDepth,
 			pv:    "1/2-1/2 (Threefold Repetition)",
 		}
 	}
 
-	if (depth == 0 && searchConfig.phase == SEARCH_PHASE_QUIESCENT) || boardState.shouldAbort {
-		return getLeafResult(boardState, searchConfig)
+	if boardState.shouldAbort {
+		return getLeafResult(boardState, currentDepth, searchConfig)
+	}
+
+	if searchConfig.phase == SEARCH_PHASE_QUIESCENT && !boardState.IsInCheck(boardState.offsetToMove) {
+		// TODO constructing the result is likely expensive-ish
+		result := getLeafResult(boardState, currentDepth, searchConfig)
+
+		alpha = Max(alpha, result.value)
+		if alpha >= beta {
+			result.stats.qcutoffs = 1
+			result.stats.cutoffs = 1
+			return result
+		}
 	}
 
 	isDebug := searchConfig.isDebug
 
-	entry := ProbeTranspositionTable(boardState)
 	var hashMove = make([]Move, 0)
+	entry := ProbeTranspositionTable(boardState)
 	if entry != nil {
 		move := entry.result.move
 		if _, err := boardState.IsMoveLegal(move); err == nil {
-			if entry.depth >= depth && entry.searchPhase <= searchConfig.phase {
-				return *entry.result
-			}
-
 			hashMove = append(hashMove, move)
 		}
 	}
@@ -146,12 +155,12 @@ func searchAlphaBeta(
 
 	// phase will change below
 	phase := searchConfig.phase
-	searchDepth := depth - 1
+	searchDepth := depthLeft - 1
 	if searchDepth == 0 && phase == SEARCH_PHASE_INITIAL {
 		searchConfig.phase = SEARCH_PHASE_QUIESCENT
-		// just do this for now
-		searchDepth = QUIESCENT_SEARCH_DEPTH
 	}
+
+	var allMoves []Move
 
 FindBestMove:
 	for i := 0; i < len(moveOrdering); i++ {
@@ -170,7 +179,6 @@ FindBestMove:
 
 				result.value = -result.value
 				result.move = move
-				result.depth++
 				addSearchStats(&searchStats, result.stats)
 
 				if bestResult == nil {
@@ -182,7 +190,7 @@ FindBestMove:
 				if isDebug && (strings.Contains(MoveToPrettyString(move, boardState), searchConfig.debugMoves) ||
 					strings.Contains(result.pv, searchConfig.debugMoves) ||
 					searchConfig.debugMoves == "*") {
-					fmt.Printf("[%d; %s] value=%d, result=%s, pv=%s\n", depth,
+					fmt.Printf("[%d; %s] value=%d, result=%s, pv=%s\n", depthLeft,
 						MoveToString(move), result.value, SearchResultToString(result), result.pv)
 				}
 
@@ -205,9 +213,15 @@ FindBestMove:
 			// add the other moves now that we're done with hash move
 			listing, hint = GenerateMoveListing(boardState, hint)
 
-			// You need to be allowed to leave check in quiescent phase
-			if phase == SEARCH_PHASE_QUIESCENT && !boardState.IsInCheck(boardState.offsetToMove) {
-				listing.moves = boardState.FilterChecks(listing.moves)
+			if phase == SEARCH_PHASE_QUIESCENT {
+				allMoves = listing.moves
+				if !boardState.IsInCheck(boardState.offsetToMove) {
+					if depthLeft >= -QUIESCENT_CHECK_DEPTH {
+						listing.moves = boardState.FilterChecks(listing.moves)
+					} else {
+						listing.moves = []Move{}
+					}
+				}
 			}
 
 			moveOrdering[1] = listing.captures
@@ -226,9 +240,22 @@ FindBestMove:
 		if phase == SEARCH_PHASE_INITIAL {
 			result = getNoLegalMoveResult(boardState, currentDepth, searchConfig)
 		} else {
-			// This means we don't check for checkmates/stalemates in quiescent search
-			// and just evaluate the board.
-			result = getLeafResult(boardState, searchConfig)
+			hasLegalMove := false
+			for _, move := range allMoves {
+				boardState.ApplyMove(move)
+				inCheck := boardState.IsInCheck(boardState.offsetToMove)
+				boardState.UnapplyMove(move)
+				if !inCheck {
+					hasLegalMove = true
+					break
+				}
+			}
+
+			if hasLegalMove {
+				result = getLeafResult(boardState, currentDepth, searchConfig)
+			} else {
+				result = getNoLegalMoveResult(boardState, currentDepth, searchConfig)
+			}
 		}
 		bestResult = &result
 	} else {
@@ -240,7 +267,7 @@ FindBestMove:
 	}
 
 	bestResult.stats = searchStats
-	StoreTranspositionTable(boardState, bestResult, depth, searchConfig.phase)
+	StoreTranspositionTable(boardState, bestResult, depthLeft, searchConfig.phase)
 
 	return *bestResult
 }
@@ -253,7 +280,7 @@ func addSearchStats(searchStats *SearchStats, add SearchStats) {
 	searchStats.hashCutoffs += searchStats.hashCutoffs
 }
 
-func getLeafResult(boardState *BoardState, searchConfig SearchConfig) SearchResult {
+func getLeafResult(boardState *BoardState, currentDepth uint, searchConfig SearchConfig) SearchResult {
 	// TODO(perf): use an incremental evaluation state passed in as an argument
 
 	e := Eval(boardState)
@@ -261,12 +288,14 @@ func getLeafResult(boardState *BoardState, searchConfig SearchConfig) SearchResu
 	if !e.hasMatingMaterial {
 		res = SearchResult{
 			value: 0,
+			depth: currentDepth,
 			flags: DRAW_FLAG,
 			pv:    "1/2-1/2 (Insufficient mating material)",
 		}
 	} else {
 		res = SearchResult{
 			value: e.value(),
+			depth: currentDepth,
 			move:  searchConfig.move,
 			pv:    "",
 		}
@@ -282,6 +311,7 @@ func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfi
 		return SearchResult{
 			value: -(CHECKMATE_SCORE - int(currentDepth) + 1),
 			flags: CHECKMATE_FLAG,
+			depth: currentDepth,
 			pv:    "#",
 		}
 	}
@@ -322,13 +352,14 @@ func SearchValueToString(result SearchResult) string {
 }
 
 func SearchStatsToString(stats SearchStats) string {
-	return fmt.Sprintf("[nodes=%d, leafNodes=%d, branchNodes=%d, qBranchNodes=%d, cutoffs=%d, hash cutoffs=%d]",
+	return fmt.Sprintf("[nodes=%d, leafNodes=%d, branchNodes=%d, qBranchNodes=%d, cutoffs=%d, hash cutoffs=%d, qcutoffs=%d]",
 		stats.Nodes(),
 		stats.leafNodes,
 		stats.branchNodes,
 		stats.qBranchNodes,
 		stats.cutoffs,
-		stats.hashCutoffs)
+		stats.hashCutoffs,
+		stats.qcutoffs)
 }
 
 func (stats *SearchStats) Nodes() uint {
