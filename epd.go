@@ -75,14 +75,14 @@ func ParseEpdFile(epdFile string) ([]EpdLine, error) {
 			arr := strings.Split(fenWithMove, "bm")
 			if len(arr) == 2 {
 				fen, bestMove = strings.Trim(arr[0], " "), strings.Trim(arr[1], " ")
-				arr2 := strings.Split(nameWithID, "id")
-				name = strings.Trim(arr2[1], " \"")
+				arr2 := strings.Split(nameWithID, "id ")
+				name = strings.Trim(arr2[1], "\"")
 			} else {
 				arr = strings.Split(fenWithMove, "am")
 				// TODO: handle no bm or no am here (I have a file for perft positions with ;D1 ;D2)
 				fen, avoidMove = strings.Trim(arr[0], " "), strings.Trim(arr[1], " ")
-				arr2 := strings.Split(nameWithID, "id")
-				name = strings.Trim(arr2[1], " \"")
+				arr2 := strings.Split(nameWithID, "id ")
+				name = strings.Trim(arr2[1], "\"")
 			}
 		}
 
