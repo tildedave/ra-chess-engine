@@ -204,6 +204,7 @@ func thinkAndChooseMove(
 
 			case <-time.After(time.Duration(checkInterval) * time.Millisecond):
 				if time.Since(startTime) > time.Duration(thinkingTimeMs)*time.Millisecond {
+					logger.Println("Thinking time is up!")
 					break ThinkingLoop
 				}
 			}

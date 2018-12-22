@@ -84,6 +84,14 @@ func searchAlphaBeta(
 	hint MoveSizeHint,
 ) SearchResult {
 	// fmt.Printf("phase=%d depth left=%d current depth=%d\n", searchConfig.phase, depth, currentDepth)
+	if boardState.IsThreefoldRepetition() {
+		return SearchResult{
+			value: 0,
+			flags: STALEMATE_FLAG,
+			pv:    "1/2-1/2 (Threefold Repetition)",
+		}
+	}
+
 	if (depth == 0 && searchConfig.phase == SEARCH_PHASE_QUIESCENT) || boardState.shouldAbort {
 		return getTerminalResult(boardState, searchConfig)
 	}
