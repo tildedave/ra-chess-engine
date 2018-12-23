@@ -15,9 +15,11 @@ var CHECK_FLAG byte = 0x20
 var THREEFOLD_REP_FLAG byte = 0x10
 
 type SearchStats struct {
-	hashCutoffs uint
-	cutoffs     uint
-	nodes       uint
+	leafNodes    uint
+	branchNodes  uint
+	qBranchNodes uint
+	hashCutoffs  uint
+	cutoffs      uint
 }
 
 type SearchResult struct {
@@ -107,7 +109,7 @@ func searchAlphaBeta(
 	}
 
 	if (depth == 0 && searchConfig.phase == SEARCH_PHASE_QUIESCENT) || boardState.shouldAbort {
-		return getTerminalResult(boardState, searchConfig)
+		return getLeafResult(boardState, searchConfig)
 	}
 
 	isDebug := searchConfig.isDebug
@@ -126,6 +128,10 @@ func searchAlphaBeta(
 	}
 
 	var searchStats SearchStats
+	searchStats.branchNodes++
+	if searchConfig.phase == SEARCH_PHASE_QUIESCENT {
+		searchStats.qBranchNodes++
+	}
 
 	var bestResult *SearchResult
 
@@ -222,7 +228,7 @@ FindBestMove:
 		} else {
 			// This means we don't check for checkmates/stalemates in quiescent search
 			// and just evaluate the board.
-			result = getTerminalResult(boardState, searchConfig)
+			result = getLeafResult(boardState, searchConfig)
 		}
 		bestResult = &result
 	} else {
@@ -241,11 +247,13 @@ FindBestMove:
 
 func addSearchStats(searchStats *SearchStats, add SearchStats) {
 	searchStats.cutoffs += add.cutoffs
-	searchStats.nodes += add.nodes
+	searchStats.leafNodes += add.leafNodes
+	searchStats.branchNodes += add.branchNodes
+	searchStats.qBranchNodes += add.qBranchNodes
 	searchStats.hashCutoffs += searchStats.hashCutoffs
 }
 
-func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) SearchResult {
+func getLeafResult(boardState *BoardState, searchConfig SearchConfig) SearchResult {
 	// TODO(perf): use an incremental evaluation state passed in as an argument
 
 	e := Eval(boardState)
@@ -264,7 +272,7 @@ func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) Search
 		}
 	}
 
-	res.stats.nodes = 1
+	res.stats.leafNodes = 1
 	return res
 }
 
@@ -314,7 +322,17 @@ func SearchValueToString(result SearchResult) string {
 }
 
 func SearchStatsToString(stats SearchStats) string {
-	return fmt.Sprintf("[nodes=%d, cutoffs=%d, hash cutoffs=%d]", stats.nodes, stats.cutoffs, stats.hashCutoffs)
+	return fmt.Sprintf("[nodes=%d, leafNodes=%d, branchNodes=%d, qBranchNodes=%d, cutoffs=%d, hash cutoffs=%d]",
+		stats.Nodes(),
+		stats.leafNodes,
+		stats.branchNodes,
+		stats.qBranchNodes,
+		stats.cutoffs,
+		stats.hashCutoffs)
+}
+
+func (stats *SearchStats) Nodes() uint {
+	return stats.branchNodes + stats.leafNodes + stats.qBranchNodes
 }
 
 // Used to determine if we should extend search

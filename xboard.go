@@ -197,7 +197,7 @@ func thinkAndChooseMove(
 					ply:   bestResult.depth,
 					score: bestResult.value,
 					time:  bestResult.time,
-					nodes: bestResult.stats.nodes,
+					nodes: bestResult.stats.Nodes(),
 					pv:    bestResult.pv,
 				}
 
