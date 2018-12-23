@@ -45,7 +45,7 @@ const (
 	SEARCH_PHASE_QUIESCENT = iota
 )
 
-const QUIESCENT_SEARCH_DEPTH = 3
+const QUIESCENT_CHECK_DEPTH = 3
 
 type SearchConfig struct {
 	move          Move
@@ -69,7 +69,7 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 	startTime := time.Now().UnixNano()
 
 	stats := SearchStats{}
-	score := searchAlphaBeta(boardState, &stats, depth, 0, -INFINITY, INFINITY, SearchConfig{
+	score := searchAlphaBeta(boardState, &stats, int(depth), 0, -INFINITY, INFINITY, SearchConfig{
 		isDebug:       config.isDebug,
 		debugMoves:    config.debugMoves,
 		startingDepth: depth,
@@ -129,7 +129,7 @@ func ExtractPV(boardState *BoardState) string {
 func searchAlphaBeta(
 	boardState *BoardState,
 	searchStats *SearchStats,
-	depth uint,
+	depthLeft int,
 	currentDepth uint,
 	alpha int,
 	beta int,
@@ -141,8 +141,25 @@ func searchAlphaBeta(
 		return 0
 	}
 
-	if (depth == 0 && searchConfig.phase == SEARCH_PHASE_QUIESCENT) || boardState.shouldAbort {
+	if boardState.shouldAbort {
 		return getLeafResult(boardState, searchConfig, searchStats)
+	}
+
+	bestScore := -INFINITY
+	var bestMove Move
+
+	var nodeResult SearchResult
+	if searchConfig.phase == SEARCH_PHASE_QUIESCENT && !boardState.IsInCheck(boardState.offsetToMove) {
+		score := getLeafResult(boardState, searchConfig, searchStats)
+
+		if score >= beta {
+			StoreTranspositionTable(boardState, bestMove, score, TT_FAIL_HIGH, currentDepth, searchConfig.phase)
+			searchStats.cutoffs++
+
+			return score
+		}
+
+		alpha = Max(alpha, nodeResult.value)
 	}
 
 	isDebug := searchConfig.isDebug
@@ -152,10 +169,6 @@ func searchAlphaBeta(
 	if entry != nil {
 		move := entry.move
 		if _, err := boardState.IsMoveLegal(move); err == nil {
-			if entry.depth >= depth && entry.searchPhase <= searchConfig.phase {
-				return entry.score
-			}
-
 			hashMove = append(hashMove, move)
 		}
 	}
@@ -176,21 +189,17 @@ func searchAlphaBeta(
 
 	// phase will change below
 	phase := searchConfig.phase
-	searchDepth := depth - 1
+	searchDepth := depthLeft - 1
 	if searchDepth == 0 && phase == SEARCH_PHASE_INITIAL {
 		searchConfig.phase = SEARCH_PHASE_QUIESCENT
 		// just do this for now
-		searchDepth = QUIESCENT_SEARCH_DEPTH
 	}
 
 	hasLegalMove := false
 
 	// Stupid temporary variable for quiescent search checkmate detection
 	var allMoves []Move
-	bestScore := -INFINITY
-	var bestMove Move
 
-FindBestMove:
 	for i := 0; i < len(moveOrdering); i++ {
 		for _, move := range moveOrdering[i] {
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
@@ -211,6 +220,11 @@ FindBestMove:
 			boardState.UnapplyMove(move)
 
 			if score > beta {
+				if i == 0 {
+					searchStats.hashCutoffs++
+				}
+				searchStats.cutoffs++
+
 				StoreTranspositionTable(boardState, move, beta, TT_FAIL_HIGH, currentDepth, searchConfig.phase)
 				return beta
 			}
@@ -225,15 +239,7 @@ FindBestMove:
 
 			if isDebug && (strings.Contains(MoveToPrettyString(move, boardState), searchConfig.debugMoves) ||
 				searchConfig.debugMoves == "*") {
-				fmt.Printf("[%d; %s] value=%d\n", depth, MoveToString(move), score)
-			}
-
-			if alpha >= beta {
-				if i == 0 {
-					searchStats.hashCutoffs++
-				}
-				searchStats.cutoffs++
-				break FindBestMove
+				fmt.Printf("[%d; %s] value=%d\n", depthLeft, MoveToString(move), score)
 			}
 		}
 
@@ -244,8 +250,15 @@ FindBestMove:
 
 			allMoves = listing.moves
 			// You need to be allowed to leave check in quiescent phase
-			if phase == SEARCH_PHASE_QUIESCENT && !boardState.IsInCheck(boardState.offsetToMove) {
-				listing.moves = boardState.FilterChecks(listing.moves)
+			if phase == SEARCH_PHASE_QUIESCENT {
+				allMoves = listing.moves
+				if !boardState.IsInCheck(boardState.offsetToMove) {
+					if depthLeft >= -QUIESCENT_CHECK_DEPTH {
+						listing.moves = boardState.FilterChecks(listing.moves)
+					} else {
+						listing.moves = []Move{}
+					}
+				}
 			}
 
 			moveOrdering[1] = listing.captures
@@ -293,7 +306,7 @@ FindBestMove:
 		ttEntryType = TT_EXACT
 	}
 
-	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depth, searchConfig.phase)
+	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, currentDepth, searchConfig.phase)
 
 	return bestScore
 }
