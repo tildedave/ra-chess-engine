@@ -24,21 +24,23 @@ type SearchStats struct {
 }
 
 type SearchResult struct {
-	move  Move
-	value int
-	flags byte
-	time  int64
-	depth uint
-	stats SearchStats
-	pv    string
+	move        Move
+	value       int
+	flags       byte
+	time        int64
+	depth       uint
+	isBetaPrune bool
+	stats       SearchStats
+	pv          string
 }
 
 func (result *SearchResult) IsCheckmate() bool {
-	return result.flags&CHECKMATE_FLAG == CHECKMATE_FLAG
+	return result.flags&CHECKMATE_FLAG == CHECKMATE_FLAG && result.value > CHECKMATE_SCORE+100
 }
 
 func (result *SearchResult) IsDraw() bool {
-	return result.flags&DRAW_FLAG == DRAW_FLAG
+	// not accurate since an equal position could be 0.0 and not a draw
+	return result.flags&DRAW_FLAG == DRAW_FLAG && result.value == 0
 }
 
 const (
@@ -120,7 +122,8 @@ func searchAlphaBeta(
 
 		if nodeResult.value >= beta {
 			nodeResult.value = beta
-			nodeResult.stats.quiescentCutoffs = 1
+			nodeResult.isBetaPrune = true
+			nodeResult.stats.qcutoffs = 1
 			nodeResult.stats.cutoffs = 1
 			return nodeResult
 		}
@@ -196,7 +199,6 @@ FindBestMove:
 					fmt.Printf("[%d; %s] value=%d, result=%s, pv=%s\n", depthLeft,
 						MoveToPrettyString(move, boardState), result.value, SearchResultToString(result), result.pv)
 				}
-
 				alpha = Max(alpha, result.value)
 			} else {
 				boardState.UnapplyMove(move)
@@ -204,6 +206,7 @@ FindBestMove:
 
 			if alpha >= beta {
 				bestResult.value = beta
+				bestResult.isBetaPrune = true
 				if i == 0 {
 					searchStats.hashCutoffs++
 				}
@@ -256,11 +259,7 @@ FindBestMove:
 			}
 
 			if hasLegalMove {
-<<<<<<< HEAD
-				result = getLeafResult(boardState, currentDepth, searchConfig)
-=======
 				result = nodeResult
->>>>>>> Search: quiscent search improving, still wrong
 			} else {
 				result = getNoLegalMoveResult(boardState, currentDepth, searchConfig)
 			}
@@ -271,7 +270,12 @@ FindBestMove:
 		if phase != searchConfig.phase {
 			separator = " <Q> "
 		}
-		bestResult.pv = MoveToPrettyString(bestResult.move, boardState) + separator + bestResult.pv
+		moveStr := MoveToPrettyString(bestResult.move, boardState) + separator
+		if phase == searchConfig.phase || !bestResult.isBetaPrune {
+			bestResult.pv = moveStr + bestResult.pv
+		} else {
+			bestResult.pv = moveStr
+		}
 	}
 
 	bestResult.stats = searchStats
