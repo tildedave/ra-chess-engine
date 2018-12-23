@@ -84,11 +84,38 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 	result.time = (time.Now().UnixNano() - startTime) / 10000000
 	e := ProbeTranspositionTable(boardState)
 	result.move = e.move
-	result.pv = MoveToPrettyString(result.move, boardState)
+	result.pv = ExtractPV(boardState)
 	result.stats = stats
 	result.depth = depth
 
 	return result
+}
+
+func ExtractPV(boardState *BoardState) string {
+	e := ProbeTranspositionTable(boardState)
+	moves := make([]Move, 0)
+	var pv string
+
+	for e != nil && e.entryType == TT_EXACT {
+		move := e.move
+		if _, err := boardState.IsMoveLegal(move); err != nil {
+			break
+		}
+		pv += " " + MoveToPrettyString(move, boardState)
+		boardState.ApplyMove(move)
+		moves = append(moves, move)
+		e = ProbeTranspositionTable(boardState)
+	}
+
+	for i := len(moves) - 1; i >= 0; i-- {
+		boardState.UnapplyMove(moves[i])
+	}
+
+	if len(pv) == 0 {
+		return ""
+	}
+
+	return pv[1:]
 }
 
 // searchAlphaBeta runs an alpha-beta search over the boardState
@@ -262,7 +289,7 @@ FindBestMove:
 		// never raised alpha
 		ttEntryType = TT_FAIL_LOW
 	} else {
-		// we raised alpha so we have an exact match
+		// we raised alpha, so we have an exact match
 		ttEntryType = TT_EXACT
 	}
 
