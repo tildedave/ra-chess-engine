@@ -17,13 +17,13 @@ var THREEFOLD_REP_FLAG byte = 0x10
 type SearchStats struct {
 	hashCutoffs uint
 	cutoffs     uint
+	nodes       uint
 }
 
 type SearchResult struct {
 	move  Move
 	value int
 	flags byte
-	nodes uint
 	time  int64
 	depth uint
 	stats SearchStats
@@ -125,9 +125,7 @@ func searchAlphaBeta(
 		}
 	}
 
-	var nodes uint
-	var hashCutoffs uint
-	var cutoffs uint
+	var searchStats SearchStats
 
 	var bestResult *SearchResult
 
@@ -167,9 +165,7 @@ FindBestMove:
 				result.value = -result.value
 				result.move = move
 				result.depth++
-				nodes += result.nodes
-				hashCutoffs += result.stats.hashCutoffs
-				cutoffs += result.stats.cutoffs
+				addSearchStats(&searchStats, result.stats)
 
 				if bestResult == nil {
 					bestResult = &result
@@ -191,9 +187,9 @@ FindBestMove:
 
 			if alpha >= beta {
 				if i == 0 {
-					hashCutoffs++
+					searchStats.hashCutoffs++
 				}
-				cutoffs++
+				searchStats.cutoffs++
 				break FindBestMove
 			}
 		}
@@ -237,32 +233,39 @@ FindBestMove:
 		bestResult.pv = MoveToPrettyString(bestResult.move, boardState) + separator + bestResult.pv
 	}
 
-	bestResult.nodes = nodes
-	bestResult.stats.hashCutoffs = hashCutoffs
-	bestResult.stats.cutoffs = cutoffs
+	bestResult.stats = searchStats
 	StoreTranspositionTable(boardState, bestResult, depth, searchConfig.phase)
 
 	return *bestResult
+}
+
+func addSearchStats(searchStats *SearchStats, add SearchStats) {
+	searchStats.cutoffs += add.cutoffs
+	searchStats.nodes += add.nodes
+	searchStats.hashCutoffs += searchStats.hashCutoffs
 }
 
 func getTerminalResult(boardState *BoardState, searchConfig SearchConfig) SearchResult {
 	// TODO(perf): use an incremental evaluation state passed in as an argument
 
 	e := Eval(boardState)
+	var res SearchResult
 	if !e.hasMatingMaterial {
-		return SearchResult{
+		res = SearchResult{
 			value: 0,
 			flags: DRAW_FLAG,
 			pv:    "1/2-1/2 (Insufficient mating material)",
 		}
+	} else {
+		res = SearchResult{
+			value: e.value(),
+			move:  searchConfig.move,
+			pv:    "",
+		}
 	}
 
-	return SearchResult{
-		value: e.value(),
-		move:  searchConfig.move,
-		nodes: 1,
-		pv:    "",
-	}
+	res.stats.nodes = 1
+	return res
 }
 
 func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfig SearchConfig) SearchResult {
@@ -285,11 +288,10 @@ func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfi
 }
 
 func SearchResultToString(result SearchResult) string {
-	return fmt.Sprintf("%s (value=%s, depth=%d, nodes=%d, stats=%s, pv=%s)",
+	return fmt.Sprintf("%s (value=%s, depth=%d, stats=%s, pv=%s)",
 		MoveToString(result.move),
 		SearchValueToString(result),
 		result.depth,
-		result.nodes,
 		SearchStatsToString(result.stats),
 		result.pv)
 }
@@ -312,7 +314,7 @@ func SearchValueToString(result SearchResult) string {
 }
 
 func SearchStatsToString(stats SearchStats) string {
-	return fmt.Sprintf("[cutoffs=%d, hash cutoffs=%d]", stats.cutoffs, stats.hashCutoffs)
+	return fmt.Sprintf("[nodes=%d, cutoffs=%d, hash cutoffs=%d]", stats.nodes, stats.cutoffs, stats.hashCutoffs)
 }
 
 // Used to determine if we should extend search
