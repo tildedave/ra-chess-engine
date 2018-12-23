@@ -1,10 +1,18 @@
 package main
 
 type TranspositionEntry struct {
+	move        Move
 	depth       uint
-	result      *SearchResult
+	score       int
+	entryType   int
 	searchPhase int
 }
+
+const (
+	TT_FAIL_HIGH = iota
+	TT_FAIL_LOW  = iota
+	TT_EXACT     = iota
+)
 
 var hashArray map[uint64]*TranspositionEntry
 
@@ -16,8 +24,8 @@ func ProbeTranspositionTable(boardState *BoardState) *TranspositionEntry {
 	return boardState.transpositionTable[boardState.hashKey]
 }
 
-func StoreTranspositionTable(boardState *BoardState, result *SearchResult, depth uint, searchPhase int) {
-	entry := TranspositionEntry{result: result, depth: depth, searchPhase: searchPhase}
+func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType int, depth uint, searchPhase int) {
+	entry := TranspositionEntry{score: score, move: move, entryType: entryType, depth: depth, searchPhase: searchPhase}
 
 	e := boardState.transpositionTable[boardState.hashKey]
 
