@@ -80,6 +80,13 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 	if boardState.offsetToMove == BLACK_OFFSET {
 		score = -score
 	}
+	absScore := score
+	if score < 0 {
+		absScore = -score
+	}
+	if absScore > CHECKMATE_SCORE-100 {
+		result.flags = CHECKMATE_FLAG
+	}
 	result.value = score
 	result.time = (time.Now().UnixNano() - startTime) / 10000000
 	e := ProbeTranspositionTable(boardState)
@@ -129,7 +136,7 @@ func ExtractPV(boardState *BoardState) string {
 func searchAlphaBeta(
 	boardState *BoardState,
 	searchStats *SearchStats,
-	depth uint,
+	depthLeft uint,
 	currentDepth uint,
 	alpha int,
 	beta int,
@@ -141,7 +148,7 @@ func searchAlphaBeta(
 		return 0
 	}
 
-	if (depth == 0 && searchConfig.phase == SEARCH_PHASE_QUIESCENT) || boardState.shouldAbort {
+	if (depthLeft == 0 && searchConfig.phase == SEARCH_PHASE_QUIESCENT) || boardState.shouldAbort {
 		return getLeafResult(boardState, searchConfig, searchStats)
 	}
 
@@ -152,7 +159,7 @@ func searchAlphaBeta(
 	if entry != nil {
 		move := entry.move
 		if _, err := boardState.IsMoveLegal(move); err == nil {
-			if entry.depth >= depth && entry.searchPhase <= searchConfig.phase {
+			if entry.depth >= depthLeft && entry.searchPhase <= searchConfig.phase {
 				return entry.score
 			}
 
@@ -176,7 +183,7 @@ func searchAlphaBeta(
 
 	// phase will change below
 	phase := searchConfig.phase
-	searchDepth := depth - 1
+	searchDepth := depthLeft - 1
 	if searchDepth == 0 && phase == SEARCH_PHASE_INITIAL {
 		searchConfig.phase = SEARCH_PHASE_QUIESCENT
 		// just do this for now
@@ -190,7 +197,6 @@ func searchAlphaBeta(
 	bestScore := -INFINITY
 	var bestMove Move
 
-FindBestMove:
 	for i := 0; i < len(moveOrdering); i++ {
 		for _, move := range moveOrdering[i] {
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
@@ -211,7 +217,7 @@ FindBestMove:
 			boardState.UnapplyMove(move)
 
 			if score > beta {
-				StoreTranspositionTable(boardState, move, beta, TT_FAIL_HIGH, currentDepth, searchConfig.phase)
+				StoreTranspositionTable(boardState, move, beta, TT_FAIL_HIGH, depthLeft, searchConfig.phase)
 				return beta
 			}
 
@@ -225,15 +231,7 @@ FindBestMove:
 
 			if isDebug && (strings.Contains(MoveToPrettyString(move, boardState), searchConfig.debugMoves) ||
 				searchConfig.debugMoves == "*") {
-				fmt.Printf("[%d; %s] value=%d\n", depth, MoveToString(move, boardState), score)
-			}
-
-			if alpha >= beta {
-				if i == 0 {
-					searchStats.hashCutoffs++
-				}
-				searchStats.cutoffs++
-				break FindBestMove
+				fmt.Printf("[%d; %s] value=%d\n", depthLeft, MoveToString(move, boardState), score)
 			}
 		}
 
@@ -293,7 +291,7 @@ FindBestMove:
 		ttEntryType = TT_EXACT
 	}
 
-	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depth, searchConfig.phase)
+	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depthLeft, searchConfig.phase)
 
 	return bestScore
 }
@@ -337,7 +335,7 @@ func SearchValueToString(result SearchResult) string {
 		if score < 0 {
 			score = -score
 		}
-		movesToCheckmate := CHECKMATE_SCORE - score
+		movesToCheckmate := CHECKMATE_SCORE - score + 1
 		return fmt.Sprintf("Mate(%d)", movesToCheckmate)
 	}
 
