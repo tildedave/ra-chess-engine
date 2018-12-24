@@ -104,5 +104,5 @@ func TestDoesNotHangCheckmate(t *testing.T) {
 	boardState, _ := CreateBoardStateFromFENString("5rk1/B3bppp/8/6P1/b1p1pP2/2P5/Pr4P1/R3K1NR w KQ - 0 24")
 
 	result := Search(&boardState, 2)
-	fmt.Println(SearchResultToString(result))
+	fmt.Println(result)
 }

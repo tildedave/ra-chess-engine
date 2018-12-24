@@ -93,7 +93,7 @@ func main() {
 		} else if *startingFen != "" {
 			prettyMove, result, err := RunTacticsFen(*startingFen, *variation, options)
 			if err == nil {
-				fmt.Printf("move=%s result=%s\n", prettyMove, SearchResultToString(result))
+				fmt.Printf("move=%s result=%s\n", prettyMove, result.String())
 			}
 		} else {
 			err = errors.New("Must specify either an EPD file or a fen argument")

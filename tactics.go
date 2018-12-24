@@ -70,7 +70,7 @@ func RunTacticsFile(epdFile string, variation string, options TacticsOptions) (b
 			res = "\033[1;31mFAIL\033[0m"
 		}
 		fmt.Printf("[%s - %s] expected=%s move=%s result=%s\n",
-			line.name, res, moveToCheck, prettyMove, SearchResultToString(result))
+			line.name, res, moveToCheck, prettyMove, result.String())
 	}
 
 	fmt.Printf("Complete.  %d/%d positions correct (%.2f%%)\n", successPositions, totalPositions,
