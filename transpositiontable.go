@@ -1,5 +1,9 @@
 package main
 
+import (
+	"fmt"
+)
+
 type TranspositionEntry struct {
 	move        Move
 	depth       uint
@@ -22,6 +26,19 @@ func generateTranspositionTable(boardState *BoardState) {
 
 func ProbeTranspositionTable(boardState *BoardState) *TranspositionEntry {
 	return boardState.transpositionTable[boardState.hashKey]
+}
+
+func (entry *TranspositionEntry) String() string {
+	var entryTypeAsString string
+	switch entry.entryType {
+	case TT_FAIL_HIGH:
+		entryTypeAsString = "beta"
+	case TT_FAIL_LOW:
+		entryTypeAsString = "alpha"
+	case TT_EXACT:
+		entryTypeAsString = "exact"
+	}
+	return fmt.Sprintf("{score=%d, depth=%d, type=%s}", entry.score, entry.depth, entryTypeAsString)
 }
 
 func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType int, depth uint) {

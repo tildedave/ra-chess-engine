@@ -39,6 +39,7 @@ func main() {
 	tacticsThinkingTime := flag.Uint("tacticsthinkingtime", 1500, "Time to think per position (ms)")
 	tacticsDebug := flag.String("tacticsdebug", "", "Output more information during tactics if the move matches the string")
 	tacticsDepth := flag.Uint("tacticsdepth", 0, "Only run tactics search for the given depth")
+	tacticsHashVariation := flag.String("tacticshashvariation", "", "Output transposition table information for given variation")
 	isMagic := flag.Bool("magic", false, "Generate magic bitboard constants (write to rook-magics.json and bishop-magics.json)")
 	isEval := flag.Bool("eval", false, "Run evaluation on the specified position or positions (no search)")
 
@@ -85,6 +86,7 @@ func main() {
 		options.epdRegex = *epdRegex
 		options.tacticsDebug = *tacticsDebug
 		options.tacticsDepth = *tacticsDepth
+		options.tacticsHashVariation = *tacticsHashVariation
 
 		if *epdFile != "" {
 			success, err = RunTacticsFile(*epdFile, *variation, options)
