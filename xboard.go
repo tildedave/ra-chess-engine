@@ -192,7 +192,7 @@ func thinkAndChooseMove(
 			select {
 			case bestResult = <-resultCh:
 				logger.Println("New result:")
-				logger.Println(SearchResultToString(bestResult))
+				logger.Println(bestResult.String())
 				thinkingChan <- ThinkingOutput{
 					ply:   bestResult.depth,
 					score: bestResult.value,
