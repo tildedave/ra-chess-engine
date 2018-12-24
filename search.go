@@ -147,6 +147,7 @@ func searchAlphaBeta(
 	if depthLeft == 0 || boardState.shouldAbort {
 		score := getLeafResult(boardState, searchConfig, searchStats)
 		StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
+
 		return score
 	}
 

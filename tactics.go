@@ -5,13 +5,15 @@ import (
 	"fmt"
 	"os"
 	"strings"
+	"time"
 )
 
 type TacticsOptions struct {
-	thinkingtimeMs uint
-	epdRegex       string
-	tacticsDebug   string
-	tacticsDepth   uint
+	thinkingtimeMs       uint
+	epdRegex             string
+	tacticsDebug         string
+	tacticsHashVariation string
+	tacticsDepth         uint
 }
 
 func RunTacticsFile(epdFile string, variation string, options TacticsOptions) (bool, error) {
@@ -121,5 +123,32 @@ func RunTacticsFen(fen string, variation string, options TacticsOptions) (string
 	}
 
 	boardState.shouldAbort = true
+
+	if options.tacticsHashVariation != "" {
+		// "Wiggle room" to allow search to abort
+		time.Sleep(time.Duration(200) * time.Millisecond)
+
+		fmt.Println("---- Transposition Table information ----")
+		moveList, err := VariationToMoveList(options.tacticsHashVariation, &boardState)
+		if err != nil {
+			return "", SearchResult{}, err
+		}
+
+		e := ProbeTranspositionTable(&boardState)
+		fmt.Printf("%s - %s\n", boardState.ToString(), e)
+		for i := 0; i < len(moveList) && e != nil; i++ {
+			boardState.ApplyMove(moveList[i])
+			e = ProbeTranspositionTable(&boardState)
+			fmt.Printf("%s - %s\n", boardState.ToString(), e)
+		}
+
+		for i := len(moveList) - 1; i >= 0; i-- {
+			boardState.UnapplyMove(moveList[i])
+		}
+
+	}
+	// .... can't use variation from transposition table while boardState is still being
+	// searched, bad things
+
 	return MoveToPrettyString(result.move, &boardState), result, nil
 }
