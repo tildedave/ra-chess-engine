@@ -24,13 +24,13 @@ func ProbeTranspositionTable(boardState *BoardState) *TranspositionEntry {
 	return boardState.transpositionTable[boardState.hashKey]
 }
 
-func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType int, depth uint, searchPhase int) {
-	entry := TranspositionEntry{score: score, move: move, entryType: entryType, depth: depth, searchPhase: searchPhase}
+func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType int, depth uint) {
+	entry := TranspositionEntry{score: score, move: move, entryType: entryType, depth: depth}
 
 	e := boardState.transpositionTable[boardState.hashKey]
 
 	// Don't overwrite regular hash tables with quiescent results
-	if e == nil || (e.depth < depth && searchPhase <= e.searchPhase) {
+	if e == nil || e.depth < depth {
 		boardState.transpositionTable[boardState.hashKey] = &entry
 	}
 }
