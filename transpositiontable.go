@@ -43,11 +43,5 @@ func (entry *TranspositionEntry) String() string {
 
 func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType int, depth uint) {
 	entry := TranspositionEntry{score: score, move: move, entryType: entryType, depth: depth}
-
-	e := boardState.transpositionTable[boardState.hashKey]
-
-	// Don't overwrite regular hash tables with quiescent results
-	if e == nil || e.depth < depth {
-		boardState.transpositionTable[boardState.hashKey] = &entry
-	}
+	boardState.transpositionTable[boardState.hashKey] = &entry
 }
