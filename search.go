@@ -32,6 +32,11 @@ type SearchResult struct {
 	pv    string
 }
 
+type Variation struct {
+	move     [MAX_MOVES]Move
+	numMoves uint
+}
+
 func (result *SearchResult) IsCheckmate() bool {
 	return result.flags&CHECKMATE_FLAG == CHECKMATE_FLAG
 }
@@ -69,7 +74,8 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 	startTime := time.Now().UnixNano()
 
 	stats := SearchStats{}
-	score := searchAlphaBeta(boardState, &stats, depth, 0, -INFINITY, INFINITY, SearchConfig{
+	variation := Variation{}
+	score := searchAlphaBeta(boardState, &stats, &variation, depth, 0, -INFINITY, INFINITY, SearchConfig{
 		isDebug:       config.isDebug,
 		debugMoves:    config.debugMoves,
 		startingDepth: depth,
@@ -89,40 +95,12 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 	}
 	result.value = score
 	result.time = (time.Now().UnixNano() - startTime) / 10000000
-	e := ProbeTranspositionTable(boardState)
-	result.move = e.move
-	result.pv = ExtractPV(boardState)
+	result.move = variation.move[0]
+	result.pv = MoveArrayToPrettyString(variation.move[0:variation.numMoves], boardState)
 	result.stats = stats
 	result.depth = depth
 
 	return result
-}
-
-func ExtractPV(boardState *BoardState) string {
-	e := ProbeTranspositionTable(boardState)
-	moves := make([]Move, 0)
-	var pv string
-
-	for e != nil && e.entryType == TT_EXACT {
-		move := e.move
-		if _, err := boardState.IsMoveLegal(move); err != nil {
-			break
-		}
-		pv += " " + MoveToPrettyString(move, boardState)
-		boardState.ApplyMove(move)
-		moves = append(moves, move)
-		e = ProbeTranspositionTable(boardState)
-	}
-
-	for i := len(moves) - 1; i >= 0; i-- {
-		boardState.UnapplyMove(moves[i])
-	}
-
-	if len(pv) == 0 {
-		return ""
-	}
-
-	return pv[1:]
 }
 
 // searchAlphaBeta runs an alpha-beta search over the boardState
@@ -136,6 +114,7 @@ func ExtractPV(boardState *BoardState) string {
 func searchAlphaBeta(
 	boardState *BoardState,
 	searchStats *SearchStats,
+	variation *Variation,
 	depthLeft uint,
 	currentDepth uint,
 	alpha int,
@@ -143,6 +122,8 @@ func searchAlphaBeta(
 	searchConfig SearchConfig,
 	hint MoveSizeHint,
 ) int {
+	var line Variation
+
 	// TODO: probably don't check this
 	if boardState.IsThreefoldRepetition() {
 		return 0
@@ -213,7 +194,8 @@ func searchAlphaBeta(
 			searchConfig.move = move
 			searchConfig.isDebug = false
 
-			score := -searchAlphaBeta(boardState, searchStats, searchDepth, currentDepth+1, -beta, -alpha, searchConfig, hint)
+			score := -searchAlphaBeta(boardState, searchStats, &line, searchDepth, currentDepth+1, -beta, -alpha,
+				searchConfig, hint)
 			boardState.UnapplyMove(move)
 
 			if score > beta {
@@ -226,6 +208,11 @@ func searchAlphaBeta(
 				bestMove = move
 				if bestScore > alpha {
 					alpha = score
+					if searchConfig.phase != SEARCH_PHASE_QUIESCENT {
+						variation.move[0] = move
+						copy(variation.move[1:], line.move[0:line.numMoves])
+						variation.numMoves = line.numMoves + 1
+					}
 				}
 			}
 
