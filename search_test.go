@@ -52,7 +52,7 @@ func TestSearchAvoidMateInOne(t *testing.T) {
 	boardState.offsetToMove = BLACK_OFFSET
 	boardState.SetPieceAtSquare(SQUARE_F5, BLACK_MASK|ROOK_MASK)
 
-	result := Search(&boardState, 1)
+	result := Search(&boardState, 2)
 
 	assert.Equal(t, Move{from: SQUARE_F5, to: SQUARE_D5}, result.move)
 }
