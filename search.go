@@ -115,28 +115,39 @@ func searchAlphaBeta(
 ) int {
 	var line Variation
 
+	isDebug := searchConfig.isDebug
+
+	var hashMove = make([]Move, 0)
+	if entry := ProbeTranspositionTable(boardState); entry != nil {
+		if entry.depth >= depthLeft {
+			switch entry.entryType {
+			case TT_EXACT:
+				return entry.score
+			case TT_FAIL_HIGH:
+				if entry.score >= beta {
+					return beta
+				}
+			case TT_FAIL_LOW:
+				if entry.score <= alpha {
+					return alpha
+				}
+			}
+		}
+		move := entry.move
+		if _, err := boardState.IsMoveLegal(move); err == nil {
+			hashMove = append(hashMove, move)
+		}
+	}
+
 	// TODO: probably don't check this
 	if boardState.IsThreefoldRepetition() {
 		return 0
 	}
 
 	if depthLeft == 0 || boardState.shouldAbort {
-		return getLeafResult(boardState, searchConfig, searchStats)
-	}
-
-	isDebug := searchConfig.isDebug
-
-	entry := ProbeTranspositionTable(boardState)
-	var hashMove = make([]Move, 0)
-	if entry != nil {
-		move := entry.move
-		if _, err := boardState.IsMoveLegal(move); err == nil {
-			if entry.depth >= depthLeft {
-				return entry.score
-			}
-
-			hashMove = append(hashMove, move)
-		}
+		score := getLeafResult(boardState, searchConfig, searchStats)
+		StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
+		return score
 	}
 
 	searchStats.branchNodes++
@@ -176,7 +187,7 @@ func searchAlphaBeta(
 			boardState.UnapplyMove(move)
 
 			if score > beta {
-				StoreTranspositionTable(boardState, move, beta, TT_FAIL_HIGH, depthLeft)
+				StoreTranspositionTable(boardState, move, score, TT_FAIL_HIGH, depthLeft)
 				return beta
 			}
 
@@ -193,7 +204,8 @@ func searchAlphaBeta(
 
 			if isDebug && (strings.Contains(MoveToPrettyString(move, boardState), searchConfig.debugMoves) ||
 				searchConfig.debugMoves == "*") {
-				fmt.Printf("[%d; %s] value=%d\n", depthLeft, MoveToString(move, boardState), score)
+				fmt.Printf("[%d; %s] value=%d pv=%s\n", depthLeft, MoveToString(move, boardState), score,
+					MoveArrayToString(line.move[0:line.numMoves]))
 			}
 		}
 
@@ -223,7 +235,7 @@ func searchAlphaBeta(
 		ttEntryType = TT_EXACT
 	}
 
-	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depthLeft)
+	StoreTranspositionTable(boardState, bestMove, alpha, ttEntryType, depthLeft)
 
 	return bestScore
 }
