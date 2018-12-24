@@ -45,19 +45,11 @@ func (result *SearchResult) IsDraw() bool {
 	return result.flags&DRAW_FLAG == DRAW_FLAG
 }
 
-const (
-	SEARCH_PHASE_INITIAL   = iota
-	SEARCH_PHASE_QUIESCENT = iota
-)
-
-const QUIESCENT_SEARCH_DEPTH = 3
-
 type SearchConfig struct {
 	move          Move
 	isDebug       bool
 	debugMoves    string
 	startingDepth uint
-	phase         int
 }
 
 type ExternalSearchConfig struct {
@@ -79,7 +71,6 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 		isDebug:       config.isDebug,
 		debugMoves:    config.debugMoves,
 		startingDepth: depth,
-		phase:         SEARCH_PHASE_INITIAL,
 	}, MoveSizeHint{})
 
 	result := SearchResult{}
@@ -129,7 +120,7 @@ func searchAlphaBeta(
 		return 0
 	}
 
-	if (depthLeft == 0 && searchConfig.phase == SEARCH_PHASE_QUIESCENT) || boardState.shouldAbort {
+	if depthLeft == 0 || boardState.shouldAbort {
 		return getLeafResult(boardState, searchConfig, searchStats)
 	}
 
@@ -140,7 +131,7 @@ func searchAlphaBeta(
 	if entry != nil {
 		move := entry.move
 		if _, err := boardState.IsMoveLegal(move); err == nil {
-			if entry.depth >= depthLeft && entry.searchPhase <= searchConfig.phase {
+			if entry.depth >= depthLeft {
 				return entry.score
 			}
 
@@ -149,9 +140,6 @@ func searchAlphaBeta(
 	}
 
 	searchStats.branchNodes++
-	if searchConfig.phase == SEARCH_PHASE_QUIESCENT {
-		searchStats.qBranchNodes++
-	}
 
 	// We'll generate the other moves after we test the hash move
 	// 0 = hash
@@ -162,19 +150,8 @@ func searchAlphaBeta(
 	var moveOrdering [5][]Move
 	moveOrdering[0] = hashMove
 
-	// phase will change below
-	phase := searchConfig.phase
-	searchDepth := depthLeft - 1
-	if searchDepth == 0 && phase == SEARCH_PHASE_INITIAL {
-		searchConfig.phase = SEARCH_PHASE_QUIESCENT
-		// just do this for now
-		searchDepth = QUIESCENT_SEARCH_DEPTH
-	}
-
 	hasLegalMove := false
 
-	// Stupid temporary variable for quiescent search checkmate detection
-	var allMoves []Move
 	bestScore := -INFINITY
 	var bestMove Move
 
@@ -194,12 +171,12 @@ func searchAlphaBeta(
 			searchConfig.move = move
 			searchConfig.isDebug = false
 
-			score := -searchAlphaBeta(boardState, searchStats, &line, searchDepth, currentDepth+1, -beta, -alpha,
+			score := -searchAlphaBeta(boardState, searchStats, &line, depthLeft-1, currentDepth+1, -beta, -alpha,
 				searchConfig, hint)
 			boardState.UnapplyMove(move)
 
 			if score > beta {
-				StoreTranspositionTable(boardState, move, beta, TT_FAIL_HIGH, depthLeft, searchConfig.phase)
+				StoreTranspositionTable(boardState, move, beta, TT_FAIL_HIGH, depthLeft)
 				return beta
 			}
 
@@ -208,11 +185,9 @@ func searchAlphaBeta(
 				bestMove = move
 				if bestScore > alpha {
 					alpha = score
-					if searchConfig.phase != SEARCH_PHASE_QUIESCENT {
-						variation.move[0] = move
-						copy(variation.move[1:], line.move[0:line.numMoves])
-						variation.numMoves = line.numMoves + 1
-					}
+					variation.move[0] = move
+					copy(variation.move[1:], line.move[0:line.numMoves])
+					variation.numMoves = line.numMoves + 1
 				}
 			}
 
@@ -227,46 +202,16 @@ func searchAlphaBeta(
 			// add the other moves now that we're done with hash move
 			listing, hint = GenerateMoveListing(boardState, hint)
 
-			allMoves = listing.moves
-			// You need to be allowed to leave check in quiescent phase
-			if phase == SEARCH_PHASE_QUIESCENT && !boardState.IsInCheck(boardState.offsetToMove) {
-				listing.moves = boardState.FilterChecks(listing.moves)
-			}
-
 			moveOrdering[1] = listing.captures
 			moveOrdering[2] = listing.promotions
-			moveOrdering[4] = listing.moves
-		}
-
-		// Quiescent search already only returns checks in listing.moves
-		if i == 2 && phase == SEARCH_PHASE_INITIAL {
 			moveOrdering[3] = boardState.FilterChecks(moveOrdering[4])
+			moveOrdering[4] = listing.moves
 		}
 	}
 
 	// IF WE HAD NO LEGAL MOVES, GAME IS OVER
 	if !hasLegalMove {
-		if phase == SEARCH_PHASE_INITIAL {
-			bestScore = getNoLegalMoveResult(boardState, currentDepth, searchConfig)
-		} else {
-			// qsearch
-			for _, move := range allMoves {
-				boardState.ApplyMove(move)
-				inCheck := boardState.IsInCheck(oppositeColorOffset(boardState.offsetToMove))
-				boardState.UnapplyMove(move)
-				if !inCheck {
-					hasLegalMove = true
-					break
-				}
-			}
-
-			if hasLegalMove {
-				// some quiescent junk here
-				bestScore = getLeafResult(boardState, searchConfig, searchStats)
-			} else {
-				bestScore = getNoLegalMoveResult(boardState, currentDepth, searchConfig)
-			}
-		}
+		bestScore = getNoLegalMoveResult(boardState, currentDepth, searchConfig)
 	}
 
 	var ttEntryType int
@@ -278,7 +223,7 @@ func searchAlphaBeta(
 		ttEntryType = TT_EXACT
 	}
 
-	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depthLeft, searchConfig.phase)
+	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depthLeft)
 
 	return bestScore
 }
