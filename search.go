@@ -205,8 +205,8 @@ func searchAlphaBeta(
 
 			if isDebug && (strings.Contains(MoveToPrettyString(move, boardState), searchConfig.debugMoves) ||
 				searchConfig.debugMoves == "*") {
-				fmt.Printf("[%d; %s] value=%d pv=%s\n", depthLeft, MoveToString(move, boardState), score,
-					MoveArrayToString(line.move[0:line.numMoves]))
+				fmt.Printf("[%d; %s] value=%d alpha=%d beta=%d pv=%s\n", depthLeft, MoveToString(move), score,
+					alpha, beta, MoveArrayToString(line.move[0:line.numMoves]))
 			}
 		}
 
@@ -223,8 +223,12 @@ func searchAlphaBeta(
 	}
 
 	// IF WE HAD NO LEGAL MOVES, GAME IS OVER
+
 	if !hasLegalMove {
-		bestScore = getNoLegalMoveResult(boardState, currentDepth, searchConfig)
+		score := getNoLegalMoveResult(boardState, currentDepth, searchConfig)
+		StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
+
+		return score
 	}
 
 	var ttEntryType int
@@ -238,7 +242,7 @@ func searchAlphaBeta(
 
 	StoreTranspositionTable(boardState, bestMove, alpha, ttEntryType, depthLeft)
 
-	return bestScore
+	return alpha
 }
 
 func getLeafResult(boardState *BoardState, searchConfig SearchConfig, searchStats *SearchStats) int {
@@ -264,11 +268,18 @@ func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfi
 
 }
 
+<<<<<<< HEAD
 func SearchResultToString(result SearchResult) string {
 	return fmt.Sprintf("%s-%s (value=%s, depth=%d, stats=%s, pv=%s)",
 		SquareToAlgebraicString(result.move.from),
 		SquareToAlgebraicString(result.move.to),
 		SearchValueToString(result),
+=======
+func (result *SearchResult) String() string {
+	return fmt.Sprintf("%s (value=%s, depth=%d, stats=%s, pv=%s)",
+		MoveToString(result.move),
+		SearchValueToString(*result),
+>>>>>>> Search: fix alpha/TT return/store value
 		result.depth,
 		SearchStatsToString(result.stats),
 		result.pv)
