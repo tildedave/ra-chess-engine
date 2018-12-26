@@ -189,7 +189,7 @@ func searchAlphaBeta(
 
 			if score > beta {
 				StoreTranspositionTable(boardState, move, score, TT_FAIL_HIGH, depthLeft)
-				return beta
+				return score
 			}
 
 			if score > bestScore {
@@ -240,9 +240,9 @@ func searchAlphaBeta(
 		ttEntryType = TT_EXACT
 	}
 
-	StoreTranspositionTable(boardState, bestMove, alpha, ttEntryType, depthLeft)
+	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depthLeft)
 
-	return alpha
+	return bestScore
 }
 
 func getLeafResult(boardState *BoardState, searchConfig SearchConfig, searchStats *SearchStats) int {
