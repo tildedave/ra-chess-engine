@@ -6,7 +6,7 @@ import (
 
 type TranspositionEntry struct {
 	move        Move
-	depth       uint
+	depth       int
 	score       int
 	entryType   int
 	searchPhase int
@@ -41,7 +41,7 @@ func (entry *TranspositionEntry) String() string {
 	return fmt.Sprintf("{score=%d, depth=%d, type=%s}", entry.score, entry.depth, entryTypeAsString)
 }
 
-func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType int, depth uint) {
+func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType int, depth int) {
 	entry := TranspositionEntry{score: score, move: move, entryType: entryType, depth: depth}
 	boardState.transpositionTable[boardState.hashKey] = &entry
 }

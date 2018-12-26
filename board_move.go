@@ -2,16 +2,20 @@ package main
 
 import (
 	"errors"
+	"fmt"
 	"strconv"
 )
 
 func (boardState *BoardState) ApplyMove(move Move) {
 	boardState.boardInfoHistory[boardState.moveIndex] = boardState.boardInfo
 
-	capturedPiece := boardState.board[move.to]
-	isCapture := capturedPiece != EMPTY_SQUARE
-	boardState.wasCapture[boardState.moveIndex+1] = isCapture
-	if isCapture {
+	var capturedPiece byte
+	if move.IsCapture(boardState) {
+		capturedPiece = boardState.board[move.to]
+		if capturedPiece&0x0F == KING_MASK {
+			fmt.Println(boardState.ToString())
+			panic("attempted to capture a king")
+		}
 		boardState.captureStack.Push(capturedPiece)
 	}
 

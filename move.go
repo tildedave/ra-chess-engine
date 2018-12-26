@@ -172,18 +172,25 @@ func MoveArrayToString(moveArr []Move) string {
 	return strings.Trim(s, " ")
 }
 
-func MoveArrayToPrettyString(moveArr []Move, boardState *BoardState) string {
+func MoveArrayToPrettyString(moveArr []Move, boardState *BoardState) (string, error) {
 	var s string
+	var err error
+	moves := make([]Move, 0)
+
 	for _, m := range moveArr {
+		if _, err = boardState.IsMoveLegal(m); err != nil {
+			break
+		}
 		s += MoveToPrettyString(m, boardState) + " "
 		boardState.ApplyMove(m)
+		moves = append(moves, m)
 	}
 
-	for i := len(moveArr) - 1; i >= 0; i-- {
-		boardState.UnapplyMove(moveArr[i])
+	for i := len(moves) - 1; i >= 0; i-- {
+		boardState.UnapplyMove(moves[i])
 	}
 
-	return strings.Trim(s, " ")
+	return strings.Trim(s, " "), err
 }
 
 func ParsePrettyMove(moveStr string, boardState *BoardState) (Move, error) {
