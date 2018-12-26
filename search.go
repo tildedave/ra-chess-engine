@@ -14,12 +14,15 @@ var DRAW_FLAG byte = 0x40
 var CHECK_FLAG byte = 0x20
 var THREEFOLD_REP_FLAG byte = 0x10
 
+const QUIESCENT_CHECK_DEPTH = -3
+
 type SearchStats struct {
-	leafNodes    uint
-	branchNodes  uint
-	qBranchNodes uint
-	hashCutoffs  uint
+	leafnodes    uint
+	branchnodes  uint
+	qbranchnodes uint
+	hashcutoffs  uint
 	cutoffs      uint
+	qcutoffs     uint
 }
 
 type SearchResult struct {
@@ -67,7 +70,7 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 
 	stats := SearchStats{}
 	variation := Variation{}
-	score := searchAlphaBeta(boardState, &stats, &variation, depth, 0, -INFINITY, INFINITY, SearchConfig{
+	score := searchAlphaBeta(boardState, &stats, &variation, int(depth), 0, -INFINITY, INFINITY, SearchConfig{
 		isDebug:       config.isDebug,
 		debugMoves:    config.debugMoves,
 		startingDepth: depth,
@@ -87,7 +90,7 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 	result.value = score
 	result.time = (time.Now().UnixNano() - startTime) / 10000000
 	result.move = variation.move[0]
-	result.pv = MoveArrayToPrettyString(variation.move[0:variation.numMoves], boardState)
+	result.pv, _ = MoveArrayToPrettyString(variation.move[0:variation.numMoves], boardState)
 	result.stats = stats
 	result.depth = depth
 
@@ -106,7 +109,7 @@ func searchAlphaBeta(
 	boardState *BoardState,
 	searchStats *SearchStats,
 	variation *Variation,
-	depthLeft uint,
+	depthLeft int,
 	currentDepth uint,
 	alpha int,
 	beta int,
@@ -144,14 +147,18 @@ func searchAlphaBeta(
 		return 0
 	}
 
-	if depthLeft == 0 || boardState.shouldAbort {
-		score := getLeafResult(boardState, searchConfig, searchStats)
+	if boardState.shouldAbort {
+		score := getLeafResult(boardState, searchStats)
 		StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
 
 		return score
 	}
 
-	searchStats.branchNodes++
+	if depthLeft == 0 {
+		return searchQuiescent(boardState, searchStats, variation, depthLeft, currentDepth, alpha, beta, searchConfig, MoveSizeHint{})
+	}
+
+	searchStats.branchnodes++
 
 	// We'll generate the other moves after we test the hash move
 	// 0 = hash
@@ -189,6 +196,10 @@ func searchAlphaBeta(
 
 			if score > beta {
 				StoreTranspositionTable(boardState, move, score, TT_FAIL_HIGH, depthLeft)
+				searchStats.cutoffs++
+				if i == 0 {
+					searchStats.hashcutoffs++
+				}
 				return score
 			}
 
@@ -225,7 +236,7 @@ func searchAlphaBeta(
 	// IF WE HAD NO LEGAL MOVES, GAME IS OVER
 
 	if !hasLegalMove {
-		score := getNoLegalMoveResult(boardState, currentDepth, searchConfig)
+		score := getNoLegalMoveResult(boardState, currentDepth)
 		StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
 
 		return score
@@ -245,9 +256,117 @@ func searchAlphaBeta(
 	return bestScore
 }
 
-func getLeafResult(boardState *BoardState, searchConfig SearchConfig, searchStats *SearchStats) int {
+func searchQuiescent(
+	boardState *BoardState,
+	searchStats *SearchStats,
+	variation *Variation,
+	// depthLeft will always be negative
+	depthLeft int,
+	currentDepth uint,
+	alpha int,
+	beta int,
+	searchConfig SearchConfig,
+	hint MoveSizeHint,
+) int {
+	var line Variation
+	var bestMove Move
+	bestScore := -INFINITY
+
+	// TODO: check hash
+
+	// Evaluate the board to see what the position is without making any quiescent moves.
+	score := getQuiescentLeafResult(boardState, currentDepth, searchStats)
+	if score >= beta {
+		return beta
+	}
+	if score >= alpha {
+		bestScore = score
+		alpha = score
+	}
+
+	var moveOrdering [5][]Move
+	moveListing, hint := GenerateMoveListing(boardState, hint)
+	// TODO: filter only SEE-good captures
+	moveOrdering[0] = moveListing.captures
+	if depthLeft > QUIESCENT_CHECK_DEPTH {
+		moveOrdering[2] = boardState.FilterChecks(moveListing.moves)
+	}
+
+	for _, moves := range moveOrdering {
+		ourOffset := boardState.offsetToMove
+		for _, move := range moves {
+			boardState.ApplyMove(move)
+			if boardState.IsInCheck(ourOffset) {
+				boardState.UnapplyMove(move)
+				continue
+			}
+
+			score := -searchQuiescent(boardState, searchStats, &line, depthLeft-1, currentDepth+1, -beta, -alpha, searchConfig, hint)
+			boardState.UnapplyMove(move)
+
+			if score >= beta {
+				searchStats.cutoffs++
+				searchStats.qcutoffs++
+				// StoreTranspositionTable(boardState, bestMove, score, TT_FAIL_HIGH, depthLeft)
+
+				return beta
+			}
+
+			if score > bestScore {
+				bestScore = score
+				bestMove = move
+				if score > alpha {
+					alpha = score
+					variation.move[0] = move
+					copy(variation.move[1:], line.move[0:line.numMoves])
+					variation.numMoves = line.numMoves + 1
+				}
+			}
+		}
+	}
+
+	var ttEntryType int
+	if bestScore < alpha {
+		// never raised alpha
+		ttEntryType = TT_FAIL_LOW
+	} else {
+		// we raised alpha, so we have an exact match
+		ttEntryType = TT_EXACT
+	}
+	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depthLeft)
+
+	return bestScore
+}
+
+func getQuiescentLeafResult(boardState *BoardState, currentDepth uint, searchStats *SearchStats) int {
+	offsetToCheck := boardState.offsetToMove
+	if boardState.IsInCheck(offsetToCheck) {
+		// TODO this is expensive
+		allMoves := GenerateMoves(boardState)
+		hasLegalMove := false
+
+		for _, move := range allMoves {
+			boardState.ApplyMove(move)
+			if !boardState.IsInCheck(offsetToCheck) {
+				hasLegalMove = true
+			}
+			boardState.UnapplyMove(move)
+			if hasLegalMove {
+				break
+			}
+		}
+
+		if !hasLegalMove {
+			return getNoLegalMoveResult(boardState, currentDepth)
+		}
+	}
+
+	return getLeafResult(boardState, searchStats)
+}
+
+func getLeafResult(boardState *BoardState, searchStats *SearchStats) int {
 	// TODO(perf): use an incremental evaluation state passed in as an argument
-	searchStats.leafNodes++
+	searchStats.leafnodes++
 
 	e := Eval(boardState)
 	if !e.hasMatingMaterial {
@@ -257,7 +376,7 @@ func getLeafResult(boardState *BoardState, searchConfig SearchConfig, searchStat
 	return e.value()
 }
 
-func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfig SearchConfig) int {
+func getNoLegalMoveResult(boardState *BoardState, currentDepth uint) int {
 	if boardState.IsInCheck(boardState.offsetToMove) {
 		// moves to mate = currentDepth
 		return -(CHECKMATE_SCORE - int(currentDepth) + 1)
@@ -268,18 +387,10 @@ func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfi
 
 }
 
-<<<<<<< HEAD
-func SearchResultToString(result SearchResult) string {
-	return fmt.Sprintf("%s-%s (value=%s, depth=%d, stats=%s, pv=%s)",
-		SquareToAlgebraicString(result.move.from),
-		SquareToAlgebraicString(result.move.to),
-		SearchValueToString(result),
-=======
 func (result *SearchResult) String() string {
 	return fmt.Sprintf("%s (value=%s, depth=%d, stats=%s, pv=%s)",
 		MoveToString(result.move),
 		SearchValueToString(*result),
->>>>>>> Search: fix alpha/TT return/store value
 		result.depth,
 		SearchStatsToString(result.stats),
 		result.pv)
@@ -303,17 +414,18 @@ func SearchValueToString(result SearchResult) string {
 }
 
 func SearchStatsToString(stats SearchStats) string {
-	return fmt.Sprintf("[nodes=%d, leafNodes=%d, branchNodes=%d, qBranchNodes=%d, cutoffs=%d, hash cutoffs=%d]",
+	return fmt.Sprintf("[nodes=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, cutoffs=%d, hash cutoffs=%d, qcutoffs=%d]",
 		stats.Nodes(),
-		stats.leafNodes,
-		stats.branchNodes,
-		stats.qBranchNodes,
+		stats.leafnodes,
+		stats.branchnodes,
+		stats.qbranchnodes,
 		stats.cutoffs,
-		stats.hashCutoffs)
+		stats.hashcutoffs,
+		stats.qcutoffs)
 }
 
 func (stats *SearchStats) Nodes() uint {
-	return stats.branchNodes + stats.leafNodes + stats.qBranchNodes
+	return stats.branchnodes + stats.leafnodes + stats.qbranchnodes
 }
 
 // Used to determine if we should extend search
