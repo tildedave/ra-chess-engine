@@ -131,27 +131,30 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions, hint MoveSi
 			case BLACK_OFFSET:
 				otherOffset = WHITE_OFFSET
 			}
-			if !boardState.IsInCheck(otherOffset) {
-				wasValid = true
-
-				if move.IsCapture() {
-					captures++
-				}
-				if move.IsKingsideCastle() || move.IsQueensideCastle() {
-					castles++
-				}
-				if move.IsPromotion() {
-					promotions++
-				}
-
-				info := Perft(boardState, depth-1, options, hint)
-				if options.divide && depth == options.depth {
-					fmt.Printf("%s %d\n", MoveToString(move), info.nodes)
-				}
-				addPerftInfo(&perftInfo, info)
+			if boardState.IsInCheck(otherOffset) {
+				boardState.UnapplyMove(move)
+				continue
 			}
 
+			wasValid = true
+			if boardState.wasCapture[boardState.moveIndex-1] {
+				captures++
+			}
+			if move.IsKingsideCastle() || move.IsQueensideCastle() {
+				castles++
+			}
+			if move.IsPromotion() {
+				promotions++
+			}
+
+			info := Perft(boardState, depth-1, options, hint)
 			boardState.UnapplyMove(move)
+
+			if options.divide && depth == options.depth {
+				fmt.Printf("%s %d\n", MoveToString(move, boardState), info.nodes)
+			}
+			addPerftInfo(&perftInfo, info)
+
 			if depth == 1 && options.perftPrintMoves {
 				if wasValid {
 					fmt.Println(MoveToPrettyString(move, boardState))
@@ -190,7 +193,7 @@ func testMoveLegality(boardState *BoardState, move Move) {
 	if !legal {
 		fmt.Println(err)
 		fmt.Println(boardState.ToString())
-		fmt.Println(MoveToString(move))
+		fmt.Println(MoveToString(move, boardState))
 		panic("Illegal move")
 	}
 }

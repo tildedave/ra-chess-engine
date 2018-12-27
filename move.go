@@ -19,8 +19,10 @@ const PROMOTION_MASK = 0x40 // may not be needed
 const SPECIAL1_MASK = 0x20
 const SPECIAL2_MASK = 0x10
 
-func (m Move) IsCapture() bool {
-	return m.flags&CAPTURE_MASK == CAPTURE_MASK
+// IsCapture returns whether this move is a capture.
+// Due to it checking the board array, it should not be used in any performance-critical places.
+func (m Move) IsCapture(boardState *BoardState) bool {
+	return m.IsEnPassantCapture() || boardState.board[m.to] != EMPTY_SQUARE
 }
 
 func (m Move) IsQueensideCastle() bool {
@@ -59,17 +61,8 @@ func CreateMove(from uint8, to uint8) Move {
 	return m
 }
 
-func CreateCapture(from uint8, to uint8) Move {
-	var m Move
-	m.from = from
-	m.to = to
-	m.flags |= CAPTURE_MASK
-
-	return m
-}
-
 func CreatePromotionCapture(from uint8, to uint8, pieceMask uint8) Move {
-	var m Move = CreateCapture(from, to)
+	var m Move = CreateMove(from, to)
 
 	m.flags |= PROMOTION_MASK | pieceMask
 
@@ -77,8 +70,8 @@ func CreatePromotionCapture(from uint8, to uint8, pieceMask uint8) Move {
 }
 
 func CreateEnPassantCapture(from uint8, to uint8) Move {
-	var m Move = CreateCapture(from, to)
-	m.flags |= SPECIAL1_MASK
+	var m Move = CreateMove(from, to)
+	m.flags |= SPECIAL1_MASK | CAPTURE_MASK
 
 	return m
 }
@@ -111,8 +104,8 @@ func CreatePromotion(from uint8, to uint8, pieceMask uint8) Move {
 	return m
 }
 
-func MoveToString(move Move) string {
-	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK && !move.IsCapture() {
+func MoveToString(move Move, boardState *BoardState) string {
+	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK && !move.IsCapture(boardState) {
 		if move.flags&SPECIAL2_MASK == SPECIAL2_MASK {
 			return "O-O-O"
 		}
@@ -121,7 +114,7 @@ func MoveToString(move Move) string {
 
 	var s string
 	s += SquareToAlgebraicString(move.from)
-	if move.IsCapture() {
+	if move.IsCapture(boardState) {
 		s += "x"
 	} else {
 		s += "-"
@@ -135,7 +128,7 @@ func MoveToString(move Move) string {
 }
 
 func MoveToPrettyString(move Move, boardState *BoardState) string {
-	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK && !move.IsCapture() {
+	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK && !move.IsCapture(boardState) {
 		if move.flags&SPECIAL2_MASK == SPECIAL2_MASK {
 			return "O-O-O"
 		}
@@ -144,7 +137,7 @@ func MoveToPrettyString(move Move, boardState *BoardState) string {
 
 	var p byte = boardState.board[move.from]
 	if p&0x0F == PAWN_MASK {
-		if move.IsCapture() {
+		if move.IsCapture(boardState) {
 			return ColumnToAlgebraicNotation(move.from%8+1) + "x" + SquareToAlgebraicString(move.to)
 		}
 
@@ -161,7 +154,7 @@ func MoveToPrettyString(move Move, boardState *BoardState) string {
 	var s string
 	s += string(pieceToString((p & 0x0F) | WHITE_MASK))
 
-	if move.IsCapture() {
+	if move.IsCapture(boardState) {
 		s += "x"
 	}
 
@@ -242,7 +235,7 @@ func ParsePrettyMove(moveStr string, boardState *BoardState) (Move, error) {
 		p := boardState.PieceAtSquare(candidateMove.from) & 0x0F
 		if (candidateMove.to == toSquare || isKingsideCastle || isQueensideCastle) &&
 			p == piece &&
-			isCapture == candidateMove.IsCapture() &&
+			isCapture == candidateMove.IsCapture(boardState) &&
 			isPromotion == candidateMove.IsPromotion() &&
 			isKingsideCastle == candidateMove.IsKingsideCastle() &&
 			isQueensideCastle == candidateMove.IsQueensideCastle() &&

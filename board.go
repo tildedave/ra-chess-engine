@@ -241,6 +241,7 @@ type BoardState struct {
 	// Internal structures to allow unmaking moves
 	captureStack     byteStack
 	boardInfoHistory [MAX_MOVES]BoardInfo
+	wasCapture       [MAX_MOVES]bool
 	moveIndex        int // 0-based and increases after every move
 
 	// Zobrist hash indices
@@ -602,21 +603,6 @@ func CreateMovesFromBitboard(sq byte, moveBoard uint64) []Move {
 	return moves
 }
 
-// CreateCapturesFromBitboard transforms a bitboard and a square to a slice of moves
-// with the capture flag set.
-// TODO: figure out how to reduce code duplication with CreateMovesFromBitboard (?)
-func CreateCapturesFromBitboard(sq byte, moveBoard uint64) []Move {
-	moves := make([]Move, 0)
-
-	for moveBoard != 0 {
-		destSq := byte(bits.TrailingZeros64(moveBoard))
-		moveBoard ^= 1 << destSq
-		moves = append(moves, CreateCapture(sq, destSq))
-	}
-
-	return moves
-}
-
 func sanityCheckBitboards(move Move, boardState *BoardState) {
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
@@ -674,7 +660,7 @@ func sanityCheckBitboards(move Move, boardState *BoardState) {
 			if isError {
 				fmt.Println(boardState.ToString())
 				fmt.Println(BitboardToString(bitboard))
-				fmt.Println(MoveToString(move))
+				fmt.Println(MoveToString(move, boardState))
 				panic(message)
 			}
 		}

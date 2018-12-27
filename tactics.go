@@ -51,7 +51,6 @@ func RunTacticsFile(epdFile string, variation string, options TacticsOptions) (b
 		if moveToCheck != "" {
 			var moveMatches bool
 			if strings.Contains(moveToCheck, prettyMove) ||
-				strings.Contains(moveToCheck, MoveToString(result.move)) ||
 				strings.Contains(moveToCheck, SquareToAlgebraicString(result.move.from)+SquareToAlgebraicString(result.move.to)) {
 				moveMatches = true
 			}
