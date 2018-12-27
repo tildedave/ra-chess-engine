@@ -184,6 +184,10 @@ func MoveArrayToPrettyString(moveArr []Move, boardState *BoardState) (string, er
 		s += MoveToPrettyString(m, boardState) + " "
 		boardState.ApplyMove(m)
 		moves = append(moves, m)
+
+		if boardState.IsCheckmate() {
+			s = strings.Trim(s, " ") + "#"
+		}
 	}
 
 	for i := len(moves) - 1; i >= 0; i-- {
