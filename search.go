@@ -183,9 +183,9 @@ func searchAlphaBeta(
 				continue
 			}
 
+			offset := boardState.offsetToMove
 			boardState.ApplyMove(move)
-
-			if boardState.IsInCheck(oppositeColorOffset(boardState.offsetToMove)) {
+			if boardState.IsInCheck(offset) {
 				boardState.UnapplyMove(move)
 				continue
 			}
