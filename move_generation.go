@@ -343,7 +343,6 @@ func generatePieceMoves(
 		oppositePiece := boardState.PieceAtSquare(move.to)
 		if oppositePiece != EMPTY_SQUARE {
 			if oppositePiece&0xF0 != p&0xF0 {
-				move.flags |= CAPTURE_MASK
 				listing.captures = append(listing.captures, move)
 			} else {
 				// same color, just skip it
@@ -410,7 +409,7 @@ func generatePawnMoves(
 		otherOccupancies = SetBitboard(otherOccupancies, boardState.boardInfo.enPassantTargetSquare)
 	}
 	pawnAttacks := boardState.moveBitboards.pawnAttacks[offset][sq]
-	captures := CreateCapturesFromBitboard(sq, pawnAttacks&otherOccupancies)
+	captures := CreateMovesFromBitboard(sq, pawnAttacks&otherOccupancies)
 
 	for _, capture := range captures {
 		var destRank = Rank(capture.to)
@@ -427,7 +426,7 @@ func generatePawnMoves(
 			listing.promotions = append(listing.promotions, capture)
 		} else {
 			if capture.to == boardState.boardInfo.enPassantTargetSquare {
-				capture.flags |= SPECIAL1_MASK
+				capture.flags |= SPECIAL1_MASK | CAPTURE_MASK
 			}
 			listing.captures = append(listing.captures, capture)
 		}

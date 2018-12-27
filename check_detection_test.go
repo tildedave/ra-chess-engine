@@ -61,7 +61,7 @@ func TestBlackKingDoesNotCheckWhiteKing(t *testing.T) {
 	var fen string = "r6r/1b2k1bq/8/8/7B/8/8/R3K2R b QK - 3 2"
 	testBoard, _ := CreateBoardStateFromFENString(fen)
 
-	testBoard.ApplyMove(CreateCapture(SQUARE_H7, SQUARE_H4))
+	testBoard.ApplyMove(CreateMove(SQUARE_H7, SQUARE_H4))
 
 	assert.False(t, testBoard.IsInCheck(BLACK_OFFSET))
 }

@@ -183,7 +183,7 @@ FindBestMove:
 					strings.Contains(result.pv, searchConfig.debugMoves) ||
 					searchConfig.debugMoves == "*") {
 					fmt.Printf("[%d; %s] value=%d, result=%s, pv=%s\n", depth,
-						MoveToString(move), result.value, SearchResultToString(result), result.pv)
+						MoveToString(move, boardState), result.value, SearchResultToString(result), result.pv)
 				}
 
 				alpha = Max(alpha, result.value)
@@ -296,8 +296,9 @@ func getNoLegalMoveResult(boardState *BoardState, currentDepth uint, searchConfi
 }
 
 func SearchResultToString(result SearchResult) string {
-	return fmt.Sprintf("%s (value=%s, depth=%d, stats=%s, pv=%s)",
-		MoveToString(result.move),
+	return fmt.Sprintf("%s-%s (value=%s, depth=%d, stats=%s, pv=%s)",
+		SquareToAlgebraicString(result.move.from),
+		SquareToAlgebraicString(result.move.to),
 		SearchValueToString(result),
 		result.depth,
 		SearchStatsToString(result.stats),

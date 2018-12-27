@@ -53,8 +53,7 @@ func TestSearchAvoidMateInOne(t *testing.T) {
 
 	result := Search(&boardState, 1)
 
-	assert.True(t, result.move.IsCapture())
-	assert.Equal(t, Move{from: SQUARE_F5, to: SQUARE_D5, flags: CAPTURE_MASK}, result.move)
+	assert.Equal(t, Move{from: SQUARE_F5, to: SQUARE_D5}, result.move)
 }
 
 func TestSearchWhiteForcesPawnPromotion(t *testing.T) {

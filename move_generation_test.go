@@ -21,11 +21,11 @@ func filterMovesFrom(moves []Move, from uint8) []Move {
 	return filteredMoves
 }
 
-func filterCaptures(moves []Move) []Move {
+func filterCaptures(moves []Move, boardState *BoardState) []Move {
 	var captures []Move
 
 	for _, move := range moves {
-		if move.IsCapture() {
+		if boardState.board[move.to] != EMPTY_SQUARE || move.IsEnPassantCapture() {
 			captures = append(captures, move)
 		}
 	}
@@ -42,7 +42,7 @@ func TestMoveGenerationWorks(t *testing.T) {
 	moves := GenerateMoves(&testBoard)
 
 	movesFromKing := filterMovesFrom(moves, SQUARE_A2)
-	numCaptures := len(filterCaptures(moves))
+	numCaptures := len(filterCaptures(moves, &testBoard))
 
 	assert.Equal(t, 4, len(movesFromKing))
 	assert.Equal(t, 1, numCaptures)
@@ -57,7 +57,7 @@ func TestMoveGenerationFromRook(t *testing.T) {
 
 	moves := GenerateMoves(&testBoard)
 	movesFromRook := filterMovesFrom(moves, SQUARE_A2)
-	numCaptures := len(filterCaptures(moves))
+	numCaptures := len(filterCaptures(moves, &testBoard))
 
 	// total 8 moves: 2 captures, A3 (1 step move), B2, C2, D2, E2, F2
 	assert.Equal(t, 8, len(movesFromRook))
@@ -141,7 +141,7 @@ func TestEnPassantCaptureFromPawn(t *testing.T) {
 	moves := GenerateMoves(&testBoard)
 
 	assert.Equal(t, 2, len(moves))
-	assert.Equal(t, 1, len(filterCaptures(moves)))
+	assert.Equal(t, 1, len(filterCaptures(moves, &testBoard)))
 }
 
 func TestCreateMoveBitboardsPawnAsserts(t *testing.T) {

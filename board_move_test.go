@@ -47,7 +47,7 @@ func TestApplyBlackPawnSingleMove(t *testing.T) {
 	emptyBoard.SetPieceAtSquare(SQUARE_B6, WHITE_MASK|ROOK_MASK)
 	emptyBoard.offsetToMove = BLACK_OFFSET
 
-	emptyBoard.ApplyMove(CreateCapture(SQUARE_A7, SQUARE_B6))
+	emptyBoard.ApplyMove(CreateMove(SQUARE_A7, SQUARE_B6))
 
 	assert.Equal(t, emptyBoard.boardInfo.enPassantTargetSquare, uint8(0))
 }
@@ -99,7 +99,7 @@ func TestApplyCapture(t *testing.T) {
 	assert.Equal(t, SetBitboard(0, SQUARE_A2), testBoard.bitboards.piece[BITBOARD_PAWN_OFFSET])
 	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 
-	m := CreateCapture(SQUARE_A2, SQUARE_B3)
+	m := CreateMove(SQUARE_A2, SQUARE_B3)
 	testBoard.ApplyMove(m)
 
 	assert.Equal(t, EMPTY_SQUARE, testBoard.PieceAtSquare(SQUARE_A2))
@@ -137,8 +137,8 @@ func TestApplyCaptureTwice(t *testing.T) {
 	assert.Equal(t, SetBitboard(0, SQUARE_B3), testBoard.bitboards.piece[BITBOARD_ROOK_OFFSET])
 	assert.Equal(t, SetBitboard(0, SQUARE_C5), testBoard.bitboards.piece[BITBOARD_KNIGHT_OFFSET])
 
-	m1 := CreateCapture(SQUARE_A2, SQUARE_B3)
-	m2 := CreateCapture(SQUARE_C5, SQUARE_B3)
+	m1 := CreateMove(SQUARE_A2, SQUARE_B3)
+	m2 := CreateMove(SQUARE_C5, SQUARE_B3)
 
 	testBoard.ApplyMove(m1)
 

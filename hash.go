@@ -82,10 +82,10 @@ func (boardState *BoardState) CreateHashKey(info *HashInfo) uint64 {
 
 // To be applied after a move has been made, to incrementally update the hash key.
 // For use in search
-func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo BoardInfo, move Move) uint64 {
+func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo BoardInfo, move Move, isCapture bool) uint64 {
 	info := boardState.hashInfo
 
-	if move.IsCapture() {
+	if isCapture {
 		capturePiece := boardState.captureStack.Peek()
 
 		if move.IsEnPassantCapture() {
@@ -159,9 +159,9 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo Board
 // UpdateHashUnapplyMove gives a new hash key as a result of unapplying a move.
 // It should be called _after_ the move has been unprocessed, and the oldBoardInfo
 // should be the board info prior to the move being unprocessed.
-func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo BoardInfo, move Move) uint64 {
+func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo BoardInfo, move Move, isCapture bool) uint64 {
 	info := boardState.hashInfo
-	if move.IsCapture() {
+	if isCapture {
 		// we've already put back the piece since this is done after move is unapplied
 		if move.IsEnPassantCapture() {
 			var pos uint8

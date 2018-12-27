@@ -333,7 +333,7 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 			state.err = errors.New("Illegal move (" + err.Error() + ")")
 		}
 
-		logger.Printf("Applying move %s\n", MoveToString(move))
+		logger.Printf("Applying move %s\n", MoveToString(move, state.boardState))
 		state.boardState.ApplyMove(move)
 		state.moveHistory = append(state.moveHistory, move)
 
@@ -522,15 +522,18 @@ func ParseXboardMove(command string, boardState *BoardState) (Move, error) {
 	}
 
 	isCapture := false
+	isEnPassantCapture := false
 	isKingsideCastle := false
 	isQueensideCastle := false
 
 	fromPiece := boardState.PieceAtSquare(from_sq)
 	destPiece := boardState.PieceAtSquare(to_sq)
 
-	if destPiece != 0 ||
-		(boardState.boardInfo.enPassantTargetSquare == to_sq && boardState.boardInfo.enPassantTargetSquare > 0) {
+	if destPiece != 0 {
 		isCapture = true
+	}
+	if boardState.boardInfo.enPassantTargetSquare == to_sq && boardState.boardInfo.enPassantTargetSquare > 0 {
+		isEnPassantCapture = true
 	}
 
 	if boardState.offsetToMove == WHITE_OFFSET && fromPiece == KING_MASK|WHITE_MASK && from_sq == SQUARE_E1 {
@@ -551,6 +554,8 @@ func ParseXboardMove(command string, boardState *BoardState) (Move, error) {
 		move = CreateKingsideCastle(from_sq, to_sq)
 	} else if isQueensideCastle {
 		move = CreateQueensideCastle(from_sq, to_sq)
+	} else if isEnPassantCapture {
+		move = CreateEnPassantCapture(from_sq, to_sq)
 	} else if promotion != 0 {
 		var pieceMask byte
 		switch promotion {
@@ -568,8 +573,6 @@ func ParseXboardMove(command string, boardState *BoardState) (Move, error) {
 		} else {
 			move = CreatePromotion(from_sq, to_sq, pieceMask)
 		}
-	} else if isCapture {
-		move = CreateCapture(from_sq, to_sq)
 	} else {
 		move = CreateMove(from_sq, to_sq)
 	}
