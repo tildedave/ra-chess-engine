@@ -174,7 +174,7 @@ func searchAlphaBeta(
 
 	hasLegalMove := false
 
-	bestScore := -INFINITY
+	bestScore := -INFINITY + 1
 	var bestMove Move
 
 	for i := 0; i < len(moveOrdering); i++ {
@@ -273,7 +273,7 @@ func searchQuiescent(
 ) int {
 	var line Variation
 	var bestMove Move
-	bestScore := -INFINITY
+	bestScore := -INFINITY + 1
 
 	// TODO: check hash
 
