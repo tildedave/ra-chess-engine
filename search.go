@@ -7,8 +7,6 @@ import (
 	"time"
 )
 
-var _ = fmt.Println
-
 var CHECKMATE_FLAG byte = 0x80
 var DRAW_FLAG byte = 0x40
 var CHECK_FLAG byte = 0x20
@@ -155,7 +153,12 @@ func searchAlphaBeta(
 	}
 
 	if depthLeft == 0 {
-		return searchQuiescent(boardState, searchStats, variation, depthLeft, currentDepth, alpha, beta, searchConfig, hint)
+		score := searchQuiescent(boardState, searchStats, &line, depthLeft, currentDepth, alpha, beta, searchConfig, hint)
+		if score > alpha {
+			copy(variation.move[0:], line.move[0:line.numMoves])
+			variation.numMoves = line.numMoves
+		}
+		return score
 	}
 
 	searchStats.branchnodes++
