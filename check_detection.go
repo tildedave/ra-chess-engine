@@ -105,3 +105,23 @@ func (boardState *BoardState) IsCheckmate() bool {
 
 	return true
 }
+
+func (boardState *BoardState) IsCheckmate() bool {
+	if !boardState.IsInCheck(boardState.offsetToMove) {
+		return false
+	}
+
+	moves := GenerateMoves(boardState)
+	offset := boardState.offsetToMove
+
+	for _, move := range moves {
+		boardState.ApplyMove(move)
+		inCheck := boardState.IsInCheck(offset)
+		boardState.UnapplyMove(move)
+		if !inCheck {
+			return false
+		}
+	}
+
+	return true
+}

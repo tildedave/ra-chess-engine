@@ -98,3 +98,10 @@ func TestFilterChecks(t *testing.T) {
 	assertMovePresent(t, checks, SQUARE_H2, SQUARE_D6)
 	assertMovePresent(t, checks, SQUARE_H2, SQUARE_B2)
 }
+
+func TestKingAttack(t *testing.T) {
+	boardState, _ := CreateBoardStateFromFENString("8/8/5k2/4K3/8/8/8/8 w - - 0 2")
+
+	assert.True(t, boardState.IsInCheck(WHITE_OFFSET))
+	assert.True(t, boardState.IsInCheck(BLACK_OFFSET))
+}
