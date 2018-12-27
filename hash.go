@@ -86,17 +86,19 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo Board
 	info := boardState.hashInfo
 
 	if isCapture {
-		capturePiece := boardState.captureStack.Peek()
-
 		if move.IsEnPassantCapture() {
 			var pos uint8
+			var capturePiece byte
 			if boardState.offsetToMove == BLACK_OFFSET {
 				pos = move.to - 8
+				capturePiece = BLACK_MASK | PAWN_MASK
 			} else {
 				pos = move.to + 8
+				capturePiece = WHITE_MASK | PAWN_MASK
 			}
 			key ^= info.content[pos][capturePiece]
 		} else {
+			capturePiece := boardState.captureStack.Peek()
 			key ^= info.content[move.to][capturePiece]
 		}
 	}

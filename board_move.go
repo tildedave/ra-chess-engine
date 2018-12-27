@@ -150,7 +150,6 @@ func (boardState *BoardState) ApplyMove(move Move) {
 				// logic above didn't do anything since the move wasn't determined
 				// as a capture
 
-				boardState.captureStack.Push(boardState.board[pos])
 				boardState.board[pos] = 0x00
 				boardState.bitboards.color[otherOffset] = FlipBitboard(
 					boardState.bitboards.color[otherOffset],
