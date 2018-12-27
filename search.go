@@ -155,7 +155,7 @@ func searchAlphaBeta(
 	}
 
 	if depthLeft == 0 {
-		return searchQuiescent(boardState, searchStats, variation, depthLeft, currentDepth, alpha, beta, searchConfig, MoveSizeHint{})
+		return searchQuiescent(boardState, searchStats, variation, depthLeft, currentDepth, alpha, beta, searchConfig, hint)
 	}
 
 	searchStats.branchnodes++
@@ -275,7 +275,8 @@ func searchQuiescent(
 	// TODO: check hash
 
 	// Evaluate the board to see what the position is without making any quiescent moves.
-	score := getQuiescentLeafResult(boardState, currentDepth, searchStats)
+	moveListing, hint := GenerateMoveListing(boardState, hint)
+	score := getQuiescentLeafResult(boardState, moveListing, currentDepth, searchStats)
 	if score >= beta {
 		return beta
 	}
@@ -283,9 +284,11 @@ func searchQuiescent(
 		bestScore = score
 		alpha = score
 	}
+	if boardState.shouldAbort {
+		return score
+	}
 
 	var moveOrdering [5][]Move
-	moveListing, hint := GenerateMoveListing(boardState, hint)
 	// TODO: filter only SEE-good captures
 	moveOrdering[0] = moveListing.captures
 	if depthLeft > QUIESCENT_CHECK_DEPTH {
@@ -338,21 +341,21 @@ func searchQuiescent(
 	return bestScore
 }
 
-func getQuiescentLeafResult(boardState *BoardState, currentDepth uint, searchStats *SearchStats) int {
+func getQuiescentLeafResult(boardState *BoardState, moveListing MoveListing, currentDepth uint, searchStats *SearchStats) int {
 	offsetToCheck := boardState.offsetToMove
 	if boardState.IsInCheck(offsetToCheck) {
-		// TODO this is expensive
-		allMoves := GenerateMoves(boardState)
 		hasLegalMove := false
 
-		for _, move := range allMoves {
-			boardState.ApplyMove(move)
-			if !boardState.IsInCheck(offsetToCheck) {
-				hasLegalMove = true
-			}
-			boardState.UnapplyMove(move)
-			if hasLegalMove {
-				break
+		for _, moveList := range [][]Move{moveListing.moves, moveListing.captures, moveListing.promotions} {
+			for _, move := range moveList {
+				boardState.ApplyMove(move)
+				if !boardState.IsInCheck(offsetToCheck) {
+					hasLegalMove = true
+				}
+				boardState.UnapplyMove(move)
+				if hasLegalMove {
+					break
+				}
 			}
 		}
 
