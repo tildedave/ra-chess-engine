@@ -17,7 +17,7 @@ func (boardState *BoardState) GetSquareAttackersBoard(sq byte) uint64 {
 		(boardState.moveBitboards.pawnAttacks[BLACK_OFFSET][sq] & boardState.bitboards.piece[PAWN_MASK]))
 }
 
-func (boardState *BoardState) IsSquareUnderAttack(sq byte, offset int, offsetForOurColor int) bool {
+func (boardState *BoardState) IsSquareUnderAttack(allOccupancies uint64, sq byte, offset int, offsetForOurColor int) bool {
 	occupancy := boardState.bitboards.color[offset]
 
 	if boardState.moveBitboards.knightAttacks[sq].board&boardState.bitboards.piece[KNIGHT_MASK]&occupancy != 0 {
@@ -28,7 +28,6 @@ func (boardState *BoardState) IsSquareUnderAttack(sq byte, offset int, offsetFor
 		return true
 	}
 
-	allOccupancies := occupancy | boardState.bitboards.color[offsetForOurColor]
 	bishopKey := hashKey(allOccupancies, boardState.moveBitboards.bishopMagics[sq])
 
 	if boardState.moveBitboards.bishopAttacks[sq][bishopKey].board&
