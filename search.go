@@ -279,8 +279,6 @@ func searchQuiescent(
 	var bestMove Move
 	bestScore := -INFINITY + 1
 
-	// TODO: check hash
-
 	// Evaluate the board to see what the position is without making any quiescent moves.
 	moveListing, hint := GenerateMoveListing(boardState, hint)
 	score := getQuiescentLeafResult(boardState, moveListing, currentDepth, searchStats)
@@ -296,11 +294,12 @@ func searchQuiescent(
 	}
 
 	var moveOrdering [5][]Move
-	// TODO: filter only SEE-good captures
-	moveOrdering[0] = moveListing.captures
+	moveOrdering[0] = boardState.FilterSEECaptures(moveListing.captures)
 	if depthLeft > QUIESCENT_CHECK_DEPTH {
 		moveOrdering[2] = boardState.FilterChecks(moveListing.moves)
 	}
+
+	searchStats.qbranchnodes++
 
 	for _, moves := range moveOrdering {
 		ourOffset := boardState.offsetToMove
