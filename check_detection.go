@@ -18,7 +18,8 @@ func (boardState *BoardState) IsInCheck(offset int) bool {
 		oppositeColorOffset = WHITE_OFFSET
 	}
 
-	return boardState.IsSquareUnderAttack(kingSq, oppositeColorOffset, offset)
+	allOccupancies := boardState.bitboards.color[WHITE_OFFSET] | boardState.bitboards.color[BLACK_OFFSET]
+	return boardState.IsSquareUnderAttack(allOccupancies, kingSq, oppositeColorOffset, offset)
 }
 
 func (boardState *BoardState) FilterChecks(moves []Move) []Move {
@@ -61,25 +62,46 @@ func (boardState *BoardState) FilterChecks(moves []Move) []Move {
 }
 
 func (boardState *BoardState) TestCastleLegality(move Move) bool {
+	allOccupancies := boardState.bitboards.color[WHITE_OFFSET] | boardState.bitboards.color[BLACK_OFFSET]
 	if boardState.offsetToMove == WHITE_OFFSET {
 		if move.IsKingsideCastle() {
 			// test	if F1 is being attacked
-			return !boardState.IsSquareUnderAttack(SQUARE_F1, BLACK_OFFSET, WHITE_OFFSET) &&
-				!boardState.IsSquareUnderAttack(SQUARE_E1, BLACK_OFFSET, WHITE_OFFSET)
+			return !boardState.IsSquareUnderAttack(allOccupancies, SQUARE_F1, BLACK_OFFSET, WHITE_OFFSET) &&
+				!boardState.IsSquareUnderAttack(allOccupancies, SQUARE_E1, BLACK_OFFSET, WHITE_OFFSET)
 		}
 
 		// test	if B1 or C1 are being attacked
-		return !boardState.IsSquareUnderAttack(SQUARE_D1, BLACK_OFFSET, WHITE_OFFSET) &&
-			!boardState.IsSquareUnderAttack(SQUARE_C1, BLACK_OFFSET, WHITE_OFFSET) &&
-			!boardState.IsSquareUnderAttack(SQUARE_E1, BLACK_OFFSET, WHITE_OFFSET)
+		return !boardState.IsSquareUnderAttack(allOccupancies, SQUARE_D1, BLACK_OFFSET, WHITE_OFFSET) &&
+			!boardState.IsSquareUnderAttack(allOccupancies, SQUARE_C1, BLACK_OFFSET, WHITE_OFFSET) &&
+			!boardState.IsSquareUnderAttack(allOccupancies, SQUARE_E1, BLACK_OFFSET, WHITE_OFFSET)
 	}
 
 	if move.IsKingsideCastle() {
-		return !boardState.IsSquareUnderAttack(SQUARE_F8, WHITE_OFFSET, BLACK_OFFSET) &&
-			!boardState.IsSquareUnderAttack(SQUARE_E8, WHITE_OFFSET, BLACK_OFFSET)
+		return !boardState.IsSquareUnderAttack(allOccupancies, SQUARE_F8, WHITE_OFFSET, BLACK_OFFSET) &&
+			!boardState.IsSquareUnderAttack(allOccupancies, SQUARE_E8, WHITE_OFFSET, BLACK_OFFSET)
 	}
 
-	return !boardState.IsSquareUnderAttack(SQUARE_D8, WHITE_OFFSET, BLACK_OFFSET) &&
-		!boardState.IsSquareUnderAttack(SQUARE_C8, WHITE_OFFSET, BLACK_OFFSET) &&
-		!boardState.IsSquareUnderAttack(SQUARE_E8, WHITE_OFFSET, BLACK_OFFSET)
+	return !boardState.IsSquareUnderAttack(allOccupancies, SQUARE_D8, WHITE_OFFSET, BLACK_OFFSET) &&
+		!boardState.IsSquareUnderAttack(allOccupancies, SQUARE_C8, WHITE_OFFSET, BLACK_OFFSET) &&
+		!boardState.IsSquareUnderAttack(allOccupancies, SQUARE_E8, WHITE_OFFSET, BLACK_OFFSET)
+}
+
+func (boardState *BoardState) IsCheckmate() bool {
+	if !boardState.IsInCheck(boardState.offsetToMove) {
+		return false
+	}
+
+	moves := GenerateMoves(boardState)
+	offset := boardState.offsetToMove
+
+	for _, move := range moves {
+		boardState.ApplyMove(move)
+		inCheck := boardState.IsInCheck(offset)
+		boardState.UnapplyMove(move)
+		if !inCheck {
+			return false
+		}
+	}
+
+	return true
 }
