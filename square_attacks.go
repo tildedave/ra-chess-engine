@@ -1,9 +1,6 @@
 package main
 
-func (boardState *BoardState) GetSquareAttackersBoard(sq byte) uint64 {
-	whiteOccupancies := boardState.bitboards.color[WHITE_OFFSET]
-	blackOccupancies := boardState.bitboards.color[BLACK_OFFSET]
-	allOccupancies := whiteOccupancies | blackOccupancies
+func (boardState *BoardState) GetSquareAttackersBoard(allOccupancies uint64, sq byte) uint64 {
 	bishopKey := hashKey(allOccupancies, boardState.moveBitboards.bishopMagics[sq])
 	rookKey := hashKey(allOccupancies, boardState.moveBitboards.rookMagics[sq])
 	bishopQueens := boardState.bitboards.piece[BISHOP_MASK] | boardState.bitboards.piece[QUEEN_MASK]

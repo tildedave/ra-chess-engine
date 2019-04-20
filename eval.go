@@ -49,7 +49,7 @@ type BoardEval struct {
 	hasMatingMaterial bool
 }
 
-var materialScore = [7]int{
+var MATERIAL_SCORE = [7]int{
 	0, PAWN_EVAL_SCORE, KNIGHT_EVAL_SCORE, BISHOP_EVAL_SCORE, ROOK_EVAL_SCORE, QUEEN_EVAL_SCORE, 0,
 }
 
@@ -97,8 +97,8 @@ func Eval(boardState *BoardState) BoardEval {
 		pieceBoard := boardState.bitboards.piece[pieceMask]
 		whitePieceBoard := whiteOccupancy & pieceBoard
 		blackPieceBoard := blackOccupancy & pieceBoard
-		whiteMaterial += bits.OnesCount64(whitePieceBoard) * materialScore[pieceMask]
-		blackMaterial += bits.OnesCount64(blackPieceBoard) * materialScore[pieceMask]
+		whiteMaterial += bits.OnesCount64(whitePieceBoard) * MATERIAL_SCORE[pieceMask]
+		blackMaterial += bits.OnesCount64(blackPieceBoard) * MATERIAL_SCORE[pieceMask]
 
 		if pieceMask == PAWN_MASK {
 			whitePawns := pieceBoard & whiteOccupancy
@@ -168,9 +168,9 @@ func Eval(boardState *BoardState) BoardEval {
 		// prioritize center control
 
 		// D4, E4, D5, E5
-
+		allOccupancies := boardState.GetAllOccupanciesBitboard()
 		for _, sq := range [4]byte{SQUARE_D4, SQUARE_E4, SQUARE_D5, SQUARE_E5} {
-			squareAttackBoard := boardState.GetSquareAttackersBoard(sq)
+			squareAttackBoard := boardState.GetSquareAttackersBoard(allOccupancies, sq)
 
 			centerControl += (PIECE_ATTACKS_CENTER_EVAL_SCORE * bits.OnesCount64(squareAttackBoard&whiteOccupancy))
 			centerControl -= (PIECE_ATTACKS_CENTER_EVAL_SCORE * bits.OnesCount64(squareAttackBoard&blackOccupancy))

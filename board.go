@@ -573,6 +573,10 @@ func (boardState *BoardState) SetPieceAtSquare(sq byte, p byte) {
 	}
 }
 
+func (boardState *BoardState) GetAllOccupanciesBitboard() uint64 {
+	return boardState.bitboards.color[WHITE_OFFSET] | boardState.bitboards.color[BLACK_OFFSET]
+}
+
 func (boardState *BoardState) IsThreefoldRepetition() bool {
 	currentHash := boardState.hashKey
 	num := 0
