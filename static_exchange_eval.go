@@ -53,3 +53,17 @@ func StaticExchangeEvaluation(boardState *BoardState, destSq byte, fromPiece byt
 
 	return gain[0]
 }
+
+func (boardState *BoardState) FilterSEECaptures(captures []Move) []Move {
+	goodCaptures := make([]Move, 0, len(captures))
+	for _, capture := range captures {
+		fromPiece := boardState.board[capture.from] & 0x0F
+		if fromPiece == PAWN_MASK {
+			goodCaptures = append(goodCaptures, capture)
+		} else if StaticExchangeEvaluation(boardState, capture.to, fromPiece, capture.from) > 0 {
+			goodCaptures = append(goodCaptures, capture)
+		}
+	}
+
+	return goodCaptures
+}
