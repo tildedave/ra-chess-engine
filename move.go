@@ -163,15 +163,6 @@ func MoveToPrettyString(move Move, boardState *BoardState) string {
 	return s
 }
 
-func MoveArrayToString(moveArr []Move) string {
-	var s string
-	for _, m := range moveArr {
-		s += MoveToString(m) + " "
-	}
-
-	return strings.Trim(s, " ")
-}
-
 func MoveArrayToPrettyString(moveArr []Move, boardState *BoardState) (string, error) {
 	var s string
 	var err error

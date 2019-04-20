@@ -219,8 +219,12 @@ func searchAlphaBeta(
 
 			if isDebug && (strings.Contains(MoveToPrettyString(move, boardState), searchConfig.debugMoves) ||
 				searchConfig.debugMoves == "*") {
-				fmt.Printf("[%d; %s] value=%d alpha=%d beta=%d pv=%s\n", depthLeft, MoveToString(move), score,
-					alpha, beta, MoveArrayToString(line.move[0:line.numMoves]))
+				str, err := MoveArrayToPrettyString(line.move[0:line.numMoves], boardState)
+				if err != nil {
+					panic(err)
+				}
+				fmt.Printf("[%d; %s] value=%d alpha=%d beta=%d pv=%s\n",
+					depthLeft, MoveToString(move, boardState), score, alpha, beta, str)
 			}
 		}
 
@@ -395,7 +399,7 @@ func getNoLegalMoveResult(boardState *BoardState, currentDepth uint) int {
 
 func (result *SearchResult) String() string {
 	return fmt.Sprintf("%s (value=%s, depth=%d, stats=%s, pv=%s)",
-		MoveToString(result.move),
+		MoveToXboardString(result.move),
 		SearchValueToString(*result),
 		result.depth,
 		SearchStatsToString(result.stats),
