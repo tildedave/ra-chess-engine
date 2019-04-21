@@ -196,7 +196,7 @@ func thinkAndChooseMove(
 				thinkingChan <- ThinkingOutput{
 					ply:   bestResult.depth,
 					score: bestResult.value,
-					time:  bestResult.time,
+					time:  bestResult.time.Nanoseconds(),
 					nodes: bestResult.stats.Nodes(),
 					pv:    bestResult.pv,
 				}

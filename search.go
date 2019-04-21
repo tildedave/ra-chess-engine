@@ -27,7 +27,7 @@ type SearchResult struct {
 	move  Move
 	value int
 	flags byte
-	time  int64
+	time  time.Duration
 	depth uint
 	stats SearchStats
 	pv    string
@@ -64,7 +64,7 @@ func Search(boardState *BoardState, depth uint) SearchResult {
 }
 
 func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchConfig) SearchResult {
-	startTime := time.Now().UnixNano()
+	startTime := time.Now()
 
 	stats := SearchStats{}
 	variation := Variation{}
@@ -86,7 +86,7 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 		result.flags = CHECKMATE_FLAG
 	}
 	result.value = score
-	result.time = (time.Now().UnixNano() - startTime) / 10000000
+	result.time = time.Now().Sub(startTime)
 	result.move = variation.move[0]
 	result.pv, _ = MoveArrayToPrettyString(variation.move[0:variation.numMoves], boardState)
 	result.stats = stats
@@ -397,8 +397,9 @@ func getNoLegalMoveResult(boardState *BoardState, currentDepth uint) int {
 }
 
 func (result *SearchResult) String() string {
-	return fmt.Sprintf("%s (value=%s, depth=%d, stats=%s, pv=%s)",
+	return fmt.Sprintf("%s (time=%s, value=%s, depth=%d, stats=%s, pv=%s)",
 		MoveToXboardString(result.move),
+		result.time.String(),
 		SearchValueToString(*result),
 		result.depth,
 		SearchStatsToString(result.stats),
