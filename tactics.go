@@ -105,8 +105,12 @@ func RunTacticsFen(fen string, variation string, options TacticsOptions) (string
 	config.isDebug = options.tacticsDebug != ""
 	config.debugMoves = options.tacticsDebug
 	config.onlySearchDepth = options.tacticsDepth
+	thinkingTimeMs := options.thinkingtimeMs
+	if options.tacticsDepth != 0 {
+		thinkingTimeMs = INFINITY
+	}
 
-	go thinkAndChooseMove(&boardState, options.thinkingtimeMs, config, ch, thinkingChan)
+	go thinkAndChooseMove(&boardState, thinkingTimeMs, config, ch, thinkingChan)
 	result := <-ch
 
 	output.Flush()
