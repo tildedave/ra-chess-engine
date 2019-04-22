@@ -15,12 +15,13 @@ var THREEFOLD_REP_FLAG byte = 0x10
 const QUIESCENT_CHECK_DEPTH = -3
 
 type SearchStats struct {
-	leafnodes    uint
-	branchnodes  uint
-	qbranchnodes uint
-	hashcutoffs  uint
-	cutoffs      uint
-	qcutoffs     uint
+	leafnodes         uint
+	branchnodes       uint
+	qbranchnodes      uint
+	hashcutoffs       uint
+	cutoffs           uint
+	qcutoffs          uint
+	qcapturesfiltered uint
 }
 
 type SearchResult struct {
@@ -295,6 +296,7 @@ func searchQuiescent(
 
 	var moveOrdering [5][]Move
 	moveOrdering[0] = boardState.FilterSEECaptures(moveListing.captures)
+	searchStats.qcapturesfiltered += uint(len(moveListing.captures) - len(moveOrdering[0]))
 	if depthLeft > QUIESCENT_CHECK_DEPTH {
 		moveOrdering[2] = boardState.FilterChecks(moveListing.moves)
 	}
@@ -424,14 +426,15 @@ func SearchValueToString(result SearchResult) string {
 }
 
 func SearchStatsToString(stats SearchStats) string {
-	return fmt.Sprintf("[nodes=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, cutoffs=%d, hash cutoffs=%d, qcutoffs=%d]",
+	return fmt.Sprintf("[nodes=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, cutoffs=%d, hash cutoffs=%d, qcutoffs=%d, qcapturesfiltered=%d]",
 		stats.Nodes(),
 		stats.leafnodes,
 		stats.branchnodes,
 		stats.qbranchnodes,
 		stats.cutoffs,
 		stats.hashcutoffs,
-		stats.qcutoffs)
+		stats.qcutoffs,
+		stats.qcapturesfiltered)
 }
 
 func (stats *SearchStats) Nodes() uint {
