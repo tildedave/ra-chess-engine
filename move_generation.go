@@ -251,6 +251,52 @@ func GenerateMoveListing(boardState *BoardState, hint MoveSizeHint) (MoveListing
 	return listing, hint
 }
 
+func GenerateQuiescentMoveListing(boardState *BoardState, hint MoveSizeHint) (MoveListing, MoveSizeHint) {
+	// for now only generate captures
+	listing := createMoveListing(hint)
+	precomputedInfo := generatePrecomputedInfo(boardState)
+	occupancy := precomputedInfo.ourOccupancy
+	moveBitboards := boardState.moveBitboards
+
+	for occupancy != 0 {
+		sq := byte(bits.TrailingZeros64(occupancy))
+		fromPiece := boardState.board[sq] & 0x0F
+		var attackBoard uint64
+		switch fromPiece {
+		case PAWN_MASK:
+			attackBoard = moveBitboards.pawnAttacks[precomputedInfo.offset][sq]
+		case KNIGHT_MASK:
+			attackBoard = moveBitboards.knightAttacks[sq].board
+		case KING_MASK:
+			attackBoard = moveBitboards.kingAttacks[sq].board
+		case BISHOP_MASK:
+			bishopKey := hashKey(precomputedInfo.allOccupancy, moveBitboards.bishopMagics[sq])
+			attackBoard = moveBitboards.bishopAttacks[sq][bishopKey].board
+		case ROOK_MASK:
+			rookKey := hashKey(precomputedInfo.allOccupancy, moveBitboards.rookMagics[sq])
+			attackBoard = moveBitboards.rookAttacks[sq][rookKey].board
+		case QUEEN_MASK:
+			rookKey := hashKey(precomputedInfo.allOccupancy, moveBitboards.rookMagics[sq])
+			bishopKey := hashKey(precomputedInfo.allOccupancy, moveBitboards.bishopMagics[sq])
+			attackBoard = (moveBitboards.rookAttacks[sq][rookKey].board | moveBitboards.bishopAttacks[sq][bishopKey].board)
+		}
+
+		generateCapturesFromBoard(&listing, sq, attackBoard&precomputedInfo.otherOccupancy)
+
+		occupancy ^= 1 << sq
+	}
+
+	return listing, MoveSizeHint{numCaptures: len(listing.captures)}
+}
+
+func generateCapturesFromBoard(moveListing *MoveListing, from byte, attackBoard uint64) {
+	for attackBoard != 0 {
+		to := byte(bits.TrailingZeros64(attackBoard))
+		moveListing.captures = append(moveListing.captures, CreateMove(from, to))
+		attackBoard ^= 1 << to
+	}
+}
+
 func generatePrecomputedInfo(boardState *BoardState) *PrecomputedInfo {
 	precomputedInfo := PrecomputedInfo{}
 	switch boardState.offsetToMove {

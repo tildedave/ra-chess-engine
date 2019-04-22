@@ -18,6 +18,11 @@ func (boardState *BoardState) IsInCheck(offset int) bool {
 		oppositeColorOffset = WHITE_OFFSET
 	}
 
+	// Quiescent search can end up capturing the king, we need to prevent this somehow.  This is one way /shrug
+	if kingSq == 64 {
+		return true
+	}
+
 	allOccupancies := boardState.bitboards.color[WHITE_OFFSET] | boardState.bitboards.color[BLACK_OFFSET]
 	return boardState.IsSquareUnderAttack(allOccupancies, kingSq, oppositeColorOffset, offset)
 }
