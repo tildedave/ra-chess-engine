@@ -12,8 +12,6 @@ var DRAW_FLAG byte = 0x40
 var CHECK_FLAG byte = 0x20
 var THREEFOLD_REP_FLAG byte = 0x10
 
-const QUIESCENT_CHECK_DEPTH = -3
-
 type SearchStats struct {
 	leafnodes         uint
 	branchnodes       uint
@@ -281,8 +279,7 @@ func searchQuiescent(
 	bestScore := -INFINITY + 1
 
 	// Evaluate the board to see what the position is without making any quiescent moves.
-	moveListing, hint := GenerateMoveListing(boardState, hint)
-	score := getQuiescentLeafResult(boardState, moveListing, currentDepth, searchStats)
+	score := getLeafResult(boardState, searchStats)
 	if score >= beta {
 		return beta
 	}
@@ -294,13 +291,10 @@ func searchQuiescent(
 		return score
 	}
 
+	moveListing, hint := GenerateMoveListing(boardState, hint)
 	var moveOrdering [5][]Move
 	moveOrdering[0] = boardState.FilterSEECaptures(moveListing.captures)
 	searchStats.qcapturesfiltered += uint(len(moveListing.captures) - len(moveOrdering[0]))
-	if depthLeft > QUIESCENT_CHECK_DEPTH {
-		moveOrdering[2] = boardState.FilterChecks(moveListing.moves)
-	}
-
 	searchStats.qbranchnodes++
 
 	for _, moves := range moveOrdering {
@@ -347,32 +341,6 @@ func searchQuiescent(
 	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depthLeft)
 
 	return bestScore
-}
-
-func getQuiescentLeafResult(boardState *BoardState, moveListing MoveListing, currentDepth uint, searchStats *SearchStats) int {
-	offsetToCheck := boardState.offsetToMove
-	if boardState.IsInCheck(offsetToCheck) {
-		hasLegalMove := false
-
-		for _, moveList := range [][]Move{moveListing.moves, moveListing.captures, moveListing.promotions} {
-			for _, move := range moveList {
-				boardState.ApplyMove(move)
-				if !boardState.IsInCheck(offsetToCheck) {
-					hasLegalMove = true
-				}
-				boardState.UnapplyMove(move)
-				if hasLegalMove {
-					break
-				}
-			}
-		}
-
-		if !hasLegalMove {
-			return getNoLegalMoveResult(boardState, currentDepth)
-		}
-	}
-
-	return getLeafResult(boardState, searchStats)
 }
 
 func getLeafResult(boardState *BoardState, searchStats *SearchStats) int {
