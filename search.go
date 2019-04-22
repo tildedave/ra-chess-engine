@@ -291,7 +291,7 @@ func searchQuiescent(
 		return score
 	}
 
-	moveListing, hint := GenerateMoveListing(boardState, hint)
+	moveListing, hint := GenerateQuiescentMoveListing(boardState, hint)
 	var moveOrdering [5][]Move
 	moveOrdering[0] = boardState.FilterSEECaptures(moveListing.captures)
 	searchStats.qcapturesfiltered += uint(len(moveListing.captures) - len(moveOrdering[0]))
