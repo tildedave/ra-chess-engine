@@ -600,3 +600,16 @@ func MoveToXboardString(move Move) string {
 	}
 	return fmt.Sprintf("%s%s", from, to)
 }
+
+func MoveArrayToXboardString(moves []Move) string {
+	str := ""
+	for i, move := range moves {
+		if i != 0 {
+			str += " "
+		}
+
+		str += MoveToXboardString(move)
+	}
+	return str
+
+}
