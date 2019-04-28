@@ -190,6 +190,10 @@ func searchAlphaBeta(
 			}
 			hasLegalMove = true
 			searchConfig.move = move
+			var nodesStarting uint
+			if isDebug {
+				nodesStarting = searchStats.Nodes()
+			}
 			searchConfig.isDebug = false
 
 			score := -searchAlphaBeta(boardState, searchStats, &line, depthLeft-1, currentDepth+1, -beta, -alpha,
@@ -218,12 +222,9 @@ func searchAlphaBeta(
 
 			if isDebug && (strings.Contains(MoveToPrettyString(move, boardState), searchConfig.debugMoves) ||
 				searchConfig.debugMoves == "*") {
-				str, err := MoveArrayToPrettyString(line.move[0:line.numMoves], boardState)
-				if err != nil {
-					panic(err)
-				}
-				fmt.Printf("[%d; %s] value=%d alpha=%d beta=%d pv=%s\n",
-					depthLeft, MoveToString(move, boardState), score, alpha, beta, str)
+				str := MoveArrayToXboardString(variation.move[0:variation.numMoves])
+				fmt.Printf("[%d; %s] value=%d nodes=%d alpha=%d beta=%d pv=%s\n",
+					depthLeft, MoveToString(move, boardState), score, searchStats.Nodes()-nodesStarting, alpha, beta, str)
 			}
 		}
 
