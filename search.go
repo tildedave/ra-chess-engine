@@ -231,7 +231,7 @@ func searchAlphaBeta(
 		if i == 0 {
 			var listing MoveListing
 			// add the other moves now that we're done with hash move
-			listing, hint = GenerateMoveListing(boardState, hint)
+			listing, hint = GenerateMoveListing(boardState, hint, true)
 
 			moveOrdering[1] = listing.captures
 			moveOrdering[2] = listing.promotions

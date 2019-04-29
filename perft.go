@@ -103,7 +103,7 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions, hint MoveSi
 		return perftInfo
 	}
 
-	listing, hint := GenerateMoveListing(boardState, hint)
+	listing, hint := GenerateMoveListing(boardState, hint, false)
 	captures := uint(0)
 	castles := uint(0)
 	promotions := uint(0)

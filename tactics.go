@@ -94,6 +94,7 @@ func RunTacticsFen(fen string, variation string, options TacticsOptions) (string
 
 	output.Write([]byte(boardState.ToString()))
 	output.WriteRune('\n')
+	output.Flush()
 
 	go func() {
 		for thinkingOutput := range thinkingChan {

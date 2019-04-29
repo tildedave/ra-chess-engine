@@ -44,6 +44,16 @@ type MoveBitboards struct {
 	bishopAttacks [64][]SquareAttacks
 }
 
+// Lifted from Apep https://github.com/tildedave/apep-chess-engine/blob/master/src/movegen.cpp#L8
+var mvvPriority = [8][8]int{
+	{0, 6, 12, 0, 0, 18, 24, 30}, // PAWN CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+	{0, 5, 11, 0, 0, 17, 23, 29}, // KNIGHT CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+	{0, 4, 10, 0, 0, 16, 22, 28}, // BISHOP CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+	{0, 3, 9, 0, 0, 15, 21, 27},  // ROOK CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+	{0, 2, 8, 0, 0, 14, 20, 26},  // QUEEN CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+	{0, 1, 7, 0, 0, 13, 19, 25},  // KING CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+}
+
 func CreateMoveBitboards() MoveBitboards {
 	var pawnMoves [2][64]uint64
 	var pawnAttacks [2][64]uint64
@@ -232,7 +242,11 @@ func createMoveListing(hint MoveSizeHint) MoveListing {
 	return listing
 }
 
-func GenerateMoveListing(boardState *BoardState, hint MoveSizeHint) (MoveListing, MoveSizeHint) {
+// GenerateMoveListing generates a MoveListing structure and a MoveSizeHint structure.  If the
+// applyOrdering flag is passed, the ordering will be sorted in an attempt to choose good moves
+// first.
+// MoveSizeHint is passed in and returned to avoid the cost of slice recomputation.
+func GenerateMoveListing(boardState *BoardState, hint MoveSizeHint, applyOrdering bool) (MoveListing, MoveSizeHint) {
 	listing := createMoveListing(hint)
 	precomputedInfo := generatePrecomputedInfo(boardState)
 	occupancy := precomputedInfo.ourOccupancy
@@ -248,6 +262,25 @@ func GenerateMoveListing(boardState *BoardState, hint MoveSizeHint) (MoveListing
 		numCaptures:   len(listing.captures),
 		numPromotions: len(listing.promotions),
 	}
+
+	if applyOrdering {
+		captureQueue := make(MovePriorityQueue, 0, len(listing.captures))
+
+		for _, capture := range listing.captures {
+			fromPiece := boardState.PieceAtSquare(capture.from)
+			toPiece := boardState.PieceAtSquare(capture.to)
+			priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
+			item := Item{move: capture, score: priority}
+			captureQueue.Push(&item)
+		}
+
+		listing.captures = make([]Move, 0, captureQueue.Len())
+		for captureQueue.Len() > 0 {
+			item := captureQueue.Pop().(*Item)
+			listing.captures = append(listing.captures, item.move)
+		}
+	}
+
 	return listing, hint
 }
 
@@ -330,7 +363,7 @@ func GenerateMovesFromSquare(
 }
 
 func GenerateMoves(boardState *BoardState) []Move {
-	listing, _ := GenerateMoveListing(boardState, MoveSizeHint{})
+	listing, _ := GenerateMoveListing(boardState, MoveSizeHint{}, true)
 
 	l1 := len(listing.promotions)
 	l2 := len(listing.captures)
