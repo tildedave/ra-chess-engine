@@ -158,9 +158,6 @@ func thinkAndChooseMove(
 
 	go func() {
 		var i uint = 1
-		if config.onlySearchDepth > 0 {
-			i = config.onlySearchDepth
-		}
 		var res SearchResult
 
 		for {
@@ -206,8 +203,8 @@ func thinkAndChooseMove(
 					break ThinkingLoop
 				}
 
-				if bestResult.move.from != bestResult.move.to && config.onlySearchDepth > 0 {
-					logger.Printf("Only wanted to search depth %d, done", config.onlySearchDepth)
+				if bestResult.move.from != bestResult.move.to && bestResult.depth == config.searchToDepth {
+					logger.Printf("Only wanted to search depth %d, done", config.searchToDepth)
 					break ThinkingLoop
 				}
 

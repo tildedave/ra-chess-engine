@@ -53,9 +53,9 @@ type SearchConfig struct {
 }
 
 type ExternalSearchConfig struct {
-	isDebug         bool
-	debugMoves      string
-	onlySearchDepth uint
+	isDebug       bool
+	debugMoves    string
+	searchToDepth uint
 }
 
 func Search(boardState *BoardState, depth uint) SearchResult {

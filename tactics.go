@@ -107,7 +107,7 @@ func RunTacticsFen(fen string, variation string, options TacticsOptions) (string
 	config := ExternalSearchConfig{}
 	config.isDebug = options.tacticsDebug != ""
 	config.debugMoves = options.tacticsDebug
-	config.onlySearchDepth = options.tacticsDepth
+	config.searchToDepth = options.tacticsDepth
 	thinkingTimeMs := options.thinkingtimeMs
 	if options.tacticsDepth != 0 {
 		thinkingTimeMs = INFINITY
