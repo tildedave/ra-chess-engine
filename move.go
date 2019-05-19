@@ -264,11 +264,17 @@ func VariationToMoveList(variation string, boardState *BoardState) ([]Move, erro
 		move, err = ParsePrettyMove(moveStr, boardState)
 
 		if err != nil {
-			break
-		} else {
-			moves = append(moves, move)
-			boardState.ApplyMove(move)
+			move, err = ParseXboardMove(moveStr, boardState)
 		}
+
+		if err != nil {
+			err = fmt.Errorf("Unable to parse %s into a move (attempted pretty move and xboard move)",
+				moveStr)
+			break
+		}
+
+		moves = append(moves, move)
+		boardState.ApplyMove(move)
 	}
 
 	for i := len(moves) - 1; i >= 0; i-- {
