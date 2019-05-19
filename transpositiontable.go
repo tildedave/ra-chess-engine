@@ -28,6 +28,19 @@ func ProbeTranspositionTable(boardState *BoardState) *TranspositionEntry {
 	return boardState.transpositionTable[boardState.hashKey]
 }
 
+func EntryTypeToString(entryType int) string {
+	switch entryType {
+	case TT_FAIL_HIGH:
+		return "TT_FAIL_HIGH"
+	case TT_FAIL_LOW:
+		return "TT_FAIL_LOW"
+	case TT_EXACT:
+		return "TT_EXACT"
+	default:
+		return ""
+	}
+}
+
 func (entry *TranspositionEntry) String() string {
 	var entryTypeAsString string
 	switch entry.entryType {

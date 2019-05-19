@@ -37,6 +37,12 @@ type Variation struct {
 	numMoves uint
 }
 
+func CopyVariation(line *Variation, move Move, restLine *Variation) {
+	line.move[0] = move
+	copy(line.move[1:], restLine.move[0:restLine.numMoves])
+	line.numMoves = restLine.numMoves + 1
+}
+
 func (result *SearchResult) IsCheckmate() bool {
 	return result.flags&CHECKMATE_FLAG == CHECKMATE_FLAG
 }
@@ -182,6 +188,9 @@ func searchAlphaBeta(
 				continue
 			}
 
+			debugMode := isDebug && (strings.Contains(MoveToPrettyString(move, boardState), searchConfig.debugMoves) ||
+				searchConfig.debugMoves == "*")
+
 			offset := boardState.offsetToMove
 			boardState.ApplyMove(move)
 			if boardState.IsInCheck(offset) {
@@ -191,14 +200,32 @@ func searchAlphaBeta(
 			hasLegalMove = true
 			searchConfig.move = move
 			var nodesStarting uint
-			if isDebug {
+			var hashKey uint64
+
+			if debugMode {
 				nodesStarting = searchStats.Nodes()
+				hashKey = boardState.hashKey
 			}
 			searchConfig.isDebug = false
 
 			score := -searchAlphaBeta(boardState, searchStats, &line, depthLeft-1, currentDepth+1, -beta, -alpha,
 				searchConfig, hint)
+
 			boardState.UnapplyMove(move)
+
+			if debugMode {
+				var moveLine Variation
+				CopyVariation(&moveLine, move, &line)
+				str := MoveArrayToXboardString(moveLine.move[0:moveLine.numMoves])
+				entry := boardState.transpositionTable[hashKey]
+				var entryType string
+				if entry != nil {
+					entryType = EntryTypeToString(entry.entryType)
+				}
+				fmt.Printf("[%d; %s] value=%d (alpha=%d, beta=%d) nodes=%d pv=%s result=%s\n",
+					depthLeft, MoveToString(move, boardState), score, alpha, beta, searchStats.Nodes()-nodesStarting, str,
+					entryType)
+			}
 
 			if score > beta {
 				StoreTranspositionTable(boardState, move, score, TT_FAIL_HIGH, depthLeft)
@@ -214,17 +241,8 @@ func searchAlphaBeta(
 				bestMove = move
 				if bestScore > alpha {
 					alpha = score
-					variation.move[0] = move
-					copy(variation.move[1:], line.move[0:line.numMoves])
-					variation.numMoves = line.numMoves + 1
+					CopyVariation(variation, move, &line)
 				}
-			}
-
-			if isDebug && (strings.Contains(MoveToPrettyString(move, boardState), searchConfig.debugMoves) ||
-				searchConfig.debugMoves == "*") {
-				str := MoveArrayToXboardString(variation.move[0:variation.numMoves])
-				fmt.Printf("[%d; %s] value=%d nodes=%d alpha=%d beta=%d pv=%s\n",
-					depthLeft, MoveToString(move, boardState), score, searchStats.Nodes()-nodesStarting, alpha, beta, str)
 			}
 		}
 
@@ -282,6 +300,7 @@ func searchQuiescent(
 	// Evaluate the board to see what the position is without making any quiescent moves.
 	score := getLeafResult(boardState, searchStats)
 	if score >= beta {
+		StoreTranspositionTable(boardState, bestMove, bestScore, TT_FAIL_HIGH, depthLeft)
 		return beta
 	}
 	if score >= alpha {
@@ -313,7 +332,7 @@ func searchQuiescent(
 			if score >= beta {
 				searchStats.cutoffs++
 				searchStats.qcutoffs++
-				// StoreTranspositionTable(boardState, bestMove, score, TT_FAIL_HIGH, depthLeft)
+				StoreTranspositionTable(boardState, bestMove, score, TT_FAIL_HIGH, depthLeft)
 
 				return beta
 			}
