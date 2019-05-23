@@ -37,7 +37,12 @@ type Variation struct {
 	numMoves uint
 }
 
-func CopyVariation(line *Variation, move Move, restLine *Variation) {
+func CopyVariation(line *Variation, restLine *Variation) {
+	copy(line.move[0:], restLine.move[0:restLine.numMoves])
+	line.numMoves = restLine.numMoves
+}
+
+func CopyVariationWithMove(line *Variation, move Move, restLine *Variation) {
 	line.move[0] = move
 	copy(line.move[1:], restLine.move[0:restLine.numMoves])
 	line.numMoves = restLine.numMoves + 1
@@ -159,10 +164,18 @@ func searchAlphaBeta(
 
 	if depthLeft == 0 {
 		score := searchQuiescent(boardState, searchStats, &line, depthLeft, currentDepth, alpha, beta, searchConfig, hint)
-		if score > alpha {
-			copy(variation.move[0:], line.move[0:line.numMoves])
-			variation.numMoves = line.numMoves
+
+		ttEntryType := TT_FAIL_LOW
+		if score >= beta {
+			ttEntryType = TT_FAIL_HIGH
 		}
+
+		if score > alpha {
+			ttEntryType = TT_EXACT
+			CopyVariation(variation, &line)
+		}
+
+		StoreTranspositionTable(boardState, Move{}, score, ttEntryType, depthLeft)
 		return score
 	}
 
@@ -215,7 +228,7 @@ func searchAlphaBeta(
 
 			if debugMode {
 				var moveLine Variation
-				CopyVariation(&moveLine, move, &line)
+				CopyVariationWithMove(&moveLine, move, &line)
 				str := MoveArrayToXboardString(moveLine.move[0:moveLine.numMoves])
 				entry := boardState.transpositionTable[hashKey]
 				var entryType string
@@ -241,7 +254,7 @@ func searchAlphaBeta(
 				bestMove = move
 				if bestScore > alpha {
 					alpha = score
-					CopyVariation(variation, move, &line)
+					CopyVariationWithMove(variation, move, &line)
 				}
 			}
 		}
@@ -303,8 +316,9 @@ func searchQuiescent(
 		StoreTranspositionTable(boardState, bestMove, bestScore, TT_FAIL_HIGH, depthLeft)
 		return beta
 	}
+	bestScore = score
+
 	if score >= alpha {
-		bestScore = score
 		alpha = score
 	}
 	if boardState.shouldAbort {
