@@ -13,13 +13,14 @@ var CHECK_FLAG byte = 0x20
 var THREEFOLD_REP_FLAG byte = 0x10
 
 type SearchStats struct {
-	leafnodes         uint
-	branchnodes       uint
-	qbranchnodes      uint
-	hashcutoffs       uint
-	cutoffs           uint
-	qcutoffs          uint
-	qcapturesfiltered uint
+	leafnodes              uint
+	branchnodes            uint
+	qbranchnodes           uint
+	hashcutoffs            uint
+	cutoffs                uint
+	qcutoffs               uint
+	qcapturesfiltered      uint
+	transpositiontablehits uint
 }
 
 type SearchResult struct {
@@ -133,13 +134,16 @@ func searchAlphaBeta(
 		if entry.depth >= depthLeft {
 			switch entry.entryType {
 			case TT_EXACT:
+				searchStats.transpositiontablehits++
 				return entry.score
 			case TT_FAIL_HIGH:
 				if entry.score >= beta {
+					searchStats.transpositiontablehits++
 					return beta
 				}
 			case TT_FAIL_LOW:
 				if entry.score <= alpha {
+					searchStats.transpositiontablehits++
 					return alpha
 				}
 			}
@@ -428,8 +432,9 @@ func SearchValueToString(result SearchResult) string {
 }
 
 func SearchStatsToString(stats SearchStats) string {
-	return fmt.Sprintf("[nodes=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, cutoffs=%d, hash cutoffs=%d, qcutoffs=%d, qcapturesfiltered=%d]",
+	return fmt.Sprintf("[nodes=%d, transpositiontablehits=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, cutoffs=%d, hash cutoffs=%d, qcutoffs=%d, qcapturesfiltered=%d]",
 		stats.Nodes(),
+		stats.transpositiontablehits,
 		stats.leafnodes,
 		stats.branchnodes,
 		stats.qbranchnodes,
