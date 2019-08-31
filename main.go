@@ -14,7 +14,7 @@ import (
 var _ = fmt.Println
 
 func InitializeLogger() {
-	file, err := os.Create("/tmp/ra-chess-engine.log")
+	file, err := os.OpenFile("/tmp/ra-chess-engine.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
 	if err != nil {
 		panic(err)
 	}
