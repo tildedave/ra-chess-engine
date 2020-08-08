@@ -533,13 +533,13 @@ func ParseXboardMove(command string, boardState *BoardState) (Move, error) {
 		isEnPassantCapture = true
 	}
 
-	if boardState.offsetToMove == WHITE_OFFSET && fromPiece == KING_MASK|WHITE_MASK && from_sq == SQUARE_E1 {
+	if boardState.sideToMove == WHITE_OFFSET && fromPiece == KING_MASK|WHITE_MASK && from_sq == SQUARE_E1 {
 		if to_sq == SQUARE_G1 {
 			isKingsideCastle = true
 		} else if to_sq == SQUARE_C1 {
 			isQueensideCastle = true
 		}
-	} else if boardState.offsetToMove == BLACK_OFFSET && fromPiece == KING_MASK|BLACK_MASK && from_sq == SQUARE_E8 {
+	} else if boardState.sideToMove == BLACK_OFFSET && fromPiece == KING_MASK|BLACK_MASK && from_sq == SQUARE_E8 {
 		if to_sq == SQUARE_G8 {
 			isKingsideCastle = true
 		} else if to_sq == SQUARE_C8 {

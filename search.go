@@ -80,7 +80,7 @@ func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchC
 	}, MoveSizeHint{})
 
 	result := SearchResult{}
-	if boardState.offsetToMove == BLACK_OFFSET {
+	if boardState.sideToMove == BLACK_OFFSET {
 		score = -score
 	}
 	absScore := score
@@ -191,7 +191,7 @@ func searchAlphaBeta(
 			debugMode := isDebug && (strings.Contains(MoveToPrettyString(move, boardState), searchConfig.debugMoves) ||
 				searchConfig.debugMoves == "*")
 
-			offset := boardState.offsetToMove
+			offset := boardState.sideToMove
 			boardState.ApplyMove(move)
 			if boardState.IsInCheck(offset) {
 				boardState.UnapplyMove(move)
@@ -318,7 +318,7 @@ func searchQuiescent(
 	searchStats.qbranchnodes++
 
 	for _, moves := range moveOrdering {
-		ourOffset := boardState.offsetToMove
+		ourOffset := boardState.sideToMove
 		for _, move := range moves {
 			boardState.ApplyMove(move)
 			if boardState.IsInCheck(ourOffset) {
@@ -376,7 +376,7 @@ func getLeafResult(boardState *BoardState, searchStats *SearchStats) int {
 }
 
 func getNoLegalMoveResult(boardState *BoardState, currentDepth uint) int {
-	if boardState.IsInCheck(boardState.offsetToMove) {
+	if boardState.IsInCheck(boardState.sideToMove) {
 		// moves to mate = currentDepth
 		return -(CHECKMATE_SCORE - int(currentDepth) + 1)
 	}

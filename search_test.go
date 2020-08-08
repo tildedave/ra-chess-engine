@@ -49,7 +49,7 @@ func TestSearchMateInOneBlack(t *testing.T) {
 
 func TestSearchAvoidMateInOne(t *testing.T) {
 	boardState := CreateMateInOneBoard()
-	boardState.offsetToMove = BLACK_OFFSET
+	boardState.sideToMove = BLACK_OFFSET
 	boardState.SetPieceAtSquare(SQUARE_F5, BLACK_MASK|ROOK_MASK)
 
 	result := Search(&boardState, 2)

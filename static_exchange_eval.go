@@ -21,7 +21,7 @@ func GetLeastValuableAttacker(boardState *BoardState, attackers uint64) (uint64,
 func StaticExchangeEvaluation(boardState *BoardState, destSq byte, fromPiece byte, fromSq byte) int {
 	occupancies := boardState.GetAllOccupanciesBitboard()
 	attackers := boardState.GetSquareAttackersBoard(occupancies, destSq)
-	offset := boardState.offsetToMove
+	offset := boardState.sideToMove
 	var gain [32]int
 	initialPiece := boardState.board[destSq]
 	if initialPiece == 0 {
