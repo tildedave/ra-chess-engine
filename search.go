@@ -145,11 +145,6 @@ func searchAlphaBeta(
 		}
 	}
 
-	// TODO: probably don't check this
-	if boardState.IsThreefoldRepetition() {
-		return 0
-	}
-
 	if boardState.shouldAbort {
 		score := getLeafResult(boardState, searchStats)
 		StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
@@ -168,6 +163,11 @@ func searchAlphaBeta(
 			variation.numMoves = line.numMoves
 		}
 		return score
+	}
+
+	if boardState.HasStateOccurred() {
+		// TODO - contempt value
+		return 0
 	}
 
 	searchStats.branchnodes++

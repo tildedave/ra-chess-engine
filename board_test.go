@@ -126,17 +126,17 @@ func TestThreefoldRepetition(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_H8, KING_MASK|BLACK_MASK)
 
 	for i := 0; i < 2; i++ {
-		assert.False(t, boardState.IsThreefoldRepetition())
+		assert.False(t, boardState.RepetitionCount(3))
 
 		boardState.ApplyMove(CreateMove(SQUARE_A1, SQUARE_B1))
 		boardState.ApplyMove(CreateMove(SQUARE_H8, SQUARE_H7))
-		assert.False(t, boardState.IsThreefoldRepetition())
+		assert.False(t, boardState.RepetitionCount(3))
 
 		boardState.ApplyMove(CreateMove(SQUARE_B1, SQUARE_A1))
 		boardState.ApplyMove(CreateMove(SQUARE_H7, SQUARE_H8))
 	}
 
-	assert.True(t, boardState.IsThreefoldRepetition())
+	assert.True(t, boardState.RepetitionCount(3))
 }
 
 func TestPawnMovePreventsThreefoldRepetition(t *testing.T) {
@@ -148,15 +148,15 @@ func TestPawnMovePreventsThreefoldRepetition(t *testing.T) {
 	boardState.ApplyMove(CreateMove(SQUARE_H6, SQUARE_H5))
 
 	for i := 0; i < 2; i++ {
-		assert.False(t, boardState.IsThreefoldRepetition())
+		assert.False(t, boardState.RepetitionCount(3))
 
 		boardState.ApplyMove(CreateMove(SQUARE_A1, SQUARE_B1))
 		boardState.ApplyMove(CreateMove(SQUARE_H8, SQUARE_H7))
-		assert.False(t, boardState.IsThreefoldRepetition())
+		assert.False(t, boardState.RepetitionCount(3))
 
 		boardState.ApplyMove(CreateMove(SQUARE_B1, SQUARE_A1))
 		boardState.ApplyMove(CreateMove(SQUARE_H7, SQUARE_H8))
 	}
 
-	assert.False(t, boardState.IsThreefoldRepetition())
+	assert.False(t, boardState.RepetitionCount(3))
 }

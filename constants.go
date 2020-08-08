@@ -95,4 +95,5 @@ const RANK_7 byte = 0x07
 const RANK_8 byte = 0x08
 
 const CHECKMATE_SCORE = 100000
+const CONTEMPT_SCORE = 200
 const INFINITY = 10000000
