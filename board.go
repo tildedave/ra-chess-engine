@@ -228,7 +228,7 @@ type BoardState struct {
 	board         []byte
 	bitboards     Bitboards
 	moveBitboards *MoveBitboards
-	sideToMove  int
+	sideToMove    int
 	boardInfo     BoardInfo
 
 	// number of moves since last capture or pawn advance
@@ -576,7 +576,8 @@ func (boardState *BoardState) GetAllOccupanciesBitboard() uint64 {
 	return boardState.bitboards.color[WHITE_OFFSET] | boardState.bitboards.color[BLACK_OFFSET]
 }
 
-func (boardState *BoardState) IsThreefoldRepetition() bool {
+// RepetitionCount returns the number of times that a position has occurred already
+func (boardState *BoardState) RepetitionCount(cutoff int) bool {
 	currentHash := boardState.hashKey
 	num := 0
 
@@ -585,12 +586,17 @@ func (boardState *BoardState) IsThreefoldRepetition() bool {
 			num++
 		}
 
-		if num >= 3 {
+		if num >= cutoff {
 			return true
 		}
 	}
 
-	return num >= 3
+	return false
+}
+
+// HasStateOccurred returns true if the position has already occurred in the game
+func (boardState *BoardState) HasStateOccurred() bool {
+	return boardState.RepetitionCount(2)
 }
 
 // CreateMovesFromBitboard transforms a bitboard and a square to a slice of moves.
