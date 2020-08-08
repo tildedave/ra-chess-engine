@@ -69,7 +69,7 @@ func TestProcessUndoCommand(t *testing.T) {
 
 	assert.Equal(t, BLACK_MASK|PAWN_MASK, state.boardState.PieceAtSquare(SQUARE_E7))
 	assert.Equal(t, uint8(0), state.boardState.PieceAtSquare(SQUARE_E5))
-	assert.Equal(t, BLACK_OFFSET, state.boardState.offsetToMove)
+	assert.Equal(t, BLACK_OFFSET, state.boardState.sideToMove)
 	assert.Equal(t, ACTION_NOTHING, action)
 }
 
@@ -87,7 +87,7 @@ func TestProcessRemoveCommand(t *testing.T) {
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, state.boardState.PieceAtSquare(SQUARE_E2))
 	assert.Equal(t, uint8(0), state.boardState.PieceAtSquare(SQUARE_E5))
 	assert.Equal(t, uint8(0), state.boardState.PieceAtSquare(SQUARE_E4))
-	assert.Equal(t, WHITE_OFFSET, state.boardState.offsetToMove)
+	assert.Equal(t, WHITE_OFFSET, state.boardState.sideToMove)
 	assert.Equal(t, ACTION_THINK_AND_MOVE, action)
 }
 
@@ -195,7 +195,7 @@ func TestParseXboardMoveQueensideCastle(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_B1, 0x00)
 	boardState.SetPieceAtSquare(SQUARE_C1, 0x00)
 	boardState.SetPieceAtSquare(SQUARE_D1, 0x00)
-	boardState.offsetToMove = BLACK_OFFSET
+	boardState.sideToMove = BLACK_OFFSET
 
 	move, err := ParseXboardMove("e8c8", &boardState)
 

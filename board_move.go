@@ -21,7 +21,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	boardState.board[move.to] = p
 	// unset
 
-	var offset = boardState.offsetToMove
+	var offset = boardState.sideToMove
 	var otherOffset int
 	switch offset {
 	case WHITE_OFFSET:
@@ -43,7 +43,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 
 	if move.IsQueensideCastle() {
 		// white
-		if boardState.offsetToMove == WHITE_OFFSET {
+		if boardState.sideToMove == WHITE_OFFSET {
 			boardState.board[SQUARE_A1] = EMPTY_SQUARE
 			boardState.board[SQUARE_D1] = WHITE_MASK | ROOK_MASK
 
@@ -77,7 +77,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			boardState.boardInfo.blackHasCastled = true
 		}
 	} else if move.IsKingsideCastle() {
-		if boardState.offsetToMove == WHITE_OFFSET {
+		if boardState.sideToMove == WHITE_OFFSET {
 			boardState.board[SQUARE_H1] = EMPTY_SQUARE
 			boardState.board[SQUARE_F1] = WHITE_MASK | ROOK_MASK
 
@@ -113,7 +113,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	} else {
 		switch movePiece {
 		case KING_MASK:
-			if boardState.offsetToMove == WHITE_OFFSET {
+			if boardState.sideToMove == WHITE_OFFSET {
 				boardState.boardInfo.whiteCanCastleKingside = false
 				boardState.boardInfo.whiteCanCastleQueenside = false
 			} else {
@@ -121,7 +121,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 				boardState.boardInfo.blackCanCastleQueenside = false
 			}
 		case ROOK_MASK:
-			if boardState.offsetToMove == WHITE_OFFSET {
+			if boardState.sideToMove == WHITE_OFFSET {
 				if move.from == SQUARE_H1 {
 					boardState.boardInfo.whiteCanCastleKingside = false
 				} else if move.from == SQUARE_A1 {
@@ -138,7 +138,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 			if move.IsEnPassantCapture() {
 				var pos uint8
 				var otherOffset int
-				if boardState.offsetToMove == WHITE_OFFSET {
+				if boardState.sideToMove == WHITE_OFFSET {
 					pos = move.to - 8
 					otherOffset = BLACK_OFFSET
 				} else {
@@ -169,7 +169,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 
 			if move.IsPromotion() {
 				promotionPiece := move.GetPromotionPiece()
-				boardState.board[move.to] = promotionPiece | offsetToMoveToColorMask(boardState.offsetToMove)
+				boardState.board[move.to] = promotionPiece | sideToMoveToColorMask(boardState.sideToMove)
 
 				boardState.bitboards.piece[BITBOARD_PAWN_OFFSET] = FlipBitboard(
 					boardState.bitboards.piece[BITBOARD_PAWN_OFFSET],
@@ -183,17 +183,17 @@ func (boardState *BoardState) ApplyMove(move Move) {
 		}
 	}
 
-	switch boardState.offsetToMove {
+	switch boardState.sideToMove {
 	case WHITE_OFFSET:
-		boardState.offsetToMove = BLACK_OFFSET
+		boardState.sideToMove = BLACK_OFFSET
 	case BLACK_OFFSET:
-		boardState.offsetToMove = WHITE_OFFSET
+		boardState.sideToMove = WHITE_OFFSET
 	}
 
 	oldBoardInfo := boardState.boardInfoHistory[boardState.moveIndex]
 	boardState.moveIndex++
 
-	if boardState.offsetToMove == WHITE_OFFSET {
+	if boardState.sideToMove == WHITE_OFFSET {
 		boardState.fullmoveNumber++
 	}
 
@@ -208,7 +208,7 @@ func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
 	var pieceMask byte
 	var captureMask byte
 
-	if boardState.offsetToMove == WHITE_OFFSET {
+	if boardState.sideToMove == WHITE_OFFSET {
 		pieceMask = WHITE_MASK
 		captureMask = BLACK_MASK
 	} else {
@@ -233,13 +233,13 @@ func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
 }
 
 func (boardState *BoardState) UnapplyMove(move Move) {
-	switch boardState.offsetToMove {
+	switch boardState.sideToMove {
 	case WHITE_OFFSET:
-		boardState.offsetToMove = BLACK_OFFSET
+		boardState.sideToMove = BLACK_OFFSET
 	case BLACK_OFFSET:
-		boardState.offsetToMove = WHITE_OFFSET
+		boardState.sideToMove = WHITE_OFFSET
 	}
-	if boardState.offsetToMove == BLACK_OFFSET {
+	if boardState.sideToMove == BLACK_OFFSET {
 		boardState.fullmoveNumber--
 	}
 	oldBoardInfo := boardState.boardInfo
@@ -260,9 +260,9 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 
 	boardState.board[move.from] = p
 
-	var offset = boardState.offsetToMove
+	var offset = boardState.sideToMove
 	var otherOffset int
-	switch boardState.offsetToMove {
+	switch boardState.sideToMove {
 	case WHITE_OFFSET:
 		otherOffset = BLACK_OFFSET
 	case BLACK_OFFSET:
@@ -280,7 +280,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 	// TODO(perf) - just switch statement on the different conditions here, they are all mutually exclusive
 	if move.IsQueensideCastle() {
 		// black was to move, so we're unmaking a white move
-		if boardState.offsetToMove == WHITE_OFFSET {
+		if boardState.sideToMove == WHITE_OFFSET {
 			boardState.board[SQUARE_D1] = 0x00
 			boardState.board[SQUARE_A1] = WHITE_MASK | ROOK_MASK
 
@@ -312,7 +312,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			boardState.boardInfo.blackHasCastled = false
 		}
 	} else if move.IsKingsideCastle() {
-		if boardState.offsetToMove == WHITE_OFFSET {
+		if boardState.sideToMove == WHITE_OFFSET {
 			boardState.board[SQUARE_F1] = 0x00
 			boardState.board[SQUARE_H1] = WHITE_MASK | ROOK_MASK
 
@@ -350,7 +350,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			var otherOffset int
 			var otherMask byte
 			var offset int
-			if boardState.offsetToMove == WHITE_OFFSET {
+			if boardState.sideToMove == WHITE_OFFSET {
 				pos = move.to - 8
 				otherOffset = BLACK_OFFSET
 				otherMask = BLACK_MASK
@@ -382,7 +382,7 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 
 	if move.IsPromotion() {
 		var mask byte
-		if boardState.offsetToMove == WHITE_OFFSET {
+		if boardState.sideToMove == WHITE_OFFSET {
 			mask = WHITE_MASK
 		} else {
 			mask = BLACK_MASK

@@ -252,7 +252,7 @@ func GenerateMoveListing(boardState *BoardState, hint MoveSizeHint, applyOrderin
 	occupancy := precomputedInfo.ourOccupancy
 	for occupancy != 0 {
 		sq := byte(bits.TrailingZeros64(occupancy))
-		GenerateMovesFromSquare(boardState, sq, boardState.offsetToMove, &listing, precomputedInfo)
+		GenerateMovesFromSquare(boardState, sq, boardState.sideToMove, &listing, precomputedInfo)
 
 		occupancy ^= 1 << sq
 	}
@@ -332,7 +332,7 @@ func generateCapturesFromBoard(moveListing *MoveListing, from byte, attackBoard 
 
 func generatePrecomputedInfo(boardState *BoardState) *PrecomputedInfo {
 	precomputedInfo := PrecomputedInfo{}
-	switch boardState.offsetToMove {
+	switch boardState.sideToMove {
 	case WHITE_OFFSET:
 		precomputedInfo.otherOffset = BLACK_OFFSET
 		precomputedInfo.ourOccupancy = boardState.bitboards.color[WHITE_OFFSET]
@@ -436,7 +436,7 @@ func generatePieceMoves(
 	// this doesn't have the provision against 'castle through check' or
 	// 'castle outside of check' which we'll do later outside of move generation
 	if p&0x0F == KING_MASK {
-		if boardState.offsetToMove == WHITE_OFFSET {
+		if boardState.sideToMove == WHITE_OFFSET {
 			if boardState.boardInfo.whiteCanCastleKingside &&
 				boardState.board[SQUARE_F1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_G1] == EMPTY_SQUARE &&

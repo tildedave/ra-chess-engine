@@ -28,7 +28,7 @@ func (boardState *BoardState) IsInCheck(offset int) bool {
 }
 
 func (boardState *BoardState) FilterChecks(moves []Move) []Move {
-	offset := oppositeColorOffset(boardState.offsetToMove)
+	offset := oppositeColorOffset(boardState.sideToMove)
 	enemyKingSq := bits.TrailingZeros64(boardState.bitboards.piece[KING_MASK] & boardState.bitboards.color[offset])
 
 	allOccupancies := boardState.bitboards.color[WHITE_OFFSET] | boardState.bitboards.color[BLACK_OFFSET]
@@ -68,7 +68,7 @@ func (boardState *BoardState) FilterChecks(moves []Move) []Move {
 
 func (boardState *BoardState) TestCastleLegality(move Move) bool {
 	allOccupancies := boardState.bitboards.color[WHITE_OFFSET] | boardState.bitboards.color[BLACK_OFFSET]
-	if boardState.offsetToMove == WHITE_OFFSET {
+	if boardState.sideToMove == WHITE_OFFSET {
 		if move.IsKingsideCastle() {
 			// test	if F1 is being attacked
 			return !boardState.IsSquareUnderAttack(allOccupancies, SQUARE_F1, BLACK_OFFSET, WHITE_OFFSET) &&
@@ -92,12 +92,12 @@ func (boardState *BoardState) TestCastleLegality(move Move) bool {
 }
 
 func (boardState *BoardState) IsCheckmate() bool {
-	if !boardState.IsInCheck(boardState.offsetToMove) {
+	if !boardState.IsInCheck(boardState.sideToMove) {
 		return false
 	}
 
 	moves := GenerateMoves(boardState)
-	offset := boardState.offsetToMove
+	offset := boardState.sideToMove
 
 	for _, move := range moves {
 		boardState.ApplyMove(move)

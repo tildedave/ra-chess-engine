@@ -20,7 +20,7 @@ func TestApplyMove(t *testing.T) {
 
 	assert.Equal(t, EMPTY_SQUARE, emptyBoard.PieceAtSquare(SQUARE_A2))
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, emptyBoard.PieceAtSquare(SQUARE_A4))
-	assert.Equal(t, BLACK_OFFSET, emptyBoard.offsetToMove)
+	assert.Equal(t, BLACK_OFFSET, emptyBoard.sideToMove)
 	assert.Equal(t, emptyBoard.boardInfo.enPassantTargetSquare, SQUARE_A3)
 
 	// bitboard asserts
@@ -32,7 +32,7 @@ func TestApplyMove(t *testing.T) {
 
 	assert.Equal(t, WHITE_MASK|PAWN_MASK, emptyBoard.PieceAtSquare(SQUARE_A2))
 	assert.Equal(t, EMPTY_SQUARE, emptyBoard.PieceAtSquare(SQUARE_A4))
-	assert.Equal(t, WHITE_OFFSET, emptyBoard.offsetToMove)
+	assert.Equal(t, WHITE_OFFSET, emptyBoard.sideToMove)
 	assert.Equal(t, emptyBoard.boardInfo.enPassantTargetSquare, EMPTY_SQUARE)
 
 	// bitboard asserts
@@ -45,7 +45,7 @@ func TestApplyBlackPawnSingleMove(t *testing.T) {
 	emptyBoard := CreateEmptyBoardState()
 	emptyBoard.SetPieceAtSquare(SQUARE_A7, BLACK_MASK|PAWN_MASK)
 	emptyBoard.SetPieceAtSquare(SQUARE_B6, WHITE_MASK|ROOK_MASK)
-	emptyBoard.offsetToMove = BLACK_OFFSET
+	emptyBoard.sideToMove = BLACK_OFFSET
 
 	emptyBoard.ApplyMove(CreateMove(SQUARE_A7, SQUARE_B6))
 
@@ -55,7 +55,7 @@ func TestApplyBlackPawnSingleMove(t *testing.T) {
 func TestApplyBlackPawnMove(t *testing.T) {
 	emptyBoard := CreateEmptyBoardState()
 	emptyBoard.SetPieceAtSquare(SQUARE_A7, BLACK_MASK|PAWN_MASK)
-	emptyBoard.offsetToMove = BLACK_OFFSET
+	emptyBoard.sideToMove = BLACK_OFFSET
 
 	// bitboard asserts
 	assert.Equal(t, uint64(0), emptyBoard.bitboards.color[0])
@@ -66,7 +66,7 @@ func TestApplyBlackPawnMove(t *testing.T) {
 
 	assert.Equal(t, EMPTY_SQUARE, emptyBoard.PieceAtSquare(SQUARE_A7))
 	assert.Equal(t, BLACK_MASK|PAWN_MASK, emptyBoard.PieceAtSquare(SQUARE_A5))
-	assert.Equal(t, WHITE_OFFSET, emptyBoard.offsetToMove)
+	assert.Equal(t, WHITE_OFFSET, emptyBoard.sideToMove)
 	assert.Equal(t, emptyBoard.boardInfo.enPassantTargetSquare, SQUARE_A6)
 
 	// bitboard asserts
@@ -78,7 +78,7 @@ func TestApplyBlackPawnMove(t *testing.T) {
 
 	assert.Equal(t, BLACK_MASK|PAWN_MASK, emptyBoard.PieceAtSquare(SQUARE_A7))
 	assert.Equal(t, EMPTY_SQUARE, emptyBoard.PieceAtSquare(SQUARE_A5))
-	assert.Equal(t, BLACK_OFFSET, emptyBoard.offsetToMove)
+	assert.Equal(t, BLACK_OFFSET, emptyBoard.sideToMove)
 	assert.Equal(t, emptyBoard.boardInfo.enPassantTargetSquare, EMPTY_SQUARE)
 
 	// bitboard asserts
@@ -236,7 +236,7 @@ func TestApplyBlackKingsideCastle(t *testing.T) {
 	var testBoard = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_E8, BLACK_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_H8, BLACK_MASK|ROOK_MASK)
-	testBoard.offsetToMove = BLACK_OFFSET
+	testBoard.sideToMove = BLACK_OFFSET
 	testBoard.boardInfo.blackCanCastleKingside = true
 
 	// bitboard asserts
@@ -311,7 +311,7 @@ func TestApplyBlackQueensideCastle(t *testing.T) {
 	var testBoard = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_E8, BLACK_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A8, BLACK_MASK|ROOK_MASK)
-	testBoard.offsetToMove = BLACK_OFFSET
+	testBoard.sideToMove = BLACK_OFFSET
 	testBoard.boardInfo.blackCanCastleQueenside = true
 
 	// bitboard asserts
@@ -381,7 +381,7 @@ func TestWhitePawnPromotes(t *testing.T) {
 func TestBlackPawnPromotes(t *testing.T) {
 	var testBoard = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_D2, BLACK_MASK|PAWN_MASK)
-	testBoard.offsetToMove = BLACK_OFFSET
+	testBoard.sideToMove = BLACK_OFFSET
 	originalKey := testBoard.hashKey
 
 	// bitboard asserts
@@ -455,7 +455,7 @@ func TestEnPassantCaptureBlack(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_F4, WHITE_MASK|PAWN_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_E4, BLACK_MASK|PAWN_MASK)
 	testBoard.boardInfo.enPassantTargetSquare = SQUARE_F3
-	testBoard.offsetToMove = BLACK_OFFSET
+	testBoard.sideToMove = BLACK_OFFSET
 	generateZobrishHashInfo(&testBoard)
 	originalKey := testBoard.hashKey
 

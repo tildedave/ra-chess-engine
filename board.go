@@ -79,8 +79,8 @@ func pieceToString(p byte) byte {
 	panic(fmt.Sprintf("Passed invalid piece: %x", p))
 }
 
-func offsetToMoveToColorMask(offsetToMove int) uint8 {
-	if offsetToMove == WHITE_OFFSET {
+func sideToMoveToColorMask(sideToMove int) uint8 {
+	if sideToMove == WHITE_OFFSET {
 		return WHITE_MASK
 	}
 
@@ -129,7 +129,7 @@ func (boardState *BoardState) ToFENString() string {
 		}
 	}
 
-	if boardState.offsetToMove == WHITE_OFFSET {
+	if boardState.sideToMove == WHITE_OFFSET {
 		s += "w "
 	} else {
 		s += "b "
@@ -228,7 +228,7 @@ type BoardState struct {
 	board         []byte
 	bitboards     Bitboards
 	moveBitboards *MoveBitboards
-	offsetToMove  int
+	sideToMove  int
 	boardInfo     BoardInfo
 
 	// number of moves since last capture or pawn advance
@@ -286,7 +286,7 @@ func CreateEmptyBoardState() BoardState {
 		0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00,
 	}
 
-	b.offsetToMove = WHITE_OFFSET
+	b.sideToMove = WHITE_OFFSET
 	b.boardInfo = BoardInfo{
 		whiteCanCastleKingside:  false,
 		whiteCanCastleQueenside: false,
@@ -398,9 +398,9 @@ func CreateBoardStateFromFENString(s string) (BoardState, error) {
 
 	switch splits[1] {
 	case "w":
-		boardState.offsetToMove = WHITE_OFFSET
+		boardState.sideToMove = WHITE_OFFSET
 	case "b":
-		boardState.offsetToMove = BLACK_OFFSET
+		boardState.sideToMove = BLACK_OFFSET
 	default:
 		return boardState, errors.New("Invalid side-to-move specification: " + splits[1])
 	}

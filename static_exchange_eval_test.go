@@ -32,7 +32,7 @@ func TestGetLeastValuableAttacker(t *testing.T) {
 
 func TestStaticExchangeEvaluationSingleCapture(t *testing.T) {
 	boardState := CreateEmptyBoardState()
-	boardState.offsetToMove = BLACK_OFFSET
+	boardState.sideToMove = BLACK_OFFSET
 
 	boardState.SetPieceAtSquare(SQUARE_E3, WHITE_MASK|PAWN_MASK)
 	boardState.SetPieceAtSquare(SQUARE_E8, BLACK_MASK|ROOK_MASK)
@@ -41,7 +41,7 @@ func TestStaticExchangeEvaluationSingleCapture(t *testing.T) {
 }
 func TestStaticExchangeEvaluationGuardedCapture(t *testing.T) {
 	boardState := CreateEmptyBoardState()
-	boardState.offsetToMove = BLACK_OFFSET
+	boardState.sideToMove = BLACK_OFFSET
 
 	boardState.SetPieceAtSquare(SQUARE_E3, WHITE_MASK|PAWN_MASK)
 	boardState.SetPieceAtSquare(SQUARE_E8, BLACK_MASK|ROOK_MASK)
