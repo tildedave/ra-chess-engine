@@ -157,6 +157,10 @@ func searchAlphaBeta(
 		return score
 	}
 
+	if boardState.IsInCheck(boardState.sideToMove) {
+		depthLeft++
+	}
+
 	if depthLeft == 0 {
 		score := searchQuiescent(boardState, searchStats, &line, depthLeft, currentDepth, alpha, beta, searchConfig, hint)
 		if score > alpha {
