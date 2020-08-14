@@ -13,13 +13,13 @@ var CHECK_FLAG byte = 0x20
 var THREEFOLD_REP_FLAG byte = 0x10
 
 type SearchStats struct {
-	leafnodes         uint
-	branchnodes       uint
-	qbranchnodes      uint
-	hashcutoffs       uint
-	cutoffs           uint
-	qcutoffs          uint
-	qcapturesfiltered uint
+	leafnodes         uint64
+	branchnodes       uint64
+	qbranchnodes      uint64
+	hashcutoffs       uint64
+	cutoffs           uint64
+	qcutoffs          uint64
+	qcapturesfiltered uint64
 }
 
 type SearchResult struct {
@@ -203,7 +203,7 @@ func searchAlphaBeta(
 			}
 			hasLegalMove = true
 			searchConfig.move = move
-			var nodesStarting uint
+			var nodesStarting uint64
 			var hashKey uint64
 
 			if debugMode {
@@ -318,7 +318,7 @@ func searchQuiescent(
 	moveListing, hint := GenerateQuiescentMoveListing(boardState, hint)
 	var moveOrdering [5][]Move
 	moveOrdering[0] = boardState.FilterSEECaptures(moveListing.captures)
-	searchStats.qcapturesfiltered += uint(len(moveListing.captures) - len(moveOrdering[0]))
+	searchStats.qcapturesfiltered += uint64(len(moveListing.captures) - len(moveOrdering[0]))
 	searchStats.qbranchnodes++
 
 	for _, moves := range moveOrdering {
@@ -429,7 +429,7 @@ func SearchStatsToString(stats SearchStats) string {
 		stats.qcapturesfiltered)
 }
 
-func (stats *SearchStats) Nodes() uint {
+func (stats *SearchStats) Nodes() uint64 {
 	return stats.branchnodes + stats.leafnodes + stats.qbranchnodes
 }
 
