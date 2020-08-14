@@ -145,7 +145,7 @@ func searchAlphaBeta(
 		}
 	}
 
-	if boardState.shouldAbort {
+	if shouldAbort {
 		score := getLeafResult(boardState, searchStats)
 		StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
 
@@ -311,7 +311,7 @@ func searchQuiescent(
 		bestScore = score
 		alpha = score
 	}
-	if boardState.shouldAbort {
+	if shouldAbort {
 		return score
 	}
 
