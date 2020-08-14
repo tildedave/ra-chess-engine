@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/heap"
 	"math/bits"
 )
 
@@ -45,13 +46,14 @@ type MoveBitboards struct {
 }
 
 // Lifted from Apep https://github.com/tildedave/apep-chess-engine/blob/master/src/movegen.cpp#L8
-var mvvPriority = [8][8]int{
-	{0, 6, 12, 0, 0, 18, 24, 30}, // PAWN CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
-	{0, 5, 11, 0, 0, 17, 23, 29}, // KNIGHT CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
-	{0, 4, 10, 0, 0, 16, 22, 28}, // BISHOP CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
-	{0, 3, 9, 0, 0, 15, 21, 27},  // ROOK CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
-	{0, 2, 8, 0, 0, 14, 20, 26},  // QUEEN CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
-	{0, 1, 7, 0, 0, 13, 19, 25},  // KING CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+var mvvPriority = [7][7]int{
+	{0, 0, 0, 0, 0, 0, 0},
+	{0, 6, 12, 18, 24, 30, 0}, // PAWN CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+	{0, 5, 11, 17, 23, 29, 0}, // KNIGHT CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+	{0, 4, 10, 16, 22, 28, 0}, // BISHOP CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+	{0, 3, 9, 15, 21, 27, 0},  // ROOK CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+	{0, 2, 8, 14, 20, 26, 0},  // QUEEN CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
+	{0, 1, 7, 13, 19, 25, 0},  // KING CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
 }
 
 func CreateMoveBitboards() MoveBitboards {
@@ -264,21 +266,7 @@ func GenerateMoveListing(boardState *BoardState, hint MoveSizeHint, applyOrderin
 	}
 
 	if applyOrdering {
-		captureQueue := make(MovePriorityQueue, 0, len(listing.captures))
-
-		for _, capture := range listing.captures {
-			fromPiece := boardState.PieceAtSquare(capture.from)
-			toPiece := boardState.PieceAtSquare(capture.to)
-			priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
-			item := Item{move: capture, score: priority}
-			captureQueue.Push(&item)
-		}
-
-		listing.captures = make([]Move, 0, captureQueue.Len())
-		for captureQueue.Len() > 0 {
-			item := captureQueue.Pop().(*Item)
-			listing.captures = append(listing.captures, item.move)
-		}
+		orderCaptures(boardState, &listing)
 	}
 
 	return listing, hint
@@ -319,9 +307,29 @@ func GenerateQuiescentMoveListing(boardState *BoardState, hint MoveSizeHint) (Mo
 		occupancy ^= 1 << sq
 	}
 
+	orderCaptures(boardState, &listing)
+
 	return listing, MoveSizeHint{numCaptures: len(listing.captures)}
 }
 
+func orderCaptures(boardState *BoardState, listing *MoveListing) {
+	captureQueue := make(MovePriorityQueue, 0, len(listing.captures))
+
+	for _, capture := range listing.captures {
+		fromPiece := boardState.PieceAtSquare(capture.from)
+		toPiece := boardState.PieceAtSquare(capture.to)
+		priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
+		item := Item{move: capture, score: priority}
+		captureQueue.Push(&item)
+	}
+	heap.Init(&captureQueue)
+
+	listing.captures = make([]Move, 0, captureQueue.Len())
+	for captureQueue.Len() > 0 {
+		item := heap.Pop(&captureQueue).(*Item)
+		listing.captures = append(listing.captures, item.move)
+	}
+}
 func generateCapturesFromBoard(moveListing *MoveListing, from byte, attackBoard uint64) {
 	for attackBoard != 0 {
 		to := byte(bits.TrailingZeros64(attackBoard))
