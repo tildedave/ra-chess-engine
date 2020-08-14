@@ -153,6 +153,7 @@ func thinkAndChooseMove(
 	ch chan SearchResult,
 	thinkingChan chan ThinkingOutput,
 ) {
+	shouldAbort = false
 	searchQuit := make(chan bool)
 	resultCh := make(chan SearchResult)
 
@@ -170,6 +171,7 @@ func thinkAndChooseMove(
 				return
 			default:
 				// TODO: having to copy the board state indicates a bug somewhere
+				logger.Println(fmt.Printf("Searching depth %d\n", i))
 				state := CopyBoardState(boardState)
 				res = SearchWithConfig(&state, uint(i), config)
 				i = i + 1
@@ -216,6 +218,7 @@ func thinkAndChooseMove(
 			}
 		}
 
+		shouldAbort = true
 		ch <- bestResult
 		close(ch)
 		close(thinkingChan)

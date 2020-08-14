@@ -123,8 +123,6 @@ func RunTacticsFen(fen string, variation string, options TacticsOptions) (string
 		return "", result, nil
 	}
 
-	boardState.shouldAbort = true
-
 	if options.tacticsHashVariation != "" {
 		// "Wiggle room" to allow search to abort
 		time.Sleep(time.Duration(200) * time.Millisecond)

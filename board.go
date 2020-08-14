@@ -224,6 +224,8 @@ type RepetitionInfo struct {
 	pawnMoveOrCapture [MAX_MOVES]bool
 }
 
+var shouldAbort = false
+
 type BoardState struct {
 	board         []byte
 	bitboards     Bitboards
@@ -248,9 +250,6 @@ type BoardState struct {
 	hashInfo *HashInfo
 	// Transposition table
 	transpositionTable map[uint64]*TranspositionEntry
-
-	// Argument to abort search during tactics module
-	shouldAbort bool
 
 	repetitionInfo RepetitionInfo
 }
