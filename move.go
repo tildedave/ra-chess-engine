@@ -14,7 +14,7 @@ type Move struct {
 	flags uint8
 }
 
-const CAPTURE_MASK = 0x80
+const CAPTURE_MASK = 0x80   // only set in conjunction with SPECIAL masks
 const PROMOTION_MASK = 0x40 // may not be needed
 const SPECIAL1_MASK = 0x20
 const SPECIAL2_MASK = 0x10
