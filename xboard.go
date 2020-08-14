@@ -43,7 +43,7 @@ type ThinkingOutput struct {
 	ply   uint
 	score int
 	time  int64
-	nodes uint
+	nodes uint64
 	pv    string
 }
 
