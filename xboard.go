@@ -154,26 +154,30 @@ func thinkAndChooseMove(
 	thinkingChan chan ThinkingOutput,
 ) {
 	shouldAbort = false
+	// NOTE - There seems to be a bug in the TT where the wrong move is being returned
+	// For now clear out the TT before starting to think
+	generateTranspositionTable(boardState)
+
 	searchQuit := make(chan bool)
 	resultCh := make(chan SearchResult)
 
 	go func() {
 		var i uint = 1
-		var res SearchResult
+		// var res SearchResult
 
 		for {
 			select {
-			case resultCh <- res:
-				// result sent
 			case <-searchQuit:
 				close(resultCh)
 				close(searchQuit)
 				return
 			default:
 				// TODO: having to copy the board state indicates a bug somewhere
-				logger.Println(fmt.Printf("Searching depth %d\n", i))
+				logger.Printf("Searching depth %d\n", i)
 				state := CopyBoardState(boardState)
-				res = SearchWithConfig(&state, uint(i), config)
+				result := SearchWithConfig(&state, uint(i), config)
+				logger.Printf("Depth %d: %s\n", i, result.String())
+				resultCh <- result
 				i = i + 1
 			}
 		}
