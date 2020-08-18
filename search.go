@@ -190,6 +190,7 @@ func searchAlphaBeta(
 
 	bestScore := -INFINITY + 1
 	var bestMove Move
+	currentAlpha := alpha
 
 	for i := 0; i < len(moveOrdering); i++ {
 		for _, move := range moveOrdering[i] {
@@ -217,7 +218,7 @@ func searchAlphaBeta(
 			}
 			searchConfig.isDebug = false
 
-			score := -searchAlphaBeta(boardState, searchStats, &line, depthLeft-1, currentDepth+1, -beta, -alpha,
+			score := -searchAlphaBeta(boardState, searchStats, &line, depthLeft-1, currentDepth+1, -beta, -currentAlpha,
 				searchConfig, hint)
 
 			boardState.UnapplyMove(move)
@@ -232,7 +233,7 @@ func searchAlphaBeta(
 					entryType = EntryTypeToString(entry.entryType)
 				}
 				fmt.Printf("[%d; %s] value=%d (alpha=%d, beta=%d) nodes=%d pv=%s result=%s\n",
-					depthLeft, MoveToString(move, boardState), score, alpha, beta, searchStats.Nodes()-nodesStarting, str,
+					depthLeft, MoveToString(move, boardState), score, currentAlpha, beta, searchStats.Nodes()-nodesStarting, str,
 					entryType)
 			}
 
@@ -249,7 +250,7 @@ func searchAlphaBeta(
 				bestScore = score
 				bestMove = move
 				if bestScore > alpha {
-					alpha = score
+					currentAlpha = score
 					CopyVariation(variation, move, &line)
 				}
 			}
@@ -277,9 +278,11 @@ func searchAlphaBeta(
 	}
 
 	var ttEntryType int
-	if bestScore < alpha {
+	if currentAlpha == alpha {
 		// never raised alpha
 		ttEntryType = TT_FAIL_LOW
+	} else if currentAlpha == beta {
+		ttEntryType = TT_FAIL_HIGH
 	} else {
 		// we raised alpha, so we have an exact match
 		ttEntryType = TT_EXACT
