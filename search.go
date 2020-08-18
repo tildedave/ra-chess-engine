@@ -20,6 +20,7 @@ type SearchStats struct {
 	cutoffs           uint64
 	qcutoffs          uint64
 	qcapturesfiltered uint64
+	tthits            uint64
 }
 
 type SearchResult struct {
@@ -128,13 +129,16 @@ func searchAlphaBeta(
 		if entry.depth >= depthLeft {
 			switch entry.entryType {
 			case TT_EXACT:
+				searchStats.tthits++
 				return entry.score
 			case TT_FAIL_HIGH:
 				if entry.score >= beta {
+					searchStats.tthits++
 					return beta
 				}
 			case TT_FAIL_LOW:
 				if entry.score <= alpha {
+					searchStats.tthits++
 					return alpha
 				}
 			}
@@ -147,7 +151,8 @@ func searchAlphaBeta(
 
 	if shouldAbort {
 		score := getLeafResult(boardState, searchStats)
-		StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
+		// NOTE(2020) - this seems wrong
+		// StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
 
 		return score
 	}
@@ -360,6 +365,8 @@ func searchQuiescent(
 		ttEntryType = TT_FAIL_LOW
 	} else {
 		// we raised alpha, so we have an exact match
+		// TODO(2020) - I'm not clear if we should be storing exact entries for Q-search
+		// Possibly doesn't matter since depthLeft is negative in this code flow
 		ttEntryType = TT_EXACT
 	}
 	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depthLeft)
@@ -396,7 +403,7 @@ func (result *SearchResult) String() string {
 		result.time.String(),
 		SearchValueToString(*result),
 		result.depth,
-		SearchStatsToString(result.stats),
+		result.stats.String(),
 		result.pv)
 }
 
@@ -417,12 +424,13 @@ func SearchValueToString(result SearchResult) string {
 	return strconv.Itoa(result.value)
 }
 
-func SearchStatsToString(stats SearchStats) string {
-	return fmt.Sprintf("[nodes=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, cutoffs=%d, hash cutoffs=%d, qcutoffs=%d, qcapturesfiltered=%d]",
+func (stats *SearchStats) String() string {
+	return fmt.Sprintf("[nodes=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, tthits=%d, cutoffs=%d, hash cutoffs=%d, qcutoffs=%d, qcapturesfiltered=%d]",
 		stats.Nodes(),
 		stats.leafnodes,
 		stats.branchnodes,
 		stats.qbranchnodes,
+		stats.tthits,
 		stats.cutoffs,
 		stats.hashcutoffs,
 		stats.qcutoffs,
