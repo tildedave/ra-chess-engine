@@ -29,7 +29,6 @@ func TestSearchStartingPosition(t *testing.T) {
 
 func TestSearchMateInOne(t *testing.T) {
 	boardState := CreateMateInOneBoard()
-	fmt.Println(boardState.ToString())
 
 	result := Search(&boardState, 2)
 
@@ -85,11 +84,22 @@ func TestSearchWhiteForcesPromotion(t *testing.T) {
 	boardState := CreateEmptyBoardState()
 	boardState.SetPieceAtSquare(SQUARE_D6, WHITE_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D8, BLACK_MASK|KING_MASK)
+	boardState.SetPieceAtSquare(SQUARE_D5, WHITE_MASK|PAWN_MASK)
+
+	result := Search(&boardState, 8)
+	assert.True(t, result.value > 300)
+}
+
+func TestSearchBlackForcesDraw(t *testing.T) {
+	boardState := CreateEmptyBoardState()
+	boardState.SetPieceAtSquare(SQUARE_D5, WHITE_MASK|KING_MASK)
+	boardState.SetPieceAtSquare(SQUARE_D7, BLACK_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D4, WHITE_MASK|PAWN_MASK)
+	fmt.Println(boardState.ToString())
 
-	result := Search(&boardState, 13)
-
-	assert.True(t, result.value > QUEEN_EVAL_SCORE)
+	result := Search(&boardState, 10)
+	fmt.Println(result.String())
+	assert.True(t, result.value < 300)
 }
 
 func TestSearchWhiteSavesKnightFromCapture(t *testing.T) {
