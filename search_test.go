@@ -123,9 +123,8 @@ func TestSearchWhiteDoesNotHangKnight(t *testing.T) {
 	Search(&boardState, 1)
 	Search(&boardState, 2)
 	Search(&boardState, 3)
-	config := ExternalSearchConfig{isDebug: true, debugMoves: "Nc7"}
-	result := SearchWithConfig(&boardState, 4, config)
+	result := Search(&boardState, 4)
 
-	assert.True(t, result.value < 0)
+	assert.True(t, result.value > 0)
 	assert.False(t, result.move.from == SQUARE_B5 && result.move.to == SQUARE_C7)
 }
