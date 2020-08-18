@@ -40,13 +40,16 @@ func RunTacticsFile(epdFile string, variation string, options TacticsOptions) (b
 
 		var moveToCheck string
 		var wantMatch bool
+		var desiredSummary string
 
 		if line.bestMove != "" {
 			moveToCheck = line.bestMove
 			wantMatch = true
+			desiredSummary = "expected"
 		} else if line.avoidMove != "" {
 			moveToCheck = line.avoidMove
 			wantMatch = false
+			desiredSummary = "avoid"
 		}
 
 		var success bool
@@ -69,8 +72,8 @@ func RunTacticsFile(epdFile string, variation string, options TacticsOptions) (b
 		} else {
 			res = "\033[1;31mFAIL\033[0m"
 		}
-		fmt.Printf("[%s - %s] expected=%s move=%s result=%s\n",
-			line.name, res, moveToCheck, prettyMove, result.String())
+		fmt.Printf("[%s - %s] %s=%s move=%s result=%s\n",
+			line.name, res, desiredSummary, moveToCheck, prettyMove, result.String())
 	}
 
 	fmt.Printf("Complete.  %d/%d positions correct (%.2f%%)\n", successPositions, totalPositions,
