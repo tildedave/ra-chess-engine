@@ -116,3 +116,16 @@ func TestDoesNotHangCheckmate(t *testing.T) {
 	result := Search(&boardState, 2)
 	fmt.Println(result)
 }
+
+func TestSearchWhiteDoesNotHangKnight(t *testing.T) {
+	boardState, _ := CreateBoardStateFromFENString("r2qkbnr/pp2pppp/8/1Np1P3/3p2b1/8/PPP1PPPP/R1BQKB1R w KQkq c6 0 7")
+
+	Search(&boardState, 1)
+	Search(&boardState, 2)
+	Search(&boardState, 3)
+	config := ExternalSearchConfig{isDebug: true, debugMoves: "Nc7"}
+	result := SearchWithConfig(&boardState, 4, config)
+
+	assert.True(t, result.value < 0)
+	assert.False(t, result.move.from == SQUARE_B5 && result.move.to == SQUARE_C7)
+}
