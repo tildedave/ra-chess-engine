@@ -128,3 +128,13 @@ func TestSearchWhiteDoesNotHangKnight(t *testing.T) {
 	assert.True(t, result.value > 0)
 	assert.False(t, result.move.from == SQUARE_B5 && result.move.to == SQUARE_C7)
 }
+
+func TestSearchWhiteDoesNotUseTranspositionTableOnFirstDepth(t *testing.T) {
+	boardState, _ := CreateBoardStateFromFENString("rnb1k2r/pppp1ppp/4p3/4P3/1b1P3P/8/PPP1NP1P/R1BnKB1R w KQkq - 0 8")
+	Search(&boardState, 1)
+	Search(&boardState, 2)
+	Search(&boardState, 3)
+	result := Search(&boardState, 4)
+
+	assert.False(t, result.move.from == SQUARE_A1 && result.move.to == SQUARE_A1)
+}
