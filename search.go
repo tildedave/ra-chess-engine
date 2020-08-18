@@ -126,20 +126,22 @@ func searchAlphaBeta(
 
 	var hashMove = make([]Move, 0)
 	if entry := ProbeTranspositionTable(boardState); entry != nil {
-		if entry.depth >= depthLeft {
-			switch entry.entryType {
-			case TT_EXACT:
-				searchStats.tthits++
-				return entry.score
-			case TT_FAIL_HIGH:
-				if entry.score >= beta {
+		if currentDepth > 0 {
+			if entry.depth >= depthLeft {
+				switch entry.entryType {
+				case TT_EXACT:
 					searchStats.tthits++
-					return beta
-				}
-			case TT_FAIL_LOW:
-				if entry.score <= alpha {
-					searchStats.tthits++
-					return alpha
+					return entry.score
+				case TT_FAIL_HIGH:
+					if entry.score >= beta {
+						searchStats.tthits++
+						return beta
+					}
+				case TT_FAIL_LOW:
+					if entry.score <= alpha {
+						searchStats.tthits++
+						return alpha
+					}
 				}
 			}
 		}
