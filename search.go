@@ -239,7 +239,7 @@ func searchAlphaBeta(
 					entryType)
 			}
 
-			if score > beta {
+			if score >= beta {
 				StoreTranspositionTable(boardState, move, score, TT_FAIL_HIGH, depthLeft)
 				searchStats.cutoffs++
 				if i == 0 {
@@ -283,8 +283,6 @@ func searchAlphaBeta(
 	if currentAlpha == alpha {
 		// never raised alpha
 		ttEntryType = TT_FAIL_LOW
-	} else if currentAlpha == beta {
-		ttEntryType = TT_FAIL_HIGH
 	} else {
 		// we raised alpha, so we have an exact match
 		ttEntryType = TT_EXACT
