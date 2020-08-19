@@ -11,6 +11,7 @@ var CHECKMATE_FLAG byte = 0x80
 var DRAW_FLAG byte = 0x40
 var CHECK_FLAG byte = 0x20
 var THREEFOLD_REP_FLAG byte = 0x10
+var MAX_DEPTH uint = 32
 
 type SearchStats struct {
 	leafnodes         uint64
@@ -151,10 +152,9 @@ func searchAlphaBeta(
 		}
 	}
 
-	if shouldAbort {
+	if shouldAbort || currentDepth >= MAX_DEPTH {
 		score := getLeafResult(boardState, searchStats)
-		// NOTE(2020) - this seems wrong
-		// StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
+		StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
 
 		return score
 	}
