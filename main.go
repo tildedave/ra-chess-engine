@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"log"
 	"os"
+	"runtime/debug"
 	"runtime/pprof"
 	"time"
 )
@@ -49,6 +50,13 @@ func main() {
 	InitializeMoveBitboards()
 	var success = true
 	var err error
+
+	defer func() {
+		if x := recover(); x != nil {
+			debug.PrintStack()
+			logger.Fatalf("Fatal error: %v", x)
+		}
+	}()
 
 	var f *os.File
 	if *cpuProfile != "" {
