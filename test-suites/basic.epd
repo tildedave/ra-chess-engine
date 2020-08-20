@@ -12,5 +12,5 @@ r5r1/pQ5p/1qp2R2/2k1p3/4P3/2PP4/P1P3PP/6K1 w - - bm Rxc6; id "testWac126";
 r1bq4/1p4kp/3p1n2/5pB1/p1pQ4/8/1P4PP/4RRK1 w - - bm Re8; id "testWcsac002";
 2k1r3/1p2Bq2/p2Qp3/Pb1p1p1P/2pP1P2/2P5/2P2KP1/1R6 w - - bm Rxb5; id "testWac247";
 r2Nqb1r/pQ1bp1pp/1pn1p3/2kp4/P1p2B2/2P5/1PP2PPP/R3KB1R w KQ - bm Qxc6; id "testWcsac482";
-5bk1/5pp1/3N2b1/2B4p/6P1/1R4QP/1P2rP1K/5q2 b - - bm Qxc6; id "testWcsac527";
+5bk1/5pp1/3N2b1/2B4p/6P1/1R4QP/1P2rP1K/5q2 b - - bm h4; id "testWcsac527";
 rn1k1r2/pp2R3/2pP1pqp/6p1/2BQ4/2P1B3/PP4P1/6K1 w - - bm Qb6; id "testBwtc39";
