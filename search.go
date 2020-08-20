@@ -265,8 +265,8 @@ func searchAlphaBeta(
 
 			moveOrdering[1] = listing.captures
 			moveOrdering[2] = listing.promotions
-			moveOrdering[3] = boardState.FilterChecks(moveOrdering[4])
 			moveOrdering[4] = listing.moves
+			moveOrdering[3] = boardState.FilterChecks(moveOrdering[4])
 		}
 	}
 
