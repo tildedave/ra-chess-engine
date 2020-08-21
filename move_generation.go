@@ -12,8 +12,8 @@ type MoveListing struct {
 }
 
 type PrecomputedInfo struct {
-	offset         int
-	otherOffset    int
+	side           int
+	otherSide      int
 	ourOccupancy   uint64
 	otherOccupancy uint64
 	allOccupancy   uint64
@@ -285,7 +285,7 @@ func GenerateQuiescentMoveListing(boardState *BoardState, hint MoveSizeHint) (Mo
 		var attackBoard uint64
 		switch fromPiece {
 		case PAWN_MASK:
-			attackBoard = moveBitboards.pawnAttacks[precomputedInfo.offset][sq]
+			attackBoard = moveBitboards.pawnAttacks[boardState.sideToMove][sq]
 		case KNIGHT_MASK:
 			attackBoard = moveBitboards.knightAttacks[sq].board
 		case KING_MASK:
@@ -339,14 +339,14 @@ func generateCapturesFromBoard(moveListing *MoveListing, from byte, attackBoard 
 }
 
 func generatePrecomputedInfo(boardState *BoardState) *PrecomputedInfo {
-	precomputedInfo := PrecomputedInfo{}
+	precomputedInfo := PrecomputedInfo{side: boardState.sideToMove}
 	switch boardState.sideToMove {
 	case WHITE_OFFSET:
-		precomputedInfo.otherOffset = BLACK_OFFSET
+		precomputedInfo.otherSide = BLACK_OFFSET
 		precomputedInfo.ourOccupancy = boardState.bitboards.color[WHITE_OFFSET]
 		precomputedInfo.otherOccupancy = boardState.bitboards.color[BLACK_OFFSET]
 	case BLACK_OFFSET:
-		precomputedInfo.otherOffset = WHITE_OFFSET
+		precomputedInfo.otherSide = WHITE_OFFSET
 		precomputedInfo.ourOccupancy = boardState.bitboards.color[BLACK_OFFSET]
 		precomputedInfo.otherOccupancy = boardState.bitboards.color[WHITE_OFFSET]
 	}

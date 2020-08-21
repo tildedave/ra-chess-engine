@@ -125,7 +125,7 @@ func TestSearchWhiteDoesNotHangKnight(t *testing.T) {
 	Search(&boardState, 3)
 	result := Search(&boardState, 4)
 
-	assert.True(t, result.value > 0)
+	assert.True(t, result.value >= 0)
 	assert.False(t, result.move.from == SQUARE_B5 && result.move.to == SQUARE_C7)
 }
 
