@@ -22,6 +22,7 @@ type XboardState struct {
 	opponentName string
 	moveHistory  []Move
 	err          error
+	initialFEN   string
 
 	// TODO: time control per side
 	// TODO: recent sd limit
@@ -107,7 +108,12 @@ ReadLoop:
 			sendStringMessage(output, fmt.Sprintf("move %s\n", MoveToXboardString(move)))
 
 			state.boardState.ApplyMove(move)
+			state.moveHistory = append(state.moveHistory, move)
+
 			sendBoardAsComment(output, state.boardState)
+
+		case ACTION_GAME_OVER:
+			sendGameAsComment(output, &state)
 		}
 
 		logger.Println("Waiting for commands...")
@@ -134,6 +140,24 @@ func sendBoardAsComment(output *bufio.Writer, boardState *BoardState) {
 	for _, line := range strings.Split(str, "\n") {
 		sendStringMessage(output, "# "+line+"\n")
 	}
+}
+
+func sendGameAsComment(output *bufio.Writer, state *XboardState) {
+	boardState, err := CreateBoardStateFromFENString(state.initialFEN)
+	if err != nil {
+		panic("Initial FEN was invalid - should never happen")
+	}
+
+	var gameAsPgn string
+	for i, move := range state.moveHistory {
+		if i%2 == 0 {
+			gameAsPgn += fmt.Sprintf("%d. ", (i/2)+1)
+		}
+		gameAsPgn += MoveToPrettyString(move, &boardState) + " "
+		boardState.ApplyMove(move)
+	}
+	// TODO - include result string for maximum prettiness :)
+	sendStringMessage(output, fmt.Sprintf("# %s\n", gameAsPgn))
 }
 
 func sendThinkingOutput(output *bufio.Writer, thinkingOutput ThinkingOutput) {
@@ -266,6 +290,7 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		// depth limit previously set by the sd command.
 
 		boardState := CreateInitialBoardState()
+		state.initialFEN = boardState.ToFENString()
 		state.boardState = &boardState
 		state.forceMode = false
 		state.randomMode = false
