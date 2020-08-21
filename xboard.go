@@ -99,7 +99,8 @@ ReadLoop:
 				}
 			}()
 
-			go thinkAndChooseMove(state.boardState, 5000, ExternalSearchConfig{}, ch, thinkingChan)
+			// TODO - smarter thinking
+			go thinkAndChooseMove(state.boardState, 7400, ExternalSearchConfig{}, ch, thinkingChan)
 			result := <-ch
 			move := result.move
 
