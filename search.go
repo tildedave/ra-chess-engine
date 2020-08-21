@@ -11,13 +11,22 @@ var CHECKMATE_FLAG byte = 0x80
 var DRAW_FLAG byte = 0x40
 var CHECK_FLAG byte = 0x20
 var THREEFOLD_REP_FLAG byte = 0x10
-var MAX_DEPTH uint = 32
+
+const MAX_DEPTH uint = 32
+
+const MOVE_HASH_MOVE = 0
+const MOVE_CAPTURES = 1
+const MOVE_PROMOTIONS = 2
+const MOVE_KILLERS = 3
+const MOVE_CHECKS = 4
+const MOVE_NORMAL = 5
 
 type SearchStats struct {
 	leafnodes         uint64
 	branchnodes       uint64
 	qbranchnodes      uint64
 	hashcutoffs       uint64
+	killercutoffs     uint64
 	cutoffs           uint64
 	qcutoffs          uint64
 	qcapturesfiltered uint64
@@ -66,16 +75,26 @@ type ExternalSearchConfig struct {
 	searchToDepth uint
 }
 
+type SearchMoveInfo struct {
+	// eventually add a second array here
+	killerMoves [MAX_DEPTH]Move
+}
+
 func Search(boardState *BoardState, depth uint) SearchResult {
 	return SearchWithConfig(boardState, depth, ExternalSearchConfig{})
 }
 
-func SearchWithConfig(boardState *BoardState, depth uint, config ExternalSearchConfig) SearchResult {
+func SearchWithConfig(
+	boardState *BoardState,
+	depth uint,
+	config ExternalSearchConfig,
+) SearchResult {
 	startTime := time.Now()
 
 	stats := SearchStats{}
 	variation := Variation{}
-	score := searchAlphaBeta(boardState, &stats, &variation, int(depth), 0, -INFINITY, INFINITY, SearchConfig{
+	moveInfo := SearchMoveInfo{}
+	score := searchAlphaBeta(boardState, &stats, &variation, &moveInfo, int(depth), 0, -INFINITY, INFINITY, SearchConfig{
 		isDebug:       config.isDebug,
 		debugMoves:    config.debugMoves,
 		startingDepth: depth,
@@ -114,6 +133,7 @@ func searchAlphaBeta(
 	boardState *BoardState,
 	searchStats *SearchStats,
 	variation *Variation,
+	moveInfo *SearchMoveInfo,
 	depthLeft int,
 	currentDepth uint,
 	alpha int,
@@ -159,7 +179,8 @@ func searchAlphaBeta(
 		return score
 	}
 
-	if boardState.IsInCheck(boardState.sideToMove) {
+	inCheck := boardState.IsInCheck(boardState.sideToMove)
+	if inCheck {
 		depthLeft++
 	}
 
@@ -185,8 +206,8 @@ func searchAlphaBeta(
 	// 2 = promotions
 	// 3 = checks
 	// 4 = moves
-	var moveOrdering [5][]Move
-	moveOrdering[0] = hashMove
+	var moveOrdering [6][]Move
+	moveOrdering[MOVE_HASH_MOVE] = hashMove
 
 	hasLegalMove := false
 
@@ -220,7 +241,7 @@ func searchAlphaBeta(
 			}
 			searchConfig.isDebug = false
 
-			score := -searchAlphaBeta(boardState, searchStats, &line, depthLeft-1, currentDepth+1, -beta, -currentAlpha,
+			score := -searchAlphaBeta(boardState, searchStats, &line, moveInfo, depthLeft-1, currentDepth+1, -beta, -currentAlpha,
 				searchConfig, hint)
 
 			boardState.UnapplyMove(move)
@@ -240,10 +261,13 @@ func searchAlphaBeta(
 			}
 
 			if score >= beta {
+				moveInfo.killerMoves[currentDepth] = move
 				StoreTranspositionTable(boardState, move, score, TT_FAIL_HIGH, depthLeft)
 				searchStats.cutoffs++
 				if i == 0 {
 					searchStats.hashcutoffs++
+				} else if i == 3 {
+					searchStats.killercutoffs++
 				}
 				return score
 			}
@@ -263,10 +287,25 @@ func searchAlphaBeta(
 			// add the other moves now that we're done with hash move
 			listing, hint = GenerateMoveListing(boardState, hint, true)
 
-			moveOrdering[1] = listing.captures
-			moveOrdering[2] = listing.promotions
-			moveOrdering[4] = listing.moves
-			moveOrdering[3] = boardState.FilterChecks(moveOrdering[4])
+			moveOrdering[MOVE_CAPTURES] = listing.captures
+			moveOrdering[MOVE_PROMOTIONS] = listing.promotions
+			if !inCheck {
+				killerMove := moveInfo.killerMoves[currentDepth]
+				if _, err := boardState.IsMoveLegal(killerMove); err == nil {
+					// IsMoveLegal is pretty dumb and doesn't do enough 'real' checks of the
+					// position to be relied on.  We already have generated all the moves for
+					// this position so this is a simple way to avoid illegal killer moves.
+					// If IsMoveLegal gets smarter we can probably remove this.
+					for _, move := range listing.moves {
+						if move == killerMove {
+							moveOrdering[MOVE_KILLERS] = []Move{killerMove}
+							break
+						}
+					}
+				}
+			}
+			moveOrdering[MOVE_NORMAL] = listing.moves
+			moveOrdering[MOVE_CHECKS] = boardState.FilterChecks(moveOrdering[MOVE_NORMAL])
 		}
 	}
 
@@ -428,7 +467,7 @@ func SearchValueToString(result SearchResult) string {
 }
 
 func (stats *SearchStats) String() string {
-	return fmt.Sprintf("[nodes=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, tthits=%d, cutoffs=%d, hash cutoffs=%d, qcutoffs=%d, qcapturesfiltered=%d]",
+	return fmt.Sprintf("[nodes=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, tthits=%d, cutoffs=%d, hash cutoffs=%d, killer cutoffs=%d, qcutoffs=%d, qcapturesfiltered=%d]",
 		stats.Nodes(),
 		stats.leafnodes,
 		stats.branchnodes,
@@ -436,6 +475,7 @@ func (stats *SearchStats) String() string {
 		stats.tthits,
 		stats.cutoffs,
 		stats.hashcutoffs,
+		stats.killercutoffs,
 		stats.qcutoffs,
 		stats.qcapturesfiltered)
 }
