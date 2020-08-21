@@ -14,13 +14,18 @@ var logger *log.Logger = nil
 
 // https://www.gnu.org/software/xboard/engine-intf.html
 
+type XboardMove struct {
+	move   Move
+	result SearchResult // possibly null
+}
+
 type XboardState struct {
 	boardState   *BoardState
 	forceMode    bool
 	post         bool
 	randomMode   bool
 	opponentName string
-	moveHistory  []Move
+	moveHistory  []XboardMove
 	err          error
 	initialFEN   string
 
@@ -106,9 +111,11 @@ ReadLoop:
 			move := result.move
 
 			sendStringMessage(output, fmt.Sprintf("move %s\n", MoveToXboardString(move)))
+			sendStringMessage(output, fmt.Sprintf("# %s\n", result.String()))
 
 			state.boardState.ApplyMove(move)
-			state.moveHistory = append(state.moveHistory, move)
+			xboardMove := XboardMove{move: move, result: result}
+			state.moveHistory = append(state.moveHistory, xboardMove)
 
 			sendBoardAsComment(output, state.boardState)
 
@@ -149,12 +156,18 @@ func sendGameAsComment(output *bufio.Writer, state *XboardState) {
 	}
 
 	var gameAsPgn string
-	for i, move := range state.moveHistory {
+	for i, xboardMove := range state.moveHistory {
 		if i%2 == 0 {
 			gameAsPgn += fmt.Sprintf("%d. ", (i/2)+1)
 		}
-		gameAsPgn += MoveToPrettyString(move, &boardState) + " "
-		boardState.ApplyMove(move)
+		gameAsPgn += MoveToPrettyString(xboardMove.move, &boardState) + " "
+		if xboardMove.result.depth > 0 {
+			gameAsPgn += fmt.Sprintf("{%d/%d %s} ",
+				xboardMove.result.value,
+				xboardMove.result.depth,
+				xboardMove.result.pv)
+		}
+		boardState.ApplyMove(xboardMove.move)
 	}
 	// TODO - include result string for maximum prettiness :)
 	sendStringMessage(output, fmt.Sprintf("# %s\n", gameAsPgn))
@@ -198,10 +211,8 @@ func thinkAndChooseMove(
 				return
 			default:
 				// TODO: having to copy the board state indicates a bug somewhere
-				logger.Printf("Searching depth %d\n", i)
 				state := CopyBoardState(boardState)
 				result := SearchWithConfig(&state, uint(i), config)
-				logger.Printf("Depth %d: %s\n", i, result.String())
 				resultCh <- result
 				i = i + 1
 			}
@@ -367,7 +378,7 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 
 		logger.Printf("Applying move %s\n", MoveToString(move, state.boardState))
 		state.boardState.ApplyMove(move)
-		state.moveHistory = append(state.moveHistory, move)
+		state.moveHistory = append(state.moveHistory, XboardMove{move: move})
 
 		if !state.forceMode {
 			action = ACTION_THINK_AND_MOVE
@@ -476,9 +487,9 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		// in this case.)
 
 		idx := len(state.moveHistory) - 1
-		move := state.moveHistory[idx]
+		xboardMove := state.moveHistory[idx]
 		state.moveHistory = state.moveHistory[:idx]
-		state.boardState.UnapplyMove(move)
+		state.boardState.UnapplyMove(xboardMove.move)
 
 	case command == "remove":
 		// If the user asks to retract a move, xboard will send you the "remove" command. It sends this command only
@@ -486,11 +497,11 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		// playing the same color.
 
 		idx := len(state.moveHistory) - 2
-		move1 := state.moveHistory[idx]
-		move2 := state.moveHistory[idx+1]
+		xboardMove1 := state.moveHistory[idx]
+		xboardMove2 := state.moveHistory[idx+1]
 		state.moveHistory = state.moveHistory[:idx]
-		state.boardState.UnapplyMove(move2)
-		state.boardState.UnapplyMove(move1)
+		state.boardState.UnapplyMove(xboardMove1.move)
+		state.boardState.UnapplyMove(xboardMove2.move)
 		action = ACTION_THINK_AND_MOVE
 
 	case command == "hard":
