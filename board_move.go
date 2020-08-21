@@ -5,6 +5,8 @@ import (
 	"strconv"
 )
 
+var errMoveUninitialized error = errors.New("Uninitialized move")
+
 func (boardState *BoardState) ApplyMove(move Move) {
 	boardState.boardInfoHistory[boardState.moveIndex] = boardState.boardInfo
 
@@ -203,6 +205,10 @@ func (boardState *BoardState) ApplyMove(move Move) {
 }
 
 func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
+	if move.from == move.to {
+		return false, errMoveUninitialized
+	}
+
 	fromPiece := boardState.board[move.from]
 	toPiece := boardState.board[move.to]
 	var pieceMask byte
@@ -222,8 +228,14 @@ func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
 		return false, errors.New("From square was not occupied by expected piece: " + strconv.Itoa(int(fromPiece)))
 	}
 
-	if toPiece != EMPTY_SQUARE && toPiece&captureMask != captureMask {
-		return false, errors.New("Attempted to capture a piece of the same color: " + strconv.Itoa(int(toPiece)))
+	if toPiece != EMPTY_SQUARE {
+		if toPiece&captureMask != captureMask {
+			return false, errors.New("Attempted to capture a piece of the same color: " + strconv.Itoa(int(toPiece)))
+		}
+
+		if toPiece == KING_MASK|captureMask {
+			return false, errors.New("Attempted to capture king")
+		}
 	}
 
 	// TODO: ensure side to move not in check
