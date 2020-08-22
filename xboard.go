@@ -16,7 +16,11 @@ var logger *log.Logger = nil
 
 type XboardMove struct {
 	move   Move
-	result SearchResult // possibly null
+	result SearchResult // possibly uninitialized
+}
+
+func (move *XboardMove) HasResult() bool {
+	return move.result.depth > 0
 }
 
 type XboardState struct {
@@ -28,6 +32,7 @@ type XboardState struct {
 	moveHistory  []XboardMove
 	err          error
 	initialFEN   string
+	result       string
 
 	// TODO: time control per side
 	// TODO: recent sd limit
@@ -161,7 +166,7 @@ func sendGameAsComment(output *bufio.Writer, state *XboardState) {
 			gameAsPgn += fmt.Sprintf("%d. ", (i/2)+1)
 		}
 		gameAsPgn += MoveToPrettyString(xboardMove.move, &boardState) + " "
-		if xboardMove.result.depth > 0 {
+		if xboardMove.HasResult() {
 			gameAsPgn += fmt.Sprintf("{%d/%d %s} ",
 				xboardMove.result.value,
 				xboardMove.result.depth,
@@ -169,8 +174,8 @@ func sendGameAsComment(output *bufio.Writer, state *XboardState) {
 		}
 		boardState.ApplyMove(xboardMove.move)
 	}
-	// TODO - include result string for maximum prettiness :)
-	sendStringMessage(output, fmt.Sprintf("# %s\n", gameAsPgn))
+	gameAsComment := fmt.Sprintf("# %s %s\n", strings.Trim(gameAsPgn, " "), state.result)
+	sendStringMessage(output, gameAsComemnt)
 }
 
 func sendThinkingOutput(output *bufio.Writer, thinkingOutput ThinkingOutput) {
@@ -272,7 +277,7 @@ var protoverRegexp = regexp.MustCompile("^protover \\d$")
 var variantRegexp = regexp.MustCompile("^variant \\w+$")
 var moveRegexp = regexp.MustCompile("^([abcdefgh][1-8]){2}([nbqr])?$")
 var pingRegexp = regexp.MustCompile("^ping \\d$")
-var resultRegexp = regexp.MustCompile("^result (1\\-0|0\\-1|1/2\\-1/2|\\*) {[^}]+}$")
+var resultRegexp = regexp.MustCompile("^result (1\\-0|0\\-1|1/2\\-1/2|\\*)( {([^}]+)})?")
 var fenRegexp = regexp.MustCompile("^setboard (.*)$")
 var nameRegexp = regexp.MustCompile("^name (.*)$")
 
@@ -306,6 +311,7 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		state.forceMode = false
 		state.randomMode = false
 		state.err = nil
+		state.result = ""
 		action = ACTION_HALT
 
 	case variantRegexp.MatchString(command):
@@ -444,6 +450,10 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 		// stops playing by selecting Reset, Edit Game, Exit or the like.
 
 		action = ACTION_GAME_OVER
+		arr := resultRegexp.FindStringSubmatch(command)
+		result := arr[1]
+		comment := arr[3]
+		state.result = fmt.Sprintf("%s {%s}", result, comment)
 
 	case fenRegexp.MatchString(command):
 		// The setboard command is the new way to set up positions, beginning in protocol version 2. It is not used
@@ -474,6 +484,7 @@ func ProcessXboardCommand(command string, state XboardState) (int, XboardState) 
 			break
 		}
 		state.boardState = &boardState
+		state.initialFEN = fenString
 
 	case command == "hint":
 		// If the user asks for a hint, xboard sends your engine the command "hint". Your engine should respond with
