@@ -11,7 +11,7 @@ type HashInfo struct {
 	// this is a sparse array - will be indexed by offset and piece type
 	content                 [255][255]uint64
 	enpassant               [255]uint64 // indexed by offset
-	sideToMove            uint64
+	sideToMove              uint64
 	whiteCanCastleKingside  uint64
 	whiteCanCastleQueenside uint64
 	blackCanCastleKingside  uint64
@@ -80,9 +80,28 @@ func (boardState *BoardState) CreateHashKey(info *HashInfo) uint64 {
 	return key
 }
 
+func (boardState *BoardState) CreatePawnHashKey(info *HashInfo) uint64 {
+	var key uint64
+
+	for i := byte(0); i < 8; i++ {
+		for j := byte(0); j < 8; j++ {
+			sq := idx(j, i)
+			pieceAtSquare := boardState.board[sq]
+			if pieceAtSquare&0x0F == PAWN_MASK {
+				key ^= info.content[sq][boardState.board[sq]]
+			}
+		}
+	}
+
+	return key
+}
+
 // To be applied after a move has been made, to incrementally update the hash key.
 // For use in search
-func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo BoardInfo, move Move, isCapture bool) uint64 {
+func (boardState *BoardState) UpdateHashApplyMove(oldBoardInfo BoardInfo, move Move, isCapture bool) {
+	key := boardState.hashKey
+	pawnKey := boardState.pawnHashKey
+
 	info := boardState.hashInfo
 
 	if isCapture {
@@ -97,9 +116,14 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo Board
 				capturePiece = WHITE_MASK | PAWN_MASK
 			}
 			key ^= info.content[pos][capturePiece]
+			pawnKey ^= info.content[pos][capturePiece]
 		} else {
 			capturePiece := boardState.captureStack.Peek()
-			key ^= info.content[move.to][capturePiece]
+			update := info.content[move.to][capturePiece]
+			key ^= update
+			if capturePiece&0x0F == PAWN_MASK {
+				pawnKey ^= update
+			}
 		}
 	}
 
@@ -119,6 +143,13 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo Board
 	key ^= info.content[move.to][toPiece]
 	key ^= info.content[move.from][fromPiece]
 	key ^= info.sideToMove
+
+	if fromPiece&0x0F == PAWN_MASK {
+		pawnKey ^= info.content[move.from][fromPiece]
+	}
+	if toPiece&0x0F == PAWN_MASK {
+		pawnKey ^= info.content[move.to][toPiece]
+	}
 
 	if boardState.sideToMove == BLACK_OFFSET {
 		if move.IsKingsideCastle() {
@@ -155,13 +186,16 @@ func (boardState *BoardState) UpdateHashApplyMove(key uint64, oldBoardInfo Board
 		key ^= info.enpassant[boardState.boardInfo.enPassantTargetSquare]
 	}
 
-	return key
+	boardState.hashKey = key
+	boardState.pawnHashKey = pawnKey
 }
 
 // UpdateHashUnapplyMove gives a new hash key as a result of unapplying a move.
 // It should be called _after_ the move has been unprocessed, and the oldBoardInfo
 // should be the board info prior to the move being unprocessed.
-func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo BoardInfo, move Move, isCapture bool) uint64 {
+func (boardState *BoardState) UpdateHashUnapplyMove(oldBoardInfo BoardInfo, move Move, isCapture bool) {
+	key := boardState.hashKey
+	pawnKey := boardState.pawnHashKey
 	info := boardState.hashInfo
 	if isCapture {
 		// we've already put back the piece since this is done after move is unapplied
@@ -172,9 +206,16 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo Boa
 			} else {
 				pos = move.to + 8
 			}
-			key ^= info.content[pos][boardState.board[pos]]
+			update := info.content[pos][boardState.board[pos]]
+			key ^= update
+			pawnKey ^= update
 		} else {
-			key ^= info.content[move.to][boardState.board[move.to]]
+			capturedPiece := boardState.board[move.to]
+			update := info.content[move.to][capturedPiece]
+			key ^= update
+			if capturedPiece&0x0F == PAWN_MASK {
+				pawnKey ^= update
+			}
 		}
 	}
 
@@ -194,6 +235,12 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo Boa
 	key ^= info.content[move.to][toPiece]
 	key ^= info.content[move.from][fromPiece]
 	key ^= info.sideToMove
+	if toPiece&0x0F == PAWN_MASK {
+		pawnKey ^= info.content[move.to][toPiece]
+	}
+	if fromPiece&0x0F == PAWN_MASK {
+		pawnKey ^= info.content[move.from][fromPiece]
+	}
 
 	if boardState.sideToMove == WHITE_OFFSET {
 		if move.IsKingsideCastle() {
@@ -231,5 +278,6 @@ func (boardState *BoardState) UpdateHashUnapplyMove(key uint64, oldBoardInfo Boa
 		key ^= info.enpassant[boardState.boardInfo.enPassantTargetSquare]
 	}
 
-	return key
+	boardState.hashKey = key
+	boardState.pawnHashKey = pawnKey
 }

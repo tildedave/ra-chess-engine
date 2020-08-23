@@ -199,7 +199,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 		boardState.fullmoveNumber++
 	}
 
-	boardState.hashKey = boardState.UpdateHashApplyMove(boardState.hashKey, oldBoardInfo, move, isCapture)
+	boardState.UpdateHashApplyMove(oldBoardInfo, move, isCapture)
 	boardState.repetitionInfo.occurredHashes[boardState.moveIndex] = boardState.hashKey
 	boardState.repetitionInfo.pawnMoveOrCapture[boardState.moveIndex] = movePiece == PAWN_MASK || capturedPiece != 0
 }
@@ -423,5 +423,5 @@ func (boardState *BoardState) UnapplyMove(move Move) {
 			move.from)
 	}
 
-	boardState.hashKey = boardState.UpdateHashUnapplyMove(boardState.hashKey, oldBoardInfo, move, isCapture)
+	boardState.UpdateHashUnapplyMove(oldBoardInfo, move, isCapture)
 }

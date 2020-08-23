@@ -118,9 +118,11 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions, moves []Mov
 
 	for _, move := range moves[start:end] {
 		var originalHashKey uint64
+		var originalPawnHashKey uint64
 		if options.sanityCheck {
 			testMoveLegality(boardState, move)
 			originalHashKey = boardState.hashKey
+			originalPawnHashKey = boardState.pawnHashKey
 			sanityCheckBitboards(move, boardState)
 		}
 
@@ -175,6 +177,12 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions, moves []Mov
 					MoveToPrettyString(move, boardState),
 					boardState.hashKey,
 					originalHashKey)
+			}
+			if boardState.pawnHashKey != originalPawnHashKey {
+				fmt.Printf("Unapplying move did not restore original pawn hash key: %s (%d vs %d)\n",
+					MoveToPrettyString(move, boardState),
+					boardState.pawnHashKey,
+					originalPawnHashKey)
 			}
 		}
 	}
