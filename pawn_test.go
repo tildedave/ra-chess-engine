@@ -34,3 +34,8 @@ func TestPassedPawnBitboard(t *testing.T) {
 	assert.Equal(t, bitboard, GetPassedPawnBitboard(bitboard, otherBitboard, WHITE_OFFSET))
 	assert.Equal(t, otherBitboard, GetPassedPawnBitboard(otherBitboard, bitboard, BLACK_OFFSET))
 }
+
+func TestGetPawnRankBitboard(t *testing.T) {
+	bitboard := SetBitboard(SetBitboard(0, SQUARE_D4), SQUARE_H4)
+	assert.Equal(t, bitboard, GetPawnRankBitboard(bitboard, RANK_4))
+}
