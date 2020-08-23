@@ -41,3 +41,37 @@ func GetDoubledPawnBitboard(pawnBitboard uint64) uint64 {
 	}
 	return doubledBitboard
 }
+
+func GetPassedPawnBitboard(pawnBitboard uint64, otherSidePawnBitboard uint64, sideToMove int) uint64 {
+	var passedPawnBoard uint64
+	for pawnBitboard != 0 {
+		sq := byte(bits.TrailingZeros64(pawnBitboard))
+		pawnBitboard ^= 1 << sq
+
+		col := sq % 8
+		row := int(sq / 8)
+
+		var columnBoard uint64
+		var inc int
+		if sideToMove == WHITE_OFFSET {
+			inc = 1
+		} else {
+			inc = -1
+		}
+		for j := row + inc; j < 8 && j >= 0; j += inc {
+			maskSq := 8*byte(j) + col
+			columnBoard = SetBitboard(columnBoard, maskSq)
+			if col > 0 {
+				columnBoard = SetBitboard(columnBoard, maskSq-1)
+			}
+			if col < 7 {
+				columnBoard = SetBitboard(columnBoard, maskSq+1)
+			}
+		}
+		if otherSidePawnBitboard&columnBoard == 0 {
+			passedPawnBoard = SetBitboard(passedPawnBoard, sq)
+		}
+	}
+
+	return passedPawnBoard
+}
