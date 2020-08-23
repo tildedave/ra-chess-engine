@@ -240,11 +240,11 @@ func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
 
 	if fromPiece&0x0F == PAWN_MASK {
 		if pieceMask == BLACK_MASK {
-			if move.to <= SQUARE_H1 && move.flags != PROMOTION_MASK {
+			if move.to <= SQUARE_H1 && move.flags&PROMOTION_MASK == 0 {
 				return false, errors.New("Promoting without a promotion mask")
 			}
 		} else {
-			if move.to >= SQUARE_A8 && move.flags != PROMOTION_MASK {
+			if move.to >= SQUARE_A8 && move.flags&PROMOTION_MASK == 0 {
 				return false, errors.New("Promoting without a promotion mask")
 			}
 		}
