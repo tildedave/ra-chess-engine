@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -97,7 +96,7 @@ func TestSearchBlackForcesDraw(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D4, WHITE_MASK|PAWN_MASK)
 
 	result := Search(&boardState, 10)
-	assert.True(t, result.value < QUEEN_EVAL_SCORE)
+	assert.True(t, result.value < 300)
 }
 
 func TestSearchWhiteSavesKnightFromCapture(t *testing.T) {
@@ -112,7 +111,8 @@ func TestDoesNotHangCheckmate(t *testing.T) {
 	boardState, _ := CreateBoardStateFromFENString("5rk1/B3bppp/8/6P1/b1p1pP2/2P5/Pr4P1/R3K1NR w KQ - 0 24")
 
 	result := Search(&boardState, 2)
-	fmt.Println(result)
+
+	assert.True(t, result.value > -INFINITY+100)
 }
 
 func TestSearchWhiteDoesNotHangKnight(t *testing.T) {
@@ -123,7 +123,7 @@ func TestSearchWhiteDoesNotHangKnight(t *testing.T) {
 	Search(&boardState, 3)
 	result := Search(&boardState, 4)
 
-	assert.True(t, result.value >= 0)
+	assert.True(t, result.value >= -50)
 	assert.False(t, result.move.from == SQUARE_B5 && result.move.to == SQUARE_C7)
 }
 

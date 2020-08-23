@@ -9,7 +9,7 @@ type EvalOptions struct {
 	epdRegex string
 }
 
-const ENDGAME_MATERIAL_THRESHOLD = 1500
+const ENDGAME_MATERIAL_THRESHOLD = 1200
 
 const QUEEN_EVAL_SCORE = 800
 const PAWN_EVAL_SCORE = 100
@@ -27,6 +27,9 @@ const PAWN_IN_CENTER_EVAL_SCORE = 40
 const PIECE_IN_CENTER_EVAL_SCORE = 25
 const PIECE_ATTACKS_CENTER_EVAL_SCORE = 15
 const PAWN_ON_SEVENTH_RANK_SCORE = 300
+const PAWN_PASSED_ON_SIXTH_RANK_SCORE = 200
+const ISOLATED_PAWN_SCORE = -30
+const DOUBLED_PAWN_SCORE = -20
 
 const (
 	PHASE_OPENING    = iota
@@ -41,11 +44,13 @@ type BoardEval struct {
 	centerControl     int
 	whiteMaterial     int
 	blackMaterial     int
+	whitePawnScore    int
+	blackPawnScore    int
+	pawnScore         int
 	development       int
 	kingPosition      int
 	whiteKingPosition int
 	blackKingPosition int
-	passedPawns       int
 	hasMatingMaterial bool
 }
 
@@ -63,6 +68,17 @@ var pawnSixthRankBoard = [2]uint64{
 	0x0000000000FF0000,
 }
 
+var passedPawnByRankScore = [8]int{
+	0,
+	0,   // RANK_1
+	20,  // RANK_2
+	40,  // RANK_3
+	60,  // RANK_4
+	100, // RANK_5
+	150, // RANK_6
+	200, // RANK_7
+}
+
 var edges uint64 = 0xFF818181818181FF
 var nextToEdges uint64 = 0x007E424242427E00
 
@@ -74,76 +90,50 @@ func Eval(boardState *BoardState) BoardEval {
 
 	blackMaterial := 0
 	whiteMaterial := 0
-	blackHasPawns := false
-	whiteHasPawns := false
+	blackPawnMaterial := 0
+	whitePawnMaterial := 0
 	whiteHasQueen := false
 	blackHasQueen := false
+	whiteHasPawns := false
+	blackHasPawns := false
 	hasMatingMaterial := true
 
 	whiteOccupancy := boardState.bitboards.color[WHITE_OFFSET]
 	blackOccupancy := boardState.bitboards.color[BLACK_OFFSET]
-	pawnEntry := GetPawnTableEntry(boardState)
 
 	for pieceMask := byte(1); pieceMask <= 6; pieceMask++ {
 		pieceBoard := boardState.bitboards.piece[pieceMask]
 		whitePieceBoard := whiteOccupancy & pieceBoard
 		blackPieceBoard := blackOccupancy & pieceBoard
-		whiteMaterial += bits.OnesCount64(whitePieceBoard) * MATERIAL_SCORE[pieceMask]
-		blackMaterial += bits.OnesCount64(blackPieceBoard) * MATERIAL_SCORE[pieceMask]
 
-		if pieceMask == PAWN_MASK {
-			whitePawns := pieceBoard & whiteOccupancy
-			blackPawns := pieceBoard & blackOccupancy
+		whitePieceMaterial := bits.OnesCount64(whitePieceBoard) * MATERIAL_SCORE[pieceMask]
+		blackPieceMaterial := bits.OnesCount64(blackPieceBoard) * MATERIAL_SCORE[pieceMask]
 
-			// TODO: pawn checks beyond 7th rank checks need to verify that they're passed pawns
-			// or we're going to get some weird behavior in the engine
+		whiteMaterial += whitePieceMaterial
+		blackMaterial += blackPieceMaterial
 
-			if whitePawns != 0 {
-				whiteHasPawns = true
-				whiteMaterial += bits.OnesCount64(pawnEntry.pawnsPerRank[WHITE_OFFSET][RANK_7]) * PAWN_ON_SEVENTH_RANK_SCORE
-				// This is prioritizing connected pawns on the 6th rank
-				var sixthRank = pawnEntry.pawnsPerRank[WHITE_OFFSET][RANK_6]
-				if sixthRank != 0 && (sixthRank == 0x00C0000000000000 ||
-					sixthRank == 0x0060000000000000 ||
-					sixthRank == 0x0030000000000000 ||
-					sixthRank == 0x001A000000000000 ||
-					sixthRank == 0x000C000000000000 ||
-					sixthRank == 0x0006000000000000 ||
-					sixthRank == 0x0003000000000000) {
-					whiteMaterial += ROOK_EVAL_SCORE
-				}
-			}
-
-			if blackPawns != 0 {
-				blackHasPawns = true
-				blackMaterial += bits.OnesCount64(pawnEntry.pawnsPerRank[BLACK_OFFSET][RANK_2]) * PAWN_ON_SEVENTH_RANK_SCORE
-				// This is prioritizing connected pawns on the 3rd rank
-				var sixthRank = pawnEntry.pawnsPerRank[BLACK_OFFSET][RANK_3]
-				if sixthRank != 0 && (sixthRank == 0x0000000000C00000 ||
-					sixthRank == 0x0000000000600000 ||
-					sixthRank == 0x0000000000300000 ||
-					sixthRank == 0x00000000001A0000 ||
-					sixthRank == 0x00000000000C0000 ||
-					sixthRank == 0x0000000000060000 ||
-					sixthRank == 0x0000000000030000) {
-					blackMaterial += ROOK_EVAL_SCORE
-				}
-			}
-		} else if pieceMask == QUEEN_MASK {
+		if pieceMask == QUEEN_MASK {
 			whiteHasQueen = whitePieceBoard != 0
 			blackHasQueen = blackPieceBoard != 0
+		} else if pieceMask == PAWN_MASK {
+			whiteHasPawns = whitePieceBoard != 0
+			blackHasPawns = blackPieceBoard != 0
+			whitePawnMaterial = whitePieceMaterial
+			blackPawnMaterial = blackPieceMaterial
 		}
 	}
 
 	// This isn't correct, bitboards will make this easier
-	if !blackHasPawns && !whiteHasPawns && blackMaterial <= KNIGHT_EVAL_SCORE && whiteMaterial <= KNIGHT_EVAL_SCORE {
+	if !whiteHasPawns && !blackHasPawns && blackMaterial <= KNIGHT_EVAL_SCORE && whiteMaterial <= KNIGHT_EVAL_SCORE {
 		hasMatingMaterial = false
 	}
 
-	// TODO: pawns probably shouldn't count for this
-	if blackMaterial < ENDGAME_MATERIAL_THRESHOLD && whiteMaterial < ENDGAME_MATERIAL_THRESHOLD {
+	if blackMaterial-blackPawnMaterial < ENDGAME_MATERIAL_THRESHOLD &&
+		whiteMaterial-whitePawnMaterial < ENDGAME_MATERIAL_THRESHOLD {
 		boardPhase = PHASE_ENDGAME
 	}
+
+	whitePawnScore, blackPawnScore := evalPawnStructure(boardState, boardPhase)
 
 	// TODO - endgame: determine passed pawns and prioritize them
 
@@ -214,7 +204,6 @@ func Eval(boardState *BoardState) BoardEval {
 		}
 	} else {
 		// prioritize king position
-
 		if IsBitboardSet(edges, whiteKingSq) {
 			whiteKingPosition -= ENDGAME_KING_ON_EDGE_PENALTY
 		} else if IsBitboardSet(nextToEdges, whiteKingSq) {
@@ -241,7 +230,10 @@ func Eval(boardState *BoardState) BoardEval {
 		material:          whiteMaterial - blackMaterial,
 		blackMaterial:     blackMaterial,
 		whiteMaterial:     whiteMaterial,
+		whitePawnScore:    whitePawnScore,
+		blackPawnScore:    blackPawnScore,
 		kingPosition:      whiteKingPosition - blackKingPosition,
+		pawnScore:         whitePawnScore - blackPawnScore,
 		whiteKingPosition: whiteKingPosition,
 		blackKingPosition: blackKingPosition,
 		centerControl:     centerControl,
@@ -249,8 +241,36 @@ func Eval(boardState *BoardState) BoardEval {
 	}
 }
 
+func evalPawnStructure(boardState *BoardState, boardPhase int) (int, int) {
+	pawnEntry := GetPawnTableEntry(boardState)
+	whitePawnScore := 0
+	blackPawnScore := 0
+
+	whitePassers := pawnEntry.passedPawns[WHITE_OFFSET]
+	blackPassers := pawnEntry.passedPawns[BLACK_OFFSET]
+
+	for _, rank := range []byte{RANK_5, RANK_6, RANK_7} {
+		rankWhitePawns := pawnEntry.pawnsPerRank[WHITE_OFFSET][rank]
+		rankBlackPawns := pawnEntry.pawnsPerRank[BLACK_OFFSET][8-rank+1]
+		whitePawnScore += passedPawnByRankScore[rank] * bits.OnesCount64(whitePassers&rankWhitePawns)
+		blackPawnScore += passedPawnByRankScore[rank] * bits.OnesCount64(blackPassers&rankBlackPawns)
+	}
+
+	whitePawnScore += DOUBLED_PAWN_SCORE * bits.OnesCount64(pawnEntry.isolatedPawns[WHITE_OFFSET])
+	blackPawnScore += DOUBLED_PAWN_SCORE * bits.OnesCount64(pawnEntry.isolatedPawns[BLACK_OFFSET])
+
+	if boardPhase != PHASE_ENDGAME {
+		whiteIsolatedPawnCount := bits.OnesCount64(pawnEntry.isolatedPawns[WHITE_OFFSET])
+		blackIsolatedPawnCount := bits.OnesCount64(pawnEntry.isolatedPawns[BLACK_OFFSET])
+		whitePawnScore += ISOLATED_PAWN_SCORE * whiteIsolatedPawnCount
+		blackPawnScore += ISOLATED_PAWN_SCORE * blackIsolatedPawnCount
+	}
+
+	return whitePawnScore, blackPawnScore
+}
+
 func (eval BoardEval) value() int {
-	score := eval.material + eval.kingPosition + eval.centerControl
+	score := eval.material + eval.kingPosition + eval.centerControl + eval.pawnScore
 	if eval.sideToMove == BLACK_OFFSET {
 		return -score
 	}
