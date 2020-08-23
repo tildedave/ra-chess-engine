@@ -43,6 +43,14 @@ type SearchResult struct {
 	pv    string
 }
 
+type ThinkingOutput struct {
+	ply   uint
+	score int
+	time  int64
+	nodes uint64
+	pv    string
+}
+
 type Variation struct {
 	move     [MAX_MOVES]Move
 	numMoves uint
@@ -67,6 +75,7 @@ type SearchConfig struct {
 	isDebug       bool
 	debugMoves    string
 	startingDepth uint
+	startTime     time.Time
 }
 
 type ExternalSearchConfig struct {
@@ -81,24 +90,36 @@ type SearchMoveInfo struct {
 }
 
 func Search(boardState *BoardState, depth uint) SearchResult {
-	return SearchWithConfig(boardState, depth, ExternalSearchConfig{})
+	return SearchWithConfig(boardState, depth, ExternalSearchConfig{}, nil)
 }
 
 func SearchWithConfig(
 	boardState *BoardState,
 	depth uint,
 	config ExternalSearchConfig,
+	thinkingChan chan ThinkingOutput,
 ) SearchResult {
 	startTime := time.Now()
 
 	stats := SearchStats{}
 	variation := Variation{}
 	moveInfo := SearchMoveInfo{}
-	score := searchAlphaBeta(boardState, &stats, &variation, &moveInfo, int(depth), 0, -INFINITY, INFINITY, SearchConfig{
+
+	alpha := -INFINITY
+	beta := INFINITY
+	searchConfig := SearchConfig{
 		isDebug:       config.isDebug,
 		debugMoves:    config.debugMoves,
 		startingDepth: depth,
-	}, MoveSizeHint{})
+		startTime:     startTime,
+	}
+	score := searchAlphaBeta(boardState, &stats, &variation, &moveInfo,
+		thinkingChan,
+		int(depth),
+		0,
+		alpha, beta,
+		searchConfig,
+		MoveSizeHint{})
 
 	result := SearchResult{}
 	if boardState.sideToMove == BLACK_OFFSET {
@@ -118,6 +139,10 @@ func SearchWithConfig(
 	result.stats = stats
 	result.depth = depth
 
+	if shouldAbort {
+		close(thinkingChan)
+	}
+
 	return result
 }
 
@@ -134,6 +159,7 @@ func searchAlphaBeta(
 	searchStats *SearchStats,
 	variation *Variation,
 	moveInfo *SearchMoveInfo,
+	thinkingChan chan ThinkingOutput,
 	depthLeft int,
 	currentDepth uint,
 	alpha int,
@@ -241,7 +267,9 @@ func searchAlphaBeta(
 			}
 			searchConfig.isDebug = false
 
-			score := -searchAlphaBeta(boardState, searchStats, &line, moveInfo, depthLeft-1, currentDepth+1, -beta, -currentAlpha,
+			score := -searchAlphaBeta(boardState, searchStats, &line, moveInfo, thinkingChan,
+				depthLeft-1, currentDepth+1,
+				-beta, -currentAlpha, // swap alpha and beta
 				searchConfig, hint)
 
 			boardState.UnapplyMove(move)
@@ -278,6 +306,16 @@ func searchAlphaBeta(
 				if bestScore > alpha {
 					currentAlpha = score
 					CopyVariation(variation, move, &line)
+					if currentDepth == 0 && thinkingChan != nil {
+						pv, _ := MoveArrayToPrettyString(variation.move[0:variation.numMoves], boardState)
+						thinkingChan <- ThinkingOutput{
+							ply:   uint(depthLeft),
+							score: bestScore,
+							time:  time.Now().Sub(searchConfig.startTime).Nanoseconds(),
+							nodes: searchStats.Nodes(),
+							pv:    pv,
+						}
+					}
 				}
 			}
 		}
