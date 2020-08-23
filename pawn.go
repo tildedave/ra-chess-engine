@@ -4,6 +4,12 @@ import (
 	"math/bits"
 )
 
+type PawnTableEntry struct {
+	passedPawns  [2]uint64
+	doubledPawns [2]uint64
+	pawnsPerRank [2][8]uint64
+}
+
 // Given a bitboard which is the pawns for a single side, return a bitboard which
 // contains only the doubled pawns.
 func GetDoubledPawnBitboard(pawnBitboard uint64) uint64 {
@@ -21,7 +27,7 @@ func GetDoubledPawnBitboard(pawnBitboard uint64) uint64 {
 			if j == row {
 				continue
 			}
-			columnBoard = SetBitboard(columnBoard, 8*j+col)
+			columnBoard = SetBitboard(columnBoard, idx(col, j))
 		}
 
 		overlapBoard := (columnBoard & originalBoard)
@@ -59,7 +65,7 @@ func GetPassedPawnBitboard(pawnBitboard uint64, otherSidePawnBitboard uint64, si
 			inc = -1
 		}
 		for j := row + inc; j < 8 && j >= 0; j += inc {
-			maskSq := 8*byte(j) + col
+			maskSq := idx(col, byte(j))
 			columnBoard = SetBitboard(columnBoard, maskSq)
 			if col > 0 {
 				columnBoard = SetBitboard(columnBoard, maskSq-1)
@@ -74,4 +80,37 @@ func GetPassedPawnBitboard(pawnBitboard uint64, otherSidePawnBitboard uint64, si
 	}
 
 	return passedPawnBoard
+}
+
+func GetPawnRankBitboard(pawnBitboard uint64, rank byte) uint64 {
+	var bitboard uint64
+	for j := byte(0); j < 8; j++ {
+		bitboard = SetBitboard(bitboard, idx(j, rank-1))
+	}
+	return pawnBitboard & bitboard
+}
+
+// Return the pawn table entry for the given board state
+func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
+	tableEntry := boardState.pawnTable[boardState.pawnHashKey]
+	if tableEntry != nil {
+		return tableEntry
+	}
+
+	// compute
+	entry := PawnTableEntry{}
+	allPawns := boardState.bitboards.piece[PAWN_MASK]
+	whitePawns := allPawns & boardState.bitboards.color[WHITE_OFFSET]
+	blackPawns := allPawns & boardState.bitboards.color[BLACK_OFFSET]
+	entry.doubledPawns[WHITE_OFFSET] = GetDoubledPawnBitboard(whitePawns)
+	entry.doubledPawns[BLACK_OFFSET] = GetDoubledPawnBitboard(blackPawns)
+	entry.passedPawns[WHITE_OFFSET] = GetPassedPawnBitboard(whitePawns, blackPawns, WHITE_OFFSET)
+	entry.passedPawns[BLACK_OFFSET] = GetPassedPawnBitboard(blackPawns, whitePawns, BLACK_OFFSET)
+	for rank := RANK_2; rank <= RANK_7; rank++ {
+		entry.pawnsPerRank[WHITE_OFFSET][rank] = GetPawnRankBitboard(whitePawns, rank)
+		entry.pawnsPerRank[BLACK_OFFSET][rank] = GetPawnRankBitboard(blackPawns, rank)
+	}
+	boardState.pawnTable[boardState.pawnHashKey] = &entry
+
+	return &entry
 }

@@ -250,6 +250,7 @@ type BoardState struct {
 	hashInfo *HashInfo
 	// Transposition table
 	transpositionTable map[uint64]*TranspositionEntry
+	pawnTable          map[uint64]*PawnTableEntry
 
 	repetitionInfo RepetitionInfo
 }

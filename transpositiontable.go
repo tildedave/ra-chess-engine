@@ -22,6 +22,7 @@ var hashArray map[uint64]*TranspositionEntry
 
 func generateTranspositionTable(boardState *BoardState) {
 	boardState.transpositionTable = make(map[uint64]*TranspositionEntry)
+	boardState.pawnTable = make(map[uint64]*PawnTableEntry)
 }
 
 func ProbeTranspositionTable(boardState *BoardState) *TranspositionEntry {

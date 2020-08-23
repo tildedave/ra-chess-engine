@@ -35,7 +35,7 @@ const (
 )
 
 type BoardEval struct {
-	sideToMove      int
+	sideToMove        int
 	material          int
 	phase             int
 	centerControl     int
@@ -58,19 +58,9 @@ var pawnProtectionBoard = [2]uint64{
 	0x00FF000000000000,
 }
 
-var pawnSeventhRankBoard = [2]uint64{
-	0x00FF000000000000,
-	0x000000000000FF00,
-}
-
 var pawnSixthRankBoard = [2]uint64{
 	0x0000FF0000000000,
 	0x0000000000FF0000,
-}
-
-var passedPawnBoard = [2]uint64{
-	0x000000FFFFFFFF00,
-	0x00FFFFFFFF000000,
 }
 
 var edges uint64 = 0xFF818181818181FF
@@ -92,6 +82,7 @@ func Eval(boardState *BoardState) BoardEval {
 
 	whiteOccupancy := boardState.bitboards.color[WHITE_OFFSET]
 	blackOccupancy := boardState.bitboards.color[BLACK_OFFSET]
+	pawnEntry := GetPawnTableEntry(boardState)
 
 	for pieceMask := byte(1); pieceMask <= 6; pieceMask++ {
 		pieceBoard := boardState.bitboards.piece[pieceMask]
@@ -109,9 +100,9 @@ func Eval(boardState *BoardState) BoardEval {
 
 			if whitePawns != 0 {
 				whiteHasPawns = true
-				whiteMaterial += bits.OnesCount64(whitePawns&pawnSeventhRankBoard[WHITE_OFFSET]) * PAWN_ON_SEVENTH_RANK_SCORE
-
-				var sixthRank = whitePawns & pawnSixthRankBoard[WHITE_OFFSET]
+				whiteMaterial += bits.OnesCount64(pawnEntry.pawnsPerRank[WHITE_OFFSET][RANK_7]) * PAWN_ON_SEVENTH_RANK_SCORE
+				// This is prioritizing connected pawns on the 6th rank
+				var sixthRank = pawnEntry.pawnsPerRank[WHITE_OFFSET][RANK_6]
 				if sixthRank != 0 && (sixthRank == 0x00C0000000000000 ||
 					sixthRank == 0x0060000000000000 ||
 					sixthRank == 0x0030000000000000 ||
@@ -125,9 +116,9 @@ func Eval(boardState *BoardState) BoardEval {
 
 			if blackPawns != 0 {
 				blackHasPawns = true
-				blackMaterial += bits.OnesCount64(blackPawns&pawnSeventhRankBoard[BLACK_OFFSET]) * PAWN_ON_SEVENTH_RANK_SCORE
-
-				var sixthRank = blackPawns & pawnSixthRankBoard[BLACK_OFFSET]
+				blackMaterial += bits.OnesCount64(pawnEntry.pawnsPerRank[BLACK_OFFSET][RANK_2]) * PAWN_ON_SEVENTH_RANK_SCORE
+				// This is prioritizing connected pawns on the 3rd rank
+				var sixthRank = pawnEntry.pawnsPerRank[BLACK_OFFSET][RANK_3]
 				if sixthRank != 0 && (sixthRank == 0x0000000000C00000 ||
 					sixthRank == 0x0000000000600000 ||
 					sixthRank == 0x0000000000300000 ||
@@ -245,7 +236,7 @@ func Eval(boardState *BoardState) BoardEval {
 	}
 
 	return BoardEval{
-		sideToMove:      boardState.sideToMove,
+		sideToMove:        boardState.sideToMove,
 		phase:             boardPhase,
 		material:          whiteMaterial - blackMaterial,
 		blackMaterial:     blackMaterial,
