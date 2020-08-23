@@ -308,10 +308,11 @@ func searchAlphaBeta(
 					CopyVariation(variation, move, &line)
 					if currentDepth == 0 && thinkingChan != nil {
 						pv, _ := MoveArrayToPrettyString(variation.move[0:variation.numMoves], boardState)
+						timeNanos := time.Now().Sub(searchConfig.startTime).Nanoseconds()
 						thinkingChan <- ThinkingOutput{
 							ply:   uint(depthLeft),
 							score: bestScore,
-							time:  time.Now().Sub(searchConfig.startTime).Nanoseconds(),
+							time:  int64(float32(timeNanos) * 1e-7),
 							nodes: searchStats.Nodes(),
 							pv:    pv,
 						}
