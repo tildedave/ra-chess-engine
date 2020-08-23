@@ -80,7 +80,7 @@ func TestProcessRemoveCommand(t *testing.T) {
 	_, state = ProcessXboardCommand("new", state)
 	_, state = ProcessXboardCommand("force", state)
 	_, state = ProcessXboardCommand("e2e4", state)
-	_, state = ProcessXboardCommand("e5e7", state)
+	_, state = ProcessXboardCommand("e7e5", state)
 	action, state = ProcessXboardCommand("remove", state)
 
 	assert.Equal(t, BLACK_MASK|PAWN_MASK, state.boardState.PieceAtSquare(SQUARE_E7))
