@@ -237,7 +237,8 @@ type BoardState struct {
 	// starts at 1, incremented after Black moves
 	fullmoveNumber uint
 
-	hashKey uint64
+	hashKey     uint64
+	pawnHashKey uint64
 
 	// Internal structures to allow unmaking moves
 	captureStack     byteStack
@@ -314,6 +315,8 @@ func generateZobrishHashInfo(boardState *BoardState) {
 	// this factoring is dumb since we need to keep the hash
 	// info around to progressively change the hash key
 	boardState.hashKey = boardState.CreateHashKey(&hashInfo)
+	boardState.pawnHashKey = boardState.CreatePawnHashKey(&hashInfo)
+
 	boardState.repetitionInfo.occurredHashes[boardState.moveIndex] = boardState.hashKey
 }
 
