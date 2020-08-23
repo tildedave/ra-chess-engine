@@ -167,7 +167,7 @@ func sendGameAsComment(output *bufio.Writer, state *XboardState) {
 		boardState.ApplyMove(xboardMove.move)
 	}
 	gameAsComment := fmt.Sprintf("# %s %s\n", strings.Trim(gameAsPgn, " "), state.result)
-	sendStringMessage(output, gameAsComemnt)
+	sendStringMessage(output, gameAsComment)
 }
 
 func sendThinkingOutput(output *bufio.Writer, thinkingOutput ThinkingOutput) {
