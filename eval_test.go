@@ -41,6 +41,7 @@ func TestEvalPassedPawns(t *testing.T) {
 
 	boardEval := Eval(&testBoard)
 	fmt.Println(boardEval)
+	boardEval.whitePawnScore
 }
 
 func TestEvalStartingPosition(t *testing.T) {
