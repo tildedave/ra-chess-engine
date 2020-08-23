@@ -50,14 +50,6 @@ const (
 	ACTION_ERROR          = iota
 )
 
-type ThinkingOutput struct {
-	ply   uint
-	score int
-	time  int64
-	nodes uint64
-	pv    string
-}
-
 func RunXboard(scanner *bufio.Scanner, output *bufio.Writer) (bool, error) {
 	var state XboardState
 	var action int = ACTION_NOTHING
@@ -217,7 +209,7 @@ func thinkAndChooseMove(
 			default:
 				// TODO: having to copy the board state indicates a bug somewhere
 				state := CopyBoardState(boardState)
-				result := SearchWithConfig(&state, uint(i), config)
+				result := SearchWithConfig(&state, uint(i), config, thinkingChan)
 				resultCh <- result
 				i = i + 1
 			}
@@ -237,18 +229,12 @@ func thinkAndChooseMove(
 			case bestResult = <-resultCh:
 				logger.Println("New result:")
 				logger.Println(bestResult.String())
-				thinkingChan <- ThinkingOutput{
-					ply:   bestResult.depth,
-					score: bestResult.value,
-					time:  bestResult.time.Nanoseconds(),
-					nodes: bestResult.stats.Nodes(),
-					pv:    bestResult.pv,
-				}
 
 				if bestResult.flags == CHECKMATE_FLAG ||
 					bestResult.flags == DRAW_FLAG ||
 					bestResult.depth == MAX_DEPTH {
 					logger.Println("Best result is terminal, time to stop thinking")
+					shouldAbort = true
 					break ThinkingLoop
 				}
 
@@ -268,7 +254,6 @@ func thinkAndChooseMove(
 		shouldAbort = true
 		ch <- bestResult
 		close(ch)
-		close(thinkingChan)
 		searchQuit <- true
 	}()
 }
