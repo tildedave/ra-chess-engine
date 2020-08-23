@@ -28,6 +28,14 @@ func SetBitboard(bitboard uint64, sq byte) uint64 {
 	return (bitboard | (1 << sq))
 }
 
+func SetBitboardMultiple(bitboard uint64, squares ...byte) uint64 {
+	board := bitboard
+	for _, sq := range squares {
+		board = SetBitboard(board, sq)
+	}
+	return board
+}
+
 func UnsetBitboard(bitboard uint64, sq byte) uint64 {
 	return (bitboard & (0xFFFFFFFFFFFFFFFF ^ (1 << sq)))
 }
