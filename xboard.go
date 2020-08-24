@@ -172,7 +172,7 @@ func sendGameAsComment(output *bufio.Writer, state *XboardState) {
 
 func sendThinkingOutput(output *bufio.Writer, thinkingOutput ThinkingOutput) {
 	sendStringMessage(output, fmt.Sprintf(
-		"%d %d %d %d %s\n",
+		"%d %s %d %d %s\n",
 		thinkingOutput.ply,
 		thinkingOutput.score,
 		thinkingOutput.time,
