@@ -32,7 +32,7 @@ func TestEvalPawnAgainstBishop(t *testing.T) {
 
 	boardEval := Eval(&testBoard)
 
-	assert.Equal(t, -200, boardEval.material)
+	assert.Equal(t, -205, boardEval.material)
 }
 
 func TestEvalPassedPawns(t *testing.T) {
@@ -41,7 +41,6 @@ func TestEvalPassedPawns(t *testing.T) {
 
 	boardEval := Eval(&testBoard)
 	fmt.Println(boardEval)
-	boardEval.whitePawnScore
 }
 
 func TestEvalStartingPosition(t *testing.T) {
