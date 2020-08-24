@@ -52,7 +52,7 @@ type SearchResult struct {
 
 type ThinkingOutput struct {
 	ply   uint
-	score int
+	score string
 	time  int64
 	nodes uint64
 	pv    string
@@ -331,15 +331,7 @@ func searchAlphaBeta(
 					currentAlpha = score
 					CopyVariation(variation, move, &line)
 					if currentDepth == 0 && thinkingChan != nil {
-						pv, _ := MoveArrayToPrettyString(variation.move[0:variation.numMoves], boardState)
-						timeNanos := time.Now().Sub(searchConfig.startTime).Nanoseconds()
-						thinkingChan <- ThinkingOutput{
-							ply:   uint(depthLeft),
-							score: bestScore,
-							time:  int64(float32(timeNanos) * 1e-7),
-							nodes: searchStats.Nodes(),
-							pv:    pv,
-						}
+						sendToThinkingChannel(boardState, searchStats, variation, thinkingChan, searchConfig, bestScore, depthLeft)
 					}
 				}
 			}
@@ -577,4 +569,41 @@ func (m Move) IsQuiescentPawnPush(boardState *BoardState) bool {
 
 	rank := Rank(m.to)
 	return (movePiece == WHITE_MASK|PAWN_MASK && rank == 7) || (rank == 2)
+}
+
+func sendToThinkingChannel(
+	boardState *BoardState,
+	searchStats *SearchStats,
+	variation *Variation,
+	thinkingChan chan ThinkingOutput,
+	searchConfig SearchConfig,
+	score int,
+	depthLeft int,
+) {
+	pv, _ := MoveArrayToPrettyString(variation.move[0:variation.numMoves], boardState)
+	timeNanos := time.Now().Sub(searchConfig.startTime).Nanoseconds()
+	var scoreString string
+	absScore := score
+	if score < 0 {
+		absScore = -score
+	}
+	if absScore > CHECKMATE_SCORE-100 {
+		var prefix string
+		if score < 0 {
+			prefix = "-"
+		} else {
+			prefix = ""
+		}
+		scoreString = fmt.Sprintf("%sMate%d", prefix, (CHECKMATE_SCORE-absScore+1)/2)
+	} else {
+		scoreString = strconv.Itoa(score)
+	}
+
+	thinkingChan <- ThinkingOutput{
+		ply:   uint(depthLeft),
+		score: scoreString,
+		time:  int64(float32(timeNanos) * 1e-7),
+		nodes: searchStats.Nodes(),
+		pv:    pv,
+	}
 }
