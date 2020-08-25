@@ -92,11 +92,12 @@ func Eval(boardState *BoardState) BoardEval {
 	whiteMaterial := 0
 	blackPawnMaterial := 0
 	whitePawnMaterial := 0
-	whiteHasQueen := false
-	blackHasQueen := false
-	whiteHasPawns := false
-	blackHasPawns := false
 	hasMatingMaterial := true
+
+	// These are not actually full 64-bit bitboards; just a way to encode which pieces are
+	// on the board.  (Example: detect king/pawn endgames)
+	var whitePieceBitboard uint64
+	var blackPieceBitboard uint64
 
 	whiteOccupancy := boardState.bitboards.color[WHITE_OFFSET]
 	blackOccupancy := boardState.bitboards.color[BLACK_OFFSET]
@@ -112,19 +113,24 @@ func Eval(boardState *BoardState) BoardEval {
 		whiteMaterial += whitePieceMaterial
 		blackMaterial += blackPieceMaterial
 
-		if pieceMask == QUEEN_MASK {
-			whiteHasQueen = whitePieceBoard != 0
-			blackHasQueen = blackPieceBoard != 0
-		} else if pieceMask == PAWN_MASK {
-			whiteHasPawns = whitePieceBoard != 0
-			blackHasPawns = blackPieceBoard != 0
+		if whitePieceBoard != 0 {
+			whitePieceBitboard = SetBitboard(whitePieceBitboard, pieceMask)
+		}
+		if blackPieceBoard != 0 {
+			blackPieceBitboard = SetBitboard(blackPieceBitboard, pieceMask)
+		}
+
+		if pieceMask == PAWN_MASK {
 			whitePawnMaterial = whitePieceMaterial
 			blackPawnMaterial = blackPieceMaterial
 		}
 	}
 
 	// This isn't correct, bitboards will make this easier
-	if !whiteHasPawns && !blackHasPawns && blackMaterial <= KNIGHT_EVAL_SCORE && whiteMaterial <= KNIGHT_EVAL_SCORE {
+	if !IsBitboardSet(whitePieceBitboard, PAWN_MASK) &&
+		!IsBitboardSet(blackPieceBitboard, PAWN_MASK) &&
+		blackMaterial <= KNIGHT_EVAL_SCORE &&
+		whiteMaterial <= KNIGHT_EVAL_SCORE {
 		hasMatingMaterial = false
 	}
 
@@ -217,6 +223,9 @@ func Eval(boardState *BoardState) BoardEval {
 		}
 
 		// if you have a queen and enemy doesn't that's a good thing
+		blackHasQueen := IsBitboardSet(blackPieceBitboard, QUEEN_MASK)
+		whiteHasQueen := IsBitboardSet(whitePieceBitboard, QUEEN_MASK)
+
 		if whiteHasQueen && !blackHasQueen {
 			whiteMaterial += ENDGAME_QUEEN_BONUS_SCORE
 		} else if blackHasQueen && !whiteHasQueen {
