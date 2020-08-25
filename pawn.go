@@ -5,12 +5,14 @@ import (
 )
 
 type PawnTableEntry struct {
-	pawns          [2]uint64
-	passedPawns    [2]uint64
-	doubledPawns   [2]uint64
-	isolatedPawns  [2]uint64
-	connectedPawns [2]uint64
-	pawnsPerRank   [2][8]uint64
+	pawns                     [2]uint64
+	passedPawns               [2]uint64
+	passedPawnAdvanceSquares  [2]uint64
+	passedPawnQueeningSquares [2]uint64
+	doubledPawns              [2]uint64
+	isolatedPawns             [2]uint64
+	connectedPawns            [2]uint64
+	pawnsPerRank              [2][8]uint64
 }
 
 // Given a bitboard which is the pawns for a single side, return a bitboard which
@@ -120,7 +122,8 @@ func GetIsolatedPawnBitboard(pawnBitboard uint64) uint64 {
 	return bitboard
 }
 
-// Return the pawn table entry for the given board state
+// GetPawnTableEntry will return the pawn table entry for the given board state,
+// creating it if it does not yet exist.
 func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
 	tableEntry := boardState.pawnTable[boardState.pawnHashKey]
 	if tableEntry != nil {
@@ -136,8 +139,42 @@ func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
 	entry.pawns[BLACK_OFFSET] = blackPawns
 	entry.doubledPawns[WHITE_OFFSET] = GetDoubledPawnBitboard(whitePawns)
 	entry.doubledPawns[BLACK_OFFSET] = GetDoubledPawnBitboard(blackPawns)
-	entry.passedPawns[WHITE_OFFSET] = GetPassedPawnBitboard(whitePawns, blackPawns, WHITE_OFFSET)
-	entry.passedPawns[BLACK_OFFSET] = GetPassedPawnBitboard(blackPawns, whitePawns, BLACK_OFFSET)
+	whitePassers := GetPassedPawnBitboard(whitePawns, blackPawns, WHITE_OFFSET)
+	blackPassers := GetPassedPawnBitboard(blackPawns, whitePawns, BLACK_OFFSET)
+
+	entry.passedPawns[WHITE_OFFSET] = whitePassers
+	entry.passedPawns[BLACK_OFFSET] = blackPassers
+
+	var whiteQueeningSquares uint64
+	var blackQueeningSquares uint64
+	var whiteAdvanceSquares uint64
+	var blackAdvanceSquares uint64
+	for whitePassers != 0 {
+		sq := byte(bits.TrailingZeros64(whitePassers))
+		whitePassers ^= 1 << sq
+
+		whiteQueeningSquares = SetBitboard(whiteQueeningSquares, 56+sq%8)
+		row := sq / 8
+
+		// We're using the magic bitboard FollowRay here which requires a "distance" which is
+		// a bit vector of which square should have a bit set.  We just want them all set.
+		distance := (1 << (8 - row + 1)) - 1
+		whiteAdvanceSquares = FollowRay(whiteAdvanceSquares, sq%8, row, NORTH, distance)
+	}
+	for blackPassers != 0 {
+		sq := byte(bits.TrailingZeros64(blackPassers))
+		blackPassers ^= 1 << sq
+
+		row := sq / 8
+		distance := (1 << (row + 1)) - 1
+		blackQueeningSquares = SetBitboard(blackQueeningSquares, sq%8)
+		blackAdvanceSquares = FollowRay(blackAdvanceSquares, sq%8, row, SOUTH, distance)
+	}
+	entry.passedPawnAdvanceSquares[WHITE_OFFSET] = whiteAdvanceSquares
+	entry.passedPawnAdvanceSquares[BLACK_OFFSET] = blackAdvanceSquares
+	entry.passedPawnQueeningSquares[WHITE_OFFSET] = whiteQueeningSquares
+	entry.passedPawnQueeningSquares[BLACK_OFFSET] = blackQueeningSquares
+
 	for rank := RANK_2; rank <= RANK_7; rank++ {
 		entry.pawnsPerRank[WHITE_OFFSET][rank] = GetPawnRankBitboard(whitePawns, rank)
 		entry.pawnsPerRank[BLACK_OFFSET][rank] = GetPawnRankBitboard(blackPawns, rank)

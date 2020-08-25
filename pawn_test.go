@@ -58,3 +58,35 @@ func TestGetIsolatedPawnBitboard(t *testing.T) {
 		SetBitboardMultiple(0, SQUARE_A5, SQUARE_B5, SQUARE_C4, SQUARE_G4, SQUARE_H5),
 		pawnBoard^GetIsolatedPawnBitboard(pawnBoard))
 }
+
+func TestGetPawnTableEntry(t *testing.T) {
+	boardState := CreateEmptyBoardState()
+	// White: a pawn and f pawns are passed
+	// Black: D pawn is passed
+	boardState.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
+	boardState.SetPieceAtSquare(SQUARE_B2, WHITE_MASK|PAWN_MASK)
+	boardState.SetPieceAtSquare(SQUARE_F5, WHITE_MASK|PAWN_MASK)
+	boardState.SetPieceAtSquare(SQUARE_D6, BLACK_MASK|PAWN_MASK)
+	boardState.SetPieceAtSquare(SQUARE_C7, BLACK_MASK|PAWN_MASK)
+
+	entry := GetPawnTableEntry(&boardState)
+	assert.Equal(t,
+		SetBitboardMultiple(0, SQUARE_A2, SQUARE_F5),
+		entry.passedPawns[WHITE_OFFSET])
+	assert.Equal(t, SetBitboardMultiple(0, SQUARE_D6), entry.passedPawns[BLACK_OFFSET])
+
+	assert.Equal(t,
+		SetBitboardMultiple(0, SQUARE_A8, SQUARE_F8),
+		entry.passedPawnQueeningSquares[WHITE_OFFSET])
+	assert.Equal(t,
+		SetBitboardMultiple(0, SQUARE_D1),
+		entry.passedPawnQueeningSquares[BLACK_OFFSET])
+
+	assert.Equal(t,
+		SetBitboardMultiple(0, SQUARE_A3, SQUARE_A4, SQUARE_A5, SQUARE_A6, SQUARE_A7,
+			SQUARE_A8, SQUARE_F6, SQUARE_F7, SQUARE_F8),
+		entry.passedPawnAdvanceSquares[WHITE_OFFSET])
+	assert.Equal(t,
+		SetBitboardMultiple(0, SQUARE_D5, SQUARE_D4, SQUARE_D3, SQUARE_D2, SQUARE_D1),
+		entry.passedPawnAdvanceSquares[BLACK_OFFSET])
+}
