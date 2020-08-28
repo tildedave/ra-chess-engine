@@ -48,9 +48,12 @@ func RunPerftJson(perftJsonFile string, options PerftOptions) (bool, error) {
 			fmt.Println(err)
 			continue
 		}
+		options.depth = spec.Depth
 
 		start := time.Now()
-		perftResult := Perft(&board, spec.Depth, options, MoveSizeHint{})
+		moves := make([]Move, 13824)
+		var depthStart [64]int
+		perftResult := Perft(&board, spec.Depth, options, moves, depthStart)
 		elapsed := time.Since(start)
 		if perftResult.nodes != spec.Nodes {
 			fmt.Printf("NOT OK: %s (depth=%d, expected nodes=%d, actual nodes=%d; duration=%s)\n", spec.Fen, spec.Depth, spec.Nodes, perftResult.nodes, elapsed)
@@ -81,7 +84,9 @@ func RunPerft(fen string, variation string, depth uint, options PerftOptions) (b
 		if err == nil {
 			options.depth = i
 			start := time.Now()
-			result := Perft(&boardState, i, options, MoveSizeHint{})
+			moves := make([]Move, 13824)
+			var depthStart [64]int
+			result := Perft(&boardState, i, options, moves, depthStart)
 			fmt.Printf("%d\t%10d\t%s\n", i, result.nodes, time.Since(start))
 		} else {
 			fmt.Println(err)
@@ -91,7 +96,7 @@ func RunPerft(fen string, variation string, depth uint, options PerftOptions) (b
 	return true, nil
 }
 
-func Perft(boardState *BoardState, depth uint, options PerftOptions, hint MoveSizeHint) PerftInfo {
+func Perft(boardState *BoardState, depth uint, options PerftOptions, moves []Move, depthStart [64]int) PerftInfo {
 	var perftInfo PerftInfo
 
 	if options.checks && boardState.IsInCheck(boardState.sideToMove) {
@@ -103,72 +108,73 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions, hint MoveSi
 		return perftInfo
 	}
 
-	listing, hint := GenerateMoveListing(boardState, hint, false)
+	currentDepth := options.depth - depth
+	start := depthStart[currentDepth]
+	end := GenerateMoves(boardState, moves, start)
+	depthStart[currentDepth+1] = end
 	captures := uint(0)
 	castles := uint(0)
 	promotions := uint(0)
 
-	for _, moveList := range [][]Move{listing.captures, listing.moves, listing.promotions} {
-		for _, move := range moveList {
-			var originalHashKey uint64
-			if options.sanityCheck {
-				testMoveLegality(boardState, move)
-				originalHashKey = boardState.hashKey
-				sanityCheckBitboards(move, boardState)
-			}
+	for _, move := range moves[start:end] {
+		var originalHashKey uint64
+		if options.sanityCheck {
+			testMoveLegality(boardState, move)
+			originalHashKey = boardState.hashKey
+			sanityCheckBitboards(move, boardState)
+		}
 
-			if move.IsCastle() && !boardState.TestCastleLegality(move) {
-				continue
-			}
+		if move.IsCastle() && !boardState.TestCastleLegality(move) {
+			continue
+		}
 
-			boardState.ApplyMove(move)
+		boardState.ApplyMove(move)
 
-			wasValid := false
-			var otherOffset int
-			switch boardState.sideToMove {
-			case WHITE_OFFSET:
-				otherOffset = BLACK_OFFSET
-			case BLACK_OFFSET:
-				otherOffset = WHITE_OFFSET
-			}
-			if boardState.IsInCheck(otherOffset) {
-				boardState.UnapplyMove(move)
-				continue
-			}
-
-			wasValid = true
-			if boardState.wasCapture[boardState.moveIndex-1] {
-				captures++
-			}
-			if move.IsKingsideCastle() || move.IsQueensideCastle() {
-				castles++
-			}
-			if move.IsPromotion() {
-				promotions++
-			}
-
-			info := Perft(boardState, depth-1, options, hint)
+		wasValid := false
+		var otherOffset int
+		switch boardState.sideToMove {
+		case WHITE_OFFSET:
+			otherOffset = BLACK_OFFSET
+		case BLACK_OFFSET:
+			otherOffset = WHITE_OFFSET
+		}
+		if boardState.IsInCheck(otherOffset) {
 			boardState.UnapplyMove(move)
+			continue
+		}
 
-			if options.divide && depth == options.depth {
-				fmt.Printf("%s %d\n", MoveToString(move, boardState), info.nodes)
-			}
-			addPerftInfo(&perftInfo, info)
+		wasValid = true
+		if boardState.wasCapture[boardState.moveIndex-1] {
+			captures++
+		}
+		if move.IsKingsideCastle() || move.IsQueensideCastle() {
+			castles++
+		}
+		if move.IsPromotion() {
+			promotions++
+		}
 
-			if depth == 1 && options.perftPrintMoves {
-				if wasValid {
-					fmt.Println(MoveToPrettyString(move, boardState))
-				} else {
-					fmt.Println("ILLEGAL: " + MoveToPrettyString(move, boardState))
-				}
+		info := Perft(boardState, depth-1, options, moves, depthStart)
+		boardState.UnapplyMove(move)
+
+		if options.divide && depth == options.depth {
+			fmt.Printf("%s %d\n", MoveToString(move, boardState), info.nodes)
+		}
+		addPerftInfo(&perftInfo, info)
+
+		if depth == 1 && options.perftPrintMoves {
+			if wasValid {
+				fmt.Println(MoveToPrettyString(move, boardState))
+			} else {
+				fmt.Println("ILLEGAL: " + MoveToPrettyString(move, boardState))
 			}
-			if options.sanityCheck {
-				if boardState.hashKey != originalHashKey {
-					fmt.Printf("Unapplying move did not restore original hash key: %s (%d vs %d)\n",
-						MoveToPrettyString(move, boardState),
-						boardState.hashKey,
-						originalHashKey)
-				}
+		}
+		if options.sanityCheck {
+			if boardState.hashKey != originalHashKey {
+				fmt.Printf("Unapplying move did not restore original hash key: %s (%d vs %d)\n",
+					MoveToPrettyString(move, boardState),
+					boardState.hashKey,
+					originalHashKey)
 			}
 		}
 	}
