@@ -113,13 +113,18 @@ func SearchWithConfig(
 		startingDepth: depth,
 		startTime:     startTime,
 	}
+	moves := make([]Move, 13824)
+	var moveStart [64]int
 	score := searchAlphaBeta(boardState, &stats, &variation, &moveInfo,
 		thinkingChan,
 		int(depth),
 		0,
-		alpha, beta,
+		alpha,
+		beta,
 		searchConfig,
-		MoveSizeHint{})
+		moves,
+		moveStart,
+	)
 
 	result := SearchResult{}
 	if boardState.sideToMove == BLACK_OFFSET {
@@ -165,7 +170,8 @@ func searchAlphaBeta(
 	alpha int,
 	beta int,
 	searchConfig SearchConfig,
-	hint MoveSizeHint,
+	moves []Move,
+	moveStart [64]int,
 ) int {
 	var line Variation
 
@@ -211,7 +217,7 @@ func searchAlphaBeta(
 	}
 
 	if depthLeft == 0 {
-		score := searchQuiescent(boardState, searchStats, &line, depthLeft, currentDepth, alpha, beta, searchConfig, hint)
+		score := searchQuiescent(boardState, searchStats, &line, depthLeft, currentDepth, alpha, beta, searchConfig, moves, moveStart)
 		if score > alpha {
 			copy(variation.move[0:], line.move[0:line.numMoves])
 			variation.numMoves = line.numMoves
@@ -232,17 +238,21 @@ func searchAlphaBeta(
 	// 2 = promotions
 	// 3 = checks
 	// 4 = moves
-	var moveOrdering [6][]Move
-	moveOrdering[MOVE_HASH_MOVE] = hashMove
 
 	hasLegalMove := false
-
 	bestScore := -INFINITY + 1
 	var bestMove Move
 	currentAlpha := alpha
+	var moveEnd int
 
-	for i := 0; i < len(moveOrdering); i++ {
-		for _, move := range moveOrdering[i] {
+	for i := 0; i <= MOVE_NORMAL; i++ {
+		var moveOrdering []Move
+		if i == 0 {
+			moveOrdering = hashMove
+		} else {
+			moveOrdering = moves[moveStart[currentDepth]:moveEnd]
+		}
+		for _, move := range moveOrdering {
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
 				continue
 			}
@@ -270,7 +280,10 @@ func searchAlphaBeta(
 			score := -searchAlphaBeta(boardState, searchStats, &line, moveInfo, thinkingChan,
 				depthLeft-1, currentDepth+1,
 				-beta, -currentAlpha, // swap alpha and beta
-				searchConfig, hint)
+				searchConfig,
+				moves,
+				moveStart,
+			)
 
 			boardState.UnapplyMove(move)
 
@@ -322,29 +335,30 @@ func searchAlphaBeta(
 		}
 
 		if i == 0 {
-			var listing MoveListing
 			// add the other moves now that we're done with hash move
-			listing, hint = GenerateMoveListing(boardState, hint, true)
+			moveEnd = GenerateMoves(boardState, moves, moveStart[currentDepth])
+			moveStart[currentDepth+1] = moveEnd
 
-			moveOrdering[MOVE_CAPTURES] = listing.captures
-			moveOrdering[MOVE_PROMOTIONS] = listing.promotions
-			if !inCheck {
-				killerMove := moveInfo.killerMoves[currentDepth]
-				if _, err := boardState.IsMoveLegal(killerMove); err == nil {
-					// IsMoveLegal is pretty dumb and doesn't do enough 'real' checks of the
-					// position to be relied on.  We already have generated all the moves for
-					// this position so this is a simple way to avoid illegal killer moves.
-					// If IsMoveLegal gets smarter we can probably remove this.
-					for _, move := range listing.moves {
-						if move == killerMove {
-							moveOrdering[MOVE_KILLERS] = []Move{killerMove}
-							break
-						}
-					}
-				}
-			}
-			moveOrdering[MOVE_NORMAL] = listing.moves
-			moveOrdering[MOVE_CHECKS] = boardState.FilterChecks(moveOrdering[MOVE_NORMAL])
+			// TODO - must sort the range, but whatever
+			// moveOrdering[MOVE_CAPTURES] = listing.captures
+			// moveOrdering[MOVE_PROMOTIONS] = listing.promotions
+			// if !inCheck {
+			// 	killerMove := moveInfo.killerMoves[currentDepth]
+			// 	if _, err := boardState.IsMoveLegal(killerMove); err == nil {
+			// 		// IsMoveLegal is pretty dumb and doesn't do enough 'real' checks of the
+			// 		// position to be relied on.  We already have generated all the moves for
+			// 		// this position so this is a simple way to avoid illegal killer moves.
+			// 		// If IsMoveLegal gets smarter we can probably remove this.
+			// 		for _, move := range listing.moves {
+			// 			if move == killerMove {
+			// 				moveOrdering[MOVE_KILLERS] = []Move{killerMove}
+			// 				break
+			// 			}
+			// 		}
+			// 	}
+			// }
+			// moveOrdering[MOVE_NORMAL] = listing.moves
+			// moveOrdering[MOVE_CHECKS] = boardState.FilterChecks(moveOrdering[MOVE_NORMAL])
 		}
 	}
 
@@ -381,7 +395,8 @@ func searchQuiescent(
 	alpha int,
 	beta int,
 	searchConfig SearchConfig,
-	hint MoveSizeHint,
+	moves []Move,
+	moveStart [64]int,
 ) int {
 	var line Variation
 	var bestMove Move
@@ -401,41 +416,41 @@ func searchQuiescent(
 		return score
 	}
 
-	moveListing, hint := GenerateQuiescentMoveListing(boardState, hint)
-	var moveOrdering [5][]Move
-	moveOrdering[0] = boardState.FilterSEECaptures(moveListing.captures)
-	searchStats.qcapturesfiltered += uint64(len(moveListing.captures) - len(moveOrdering[0]))
+	start := moveStart[currentDepth]
+	endAllMoves := GenerateQuiescentMoves(boardState, moves, start)
+	endGoodMoves := boardState.FilterSEECaptures(moves, start, endAllMoves)
+	moveStart[currentDepth+1] = endGoodMoves
+
+	searchStats.qcapturesfiltered += uint64(endAllMoves - endGoodMoves)
 	searchStats.qbranchnodes++
 
-	for _, moves := range moveOrdering {
+	for _, move := range moves[start:endGoodMoves] {
 		ourOffset := boardState.sideToMove
-		for _, move := range moves {
-			boardState.ApplyMove(move)
-			if boardState.IsInCheck(ourOffset) {
-				boardState.UnapplyMove(move)
-				continue
-			}
-
-			score := -searchQuiescent(boardState, searchStats, &line, depthLeft-1, currentDepth+1, -beta, -alpha, searchConfig, hint)
+		boardState.ApplyMove(move)
+		if boardState.IsInCheck(ourOffset) {
 			boardState.UnapplyMove(move)
+			continue
+		}
 
-			if score >= beta {
-				searchStats.cutoffs++
-				searchStats.qcutoffs++
-				StoreTranspositionTable(boardState, bestMove, score, TT_FAIL_HIGH, depthLeft)
+		score := -searchQuiescent(boardState, searchStats, &line, depthLeft-1, currentDepth+1, -beta, -alpha, searchConfig, moves, moveStart)
+		boardState.UnapplyMove(move)
 
-				return beta
-			}
+		if score >= beta {
+			searchStats.cutoffs++
+			searchStats.qcutoffs++
+			StoreTranspositionTable(boardState, bestMove, score, TT_FAIL_HIGH, depthLeft)
 
-			if score > bestScore {
-				bestScore = score
-				bestMove = move
-				if score > alpha {
-					alpha = score
-					variation.move[0] = move
-					copy(variation.move[1:], line.move[0:line.numMoves])
-					variation.numMoves = line.numMoves + 1
-				}
+			return beta
+		}
+
+		if score > bestScore {
+			bestScore = score
+			bestMove = move
+			if score > alpha {
+				alpha = score
+				variation.move[0] = move
+				copy(variation.move[1:], line.move[0:line.numMoves])
+				variation.numMoves = line.numMoves + 1
 			}
 		}
 	}

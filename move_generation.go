@@ -1,15 +1,8 @@
 package main
 
 import (
-	"container/heap"
 	"math/bits"
 )
-
-type MoveListing struct {
-	moves      []Move
-	captures   []Move
-	promotions []Move
-}
 
 type PrecomputedInfo struct {
 	side           int
@@ -22,12 +15,6 @@ type PrecomputedInfo struct {
 type SquareAttacks struct {
 	moves []Move
 	board uint64
-}
-
-type MoveSizeHint struct {
-	numMoves      int
-	numCaptures   int
-	numPromotions int
 }
 
 var moveBitboards *MoveBitboards
@@ -235,46 +222,26 @@ func createPawnAttackBitboards(col byte, row byte) (uint64, uint64) {
 	return whitePawnAttackBitboard, blackPawnAttackBitboard
 }
 
-func createMoveListing(hint MoveSizeHint) MoveListing {
-	listing := MoveListing{}
-	listing.moves = make([]Move, 0, hint.numMoves)
-	listing.captures = make([]Move, 0, hint.numCaptures)
-	listing.promotions = make([]Move, 0, hint.numPromotions)
-
-	return listing
-}
-
-// GenerateMoveListing generates a MoveListing structure and a MoveSizeHint structure.  If the
-// applyOrdering flag is passed, the ordering will be sorted in an attempt to choose good moves
-// first.
-// MoveSizeHint is passed in and returned to avoid the cost of slice recomputation.
-func GenerateMoveListing(boardState *BoardState, hint MoveSizeHint, applyOrdering bool) (MoveListing, MoveSizeHint) {
-	listing := createMoveListing(hint)
+// GenerateMoveListing - TODO rewrite docstring
+func GenerateMoveListing(boardState *BoardState, moves []Move, start int, applyOrdering bool) int {
 	precomputedInfo := generatePrecomputedInfo(boardState)
 	occupancy := precomputedInfo.ourOccupancy
 	for occupancy != 0 {
 		sq := byte(bits.TrailingZeros64(occupancy))
-		GenerateMovesFromSquare(boardState, sq, boardState.sideToMove, &listing, precomputedInfo)
+		start = GenerateMovesFromSquare(boardState, sq, boardState.sideToMove, moves, start, precomputedInfo)
 
 		occupancy ^= 1 << sq
 	}
 
-	hint = MoveSizeHint{
-		numMoves:      len(listing.moves),
-		numCaptures:   len(listing.captures),
-		numPromotions: len(listing.promotions),
-	}
-
 	if applyOrdering {
-		orderCaptures(boardState, &listing)
+		// orderCaptures(boardState, &listing)
 	}
 
-	return listing, hint
+	return start
 }
 
-func GenerateQuiescentMoveListing(boardState *BoardState, hint MoveSizeHint) (MoveListing, MoveSizeHint) {
+func GenerateQuiescentMoves(boardState *BoardState, moves []Move, start int) int {
 	// for now only generate captures
-	listing := createMoveListing(hint)
 	precomputedInfo := generatePrecomputedInfo(boardState)
 	occupancy := precomputedInfo.ourOccupancy
 	moveBitboards := boardState.moveBitboards
@@ -302,40 +269,44 @@ func GenerateQuiescentMoveListing(boardState *BoardState, hint MoveSizeHint) (Mo
 			attackBoard = (moveBitboards.rookAttacks[sq][rookKey].board | moveBitboards.bishopAttacks[sq][bishopKey].board)
 		}
 
-		generateCapturesFromBoard(&listing, sq, attackBoard&precomputedInfo.otherOccupancy)
+		start = generateCapturesFromBoard(moves, start, sq, attackBoard&precomputedInfo.otherOccupancy)
 
 		occupancy ^= 1 << sq
 	}
 
-	orderCaptures(boardState, &listing)
+	// orderCaptures(boardState, &listing)
 
-	return listing, MoveSizeHint{numCaptures: len(listing.captures)}
+	return start
 }
 
-func orderCaptures(boardState *BoardState, listing *MoveListing) {
-	captureQueue := make(MovePriorityQueue, 0, len(listing.captures))
+// func orderCaptures(boardState *BoardState, listing *MoveListing) {
+// 	captureQueue := make(MovePriorityQueue, 0, len(listing.captures))
 
-	for _, capture := range listing.captures {
-		fromPiece := boardState.PieceAtSquare(capture.from)
-		toPiece := boardState.PieceAtSquare(capture.to)
-		priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
-		item := Item{move: capture, score: priority}
-		captureQueue.Push(&item)
-	}
-	heap.Init(&captureQueue)
+// 	for _, capture := range listing.captures {
+// 		fromPiece := boardState.PieceAtSquare(capture.from)
+// 		toPiece := boardState.PieceAtSquare(capture.to)
+// 		priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
+// 		item := Item{move: capture, score: priority}
+// 		captureQueue.Push(&item)
+// 	}
+// 	heap.Init(&captureQueue)
 
-	listing.captures = make([]Move, 0, captureQueue.Len())
-	for captureQueue.Len() > 0 {
-		item := heap.Pop(&captureQueue).(*Item)
-		listing.captures = append(listing.captures, item.move)
-	}
-}
-func generateCapturesFromBoard(moveListing *MoveListing, from byte, attackBoard uint64) {
+// 	listing.captures = make([]Move, 0, captureQueue.Len())
+// 	for captureQueue.Len() > 0 {
+// 		item := heap.Pop(&captureQueue).(*Item)
+// 		listing.captures = append(listing.captures, item.move)
+// 	}
+// }
+
+func generateCapturesFromBoard(moves []Move, start int, from byte, attackBoard uint64) int {
 	for attackBoard != 0 {
 		to := byte(bits.TrailingZeros64(attackBoard))
-		moveListing.captures = append(moveListing.captures, CreateMove(from, to))
+		moves[start] = CreateMove(from, to)
+		start++
 		attackBoard ^= 1 << to
 	}
+
+	return start
 }
 
 func generatePrecomputedInfo(boardState *BoardState) *PrecomputedInfo {
@@ -359,25 +330,20 @@ func GenerateMovesFromSquare(
 	boardState *BoardState,
 	sq byte,
 	offset int,
-	listing *MoveListing,
+	moves []Move,
+	start int,
 	precomputedInfo *PrecomputedInfo,
-) {
+) int {
 	p := boardState.board[sq]
 	if !isPawn(p) {
-		generatePieceMoves(boardState, p, sq, offset, listing, precomputedInfo)
-	} else {
-		generatePawnMoves(boardState, p, sq, offset, listing, precomputedInfo)
+		return generatePieceMoves(boardState, p, sq, offset, moves, start, precomputedInfo)
 	}
+
+	return generatePawnMoves(boardState, p, sq, offset, moves, start, precomputedInfo)
 }
 
 func GenerateMoves(boardState *BoardState, moves []Move, start int) int {
-	listing, _ := GenerateMoveListing(boardState, MoveSizeHint{}, true)
-
-	start += copy(moves[start:], listing.promotions)
-	start += copy(moves[start:], listing.captures)
-	start += copy(moves[start:], listing.moves)
-
-	return start
+	return GenerateMoveListing(boardState, moves, start, false)
 }
 
 func generatePieceMoves(
@@ -385,9 +351,10 @@ func generatePieceMoves(
 	p byte,
 	sq byte,
 	offset int,
-	listing *MoveListing,
+	moves []Move,
+	start int,
 	precomputedInfo *PrecomputedInfo,
-) {
+) int {
 	// 8 possible directions to go (for the queen + king + knight)
 	// 4 directions for bishop + rook
 	// queen, bishop, and rook will continue along a "ray" until they find
@@ -397,40 +364,42 @@ func generatePieceMoves(
 	pieceType := p & 0x0F
 	moveBitboards := boardState.moveBitboards
 
-	var moves []Move
+	var pieceMoves []Move
 
 	switch pieceType {
 	case KING_MASK:
-		moves = moveBitboards.kingAttacks[sq].moves
+		pieceMoves = moveBitboards.kingAttacks[sq].moves
 	case KNIGHT_MASK:
-		moves = moveBitboards.knightAttacks[sq].moves
+		pieceMoves = moveBitboards.knightAttacks[sq].moves
 	case BISHOP_MASK:
 		magic := moveBitboards.bishopMagics[sq]
 		key := hashKey(precomputedInfo.allOccupancy, magic)
-		moves = moveBitboards.bishopAttacks[sq][key].moves
+		pieceMoves = moveBitboards.bishopAttacks[sq][key].moves
 	case ROOK_MASK:
 		magic := moveBitboards.rookMagics[sq]
 		key := hashKey(precomputedInfo.allOccupancy, magic)
-		moves = moveBitboards.rookAttacks[sq][key].moves
+		pieceMoves = moveBitboards.rookAttacks[sq][key].moves
 	case QUEEN_MASK:
 		bishopKey := hashKey(precomputedInfo.allOccupancy, moveBitboards.bishopMagics[sq])
-		moves = moveBitboards.bishopAttacks[sq][bishopKey].moves
+		pieceMoves = moveBitboards.bishopAttacks[sq][bishopKey].moves
 		rookKey := hashKey(precomputedInfo.allOccupancy, moveBitboards.rookMagics[sq])
-		moves = append(moves, moveBitboards.rookAttacks[sq][rookKey].moves...)
+		pieceMoves = append(pieceMoves, moveBitboards.rookAttacks[sq][rookKey].moves...)
 	}
 
-	for i := range moves {
-		move := moves[i]
+	for i := range pieceMoves {
+		move := pieceMoves[i]
 		oppositePiece := boardState.PieceAtSquare(move.to)
 		if oppositePiece != EMPTY_SQUARE {
 			if oppositePiece&0xF0 != p&0xF0 {
-				listing.captures = append(listing.captures, move)
+				moves[start] = move
+				start++
 			} else {
 				// same color, just skip it
 				// I think this is how we need to filter out the precomputed sliding moves
 			}
 		} else {
-			listing.moves = append(listing.moves, move)
+			moves[start] = move
+			start++
 		}
 	}
 
@@ -443,31 +412,37 @@ func generatePieceMoves(
 				boardState.board[SQUARE_F1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_G1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_H1] == WHITE_MASK|ROOK_MASK {
-				listing.moves = append(listing.moves, CreateKingsideCastle(sq, SQUARE_G1))
+				moves[start] = CreateKingsideCastle(sq, SQUARE_G1)
+				start++
 			}
 			if boardState.boardInfo.whiteCanCastleQueenside &&
 				boardState.board[SQUARE_D1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_C1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_B1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_A1] == WHITE_MASK|ROOK_MASK {
-				listing.moves = append(listing.moves, CreateQueensideCastle(sq, SQUARE_C1))
+				moves[start] = CreateQueensideCastle(sq, SQUARE_C1)
+				start++
 			}
 		} else {
 			if boardState.boardInfo.blackCanCastleKingside &&
 				boardState.board[SQUARE_F8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_G8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_H8] == BLACK_MASK|ROOK_MASK {
-				listing.moves = append(listing.moves, CreateKingsideCastle(sq, SQUARE_G8))
+				moves[start] = CreateKingsideCastle(sq, SQUARE_G8)
+				start++
 			}
 			if boardState.boardInfo.blackCanCastleQueenside &&
 				boardState.board[SQUARE_D8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_C8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_B8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_A8] == BLACK_MASK|ROOK_MASK {
-				listing.moves = append(listing.moves, CreateQueensideCastle(sq, SQUARE_C8))
+				moves[start] = CreateQueensideCastle(sq, SQUARE_C8)
+				start++
 			}
 		}
 	}
+
+	return start
 }
 
 func generatePawnMoves(
@@ -475,9 +450,10 @@ func generatePawnMoves(
 	p byte,
 	sq byte,
 	offset int,
-	listing *MoveListing,
+	moves []Move,
+	start int,
 	precomputedInfo *PrecomputedInfo,
-) {
+) int {
 	var isWhite bool
 	if offset == WHITE_OFFSET {
 		isWhite = true
@@ -498,18 +474,23 @@ func generatePawnMoves(
 			// promotion time
 			var flags byte = PROMOTION_MASK | CAPTURE_MASK
 			capture.flags = flags | QUEEN_MASK
-			listing.promotions = append(listing.promotions, capture)
+			moves[start] = capture
+			start++
 			capture.flags = flags | ROOK_MASK
-			listing.promotions = append(listing.promotions, capture)
+			moves[start] = capture
+			start++
 			capture.flags = flags | BISHOP_MASK
-			listing.promotions = append(listing.promotions, capture)
+			moves[start] = capture
+			start++
 			capture.flags = flags | KNIGHT_MASK
-			listing.promotions = append(listing.promotions, capture)
+			moves[start] = capture
+			start++
 		} else {
 			if capture.to == boardState.boardInfo.enPassantTargetSquare {
 				capture.flags |= SPECIAL1_MASK | CAPTURE_MASK
 			}
-			listing.captures = append(listing.captures, capture)
+			moves[start] = capture
+			start++
 		}
 	}
 
@@ -528,13 +509,18 @@ func generatePawnMoves(
 		// promotion
 		if (isWhite && sourceRank == RANK_7) || (!isWhite && sourceRank == RANK_2) {
 			// promotions are color-maskless
-			listing.promotions = append(listing.promotions, CreatePromotion(sq, dest, QUEEN_MASK))
-			listing.promotions = append(listing.promotions, CreatePromotion(sq, dest, BISHOP_MASK))
-			listing.promotions = append(listing.promotions, CreatePromotion(sq, dest, KNIGHT_MASK))
-			listing.promotions = append(listing.promotions, CreatePromotion(sq, dest, ROOK_MASK))
+			moves[start] = CreatePromotion(sq, dest, QUEEN_MASK)
+			start++
+			moves[start] = CreatePromotion(sq, dest, BISHOP_MASK)
+			start++
+			moves[start] = CreatePromotion(sq, dest, KNIGHT_MASK)
+			start++
+			moves[start] = CreatePromotion(sq, dest, ROOK_MASK)
+			start++
 		} else {
 			// empty square
-			listing.moves = append(listing.moves, CreateMove(sq, dest))
+			moves[start] = CreateMove(sq, dest)
+			start++
 
 			if (isWhite && sourceRank == RANK_2) ||
 				(!isWhite && sourceRank == RANK_7) {
@@ -542,9 +528,12 @@ func generatePawnMoves(
 				dest = uint8(int8(dest) + sqOffset)
 
 				if boardState.board[dest] == EMPTY_SQUARE {
-					listing.moves = append(listing.moves, CreateMove(sq, dest))
+					moves[start] = CreateMove(sq, dest)
+					start++
 				}
 			}
 		}
 	}
+
+	return start
 }
