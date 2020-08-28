@@ -33,13 +33,19 @@ func filterCaptures(moves []Move, boardState *BoardState) []Move {
 	return captures
 }
 
+func generateMovesFromBoard(boardState *BoardState) []Move {
+	moves := make([]Move, 64)
+	end := GenerateMoves(boardState, moves, 0)
+	return moves[:end]
+}
+
 func TestMoveGenerationWorks(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A3, WHITE_MASK|PAWN_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A1, BLACK_MASK|PAWN_MASK)
 
-	moves := GenerateMoves(&testBoard)
+	moves := generateMovesFromBoard(&testBoard)
 
 	movesFromKing := filterMovesFrom(moves, SQUARE_A2)
 	numCaptures := len(filterCaptures(moves, &testBoard))
@@ -55,7 +61,7 @@ func TestMoveGenerationFromRook(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_G2, BLACK_MASK|ROOK_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A1, BLACK_MASK|QUEEN_MASK)
 
-	moves := GenerateMoves(&testBoard)
+	moves := generateMovesFromBoard(&testBoard)
 	movesFromRook := filterMovesFrom(moves, SQUARE_A2)
 	numCaptures := len(filterCaptures(moves, &testBoard))
 
@@ -68,7 +74,7 @@ func TestMoveGenerationFromQueen(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|QUEEN_MASK)
 
-	moves := GenerateMoves(&testBoard)
+	moves := generateMovesFromBoard(&testBoard)
 
 	assert.Equal(t, 21, len(moves))
 }
@@ -77,7 +83,7 @@ func TestMoveGenerationFromBishop(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_D2, WHITE_MASK|BISHOP_MASK)
 
-	moves := GenerateMoves(&testBoard)
+	moves := generateMovesFromBoard(&testBoard)
 
 	assert.Equal(t, 9, len(moves))
 }
@@ -85,7 +91,7 @@ func TestMoveGenerationFromBishop(t *testing.T) {
 func TestMoveGenerationFromInitialBoard(t *testing.T) {
 	var testBoard BoardState = CreateInitialBoardState()
 
-	moves := GenerateMoves(&testBoard)
+	moves := generateMovesFromBoard(&testBoard)
 	assert.Equal(t, 20, len(moves))
 }
 
@@ -94,7 +100,7 @@ func TestMoveGenerationFromPawn(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_B3, BLACK_MASK|ROOK_MASK)
 
-	moves := GenerateMoves(&testBoard)
+	moves := generateMovesFromBoard(&testBoard)
 	assert.Equal(t, 3, len(moves))
 }
 
@@ -109,7 +115,7 @@ func TestMoveGenerationFromPawnPromotion(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_G7, WHITE_MASK|PAWN_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_H7, WHITE_MASK|PAWN_MASK)
 
-	moves := GenerateMoves(&testBoard)
+	moves := generateMovesFromBoard(&testBoard)
 	assert.Equal(t, 32, len(moves))
 }
 func TestMoveGenerationFromPawnPromotionBlack(t *testing.T) {
@@ -117,7 +123,7 @@ func TestMoveGenerationFromPawnPromotionBlack(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_A2, BLACK_MASK|PAWN_MASK)
 	testBoard.sideToMove = BLACK_OFFSET
 
-	moves := GenerateMoves(&testBoard)
+	moves := generateMovesFromBoard(&testBoard)
 	assert.Equal(t, 4, len(moves))
 }
 
@@ -126,7 +132,7 @@ func TestMoveGenerationFromPawnDoesNotMoveIntoOwnPiece(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A4, WHITE_MASK|ROOK_MASK)
 
-	moves := GenerateMoves(&testBoard)
+	moves := generateMovesFromBoard(&testBoard)
 	pawnMoves := filterMovesFrom(moves, SQUARE_A2)
 
 	assert.Equal(t, 1, len(pawnMoves))
@@ -138,7 +144,7 @@ func TestEnPassantCaptureFromPawn(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_B5, WHITE_MASK|PAWN_MASK)
 	testBoard.boardInfo.enPassantTargetSquare = SQUARE_A6
 
-	moves := GenerateMoves(&testBoard)
+	moves := generateMovesFromBoard(&testBoard)
 
 	assert.Equal(t, 2, len(moves))
 	assert.Equal(t, 1, len(filterCaptures(moves, &testBoard)))

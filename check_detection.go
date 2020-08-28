@@ -96,10 +96,11 @@ func (boardState *BoardState) IsCheckmate() bool {
 		return false
 	}
 
-	moves := GenerateMoves(boardState)
+	moves := make([]Move, 256)
+	end := GenerateMoves(boardState, moves, 0)
 	offset := boardState.sideToMove
 
-	for _, move := range moves {
+	for _, move := range moves[0:end] {
 		boardState.ApplyMove(move)
 		inCheck := boardState.IsInCheck(offset)
 		boardState.UnapplyMove(move)
