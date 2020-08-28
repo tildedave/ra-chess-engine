@@ -239,7 +239,9 @@ func ParsePrettyMove(moveStr string, boardState *BoardState) (Move, error) {
 		}
 	}
 
-	for _, candidateMove := range GenerateMoves(boardState) {
+	moves := make([]Move, 256)
+	end := GenerateMoves(boardState, moves, 0)
+	for _, candidateMove := range moves[0:end] {
 		p := boardState.PieceAtSquare(candidateMove.from) & 0x0F
 		if (candidateMove.to == toSquare || isKingsideCastle || isQueensideCastle) &&
 			p == piece &&

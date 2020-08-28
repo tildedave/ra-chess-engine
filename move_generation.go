@@ -370,20 +370,14 @@ func GenerateMovesFromSquare(
 	}
 }
 
-func GenerateMoves(boardState *BoardState) []Move {
+func GenerateMoves(boardState *BoardState, moves []Move, start int) int {
 	listing, _ := GenerateMoveListing(boardState, MoveSizeHint{}, true)
 
-	l1 := len(listing.promotions)
-	l2 := len(listing.captures)
-	l3 := len(listing.moves)
+	start += copy(moves[start:], listing.promotions)
+	start += copy(moves[start:], listing.captures)
+	start += copy(moves[start:], listing.moves)
 
-	var moves = make([]Move, l1+l2+l3)
-	var i int
-	i += copy(moves[i:], listing.promotions)
-	i += copy(moves[i:], listing.captures)
-	i += copy(moves[i:], listing.moves)
-
-	return moves
+	return start
 }
 
 func generatePieceMoves(
