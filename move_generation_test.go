@@ -208,20 +208,19 @@ func TestCreateMovesFromBitboard(t *testing.T) {
 	assertMovePresent(t, moves, SQUARE_D3, SQUARE_D4)
 }
 
-func TestGenerateQuiescentMoveListing(t *testing.T) {
+func TestGenerateQuiescentMoves(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_A5, WHITE_MASK|ROOK_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_B5, BLACK_MASK|PAWN_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A1, BLACK_MASK|ROOK_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A8, BLACK_MASK|QUEEN_MASK)
 
-	listing, _ := GenerateQuiescentMoveListing(&testBoard, MoveSizeHint{})
-	assert.Len(t, listing.moves, 0)
-	assert.Len(t, listing.promotions, 0)
-	assert.Len(t, listing.captures, 3)
+	moves := make([]Move, 64)
+	end := GenerateQuiescentMoves(&testBoard, moves, 0)
+	assert.Equal(t, 3, end)
 
 	// verify ordering of captures
-	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_A8, flags: 0x0}, listing.captures[0])
-	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_A1, flags: 0x0}, listing.captures[1])
-	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_B5, flags: 0x0}, listing.captures[2])
+	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_A8, flags: 0x0}, moves[0])
+	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_A1, flags: 0x0}, moves[1])
+	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_B5, flags: 0x0}, moves[2])
 }
