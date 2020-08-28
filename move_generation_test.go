@@ -201,11 +201,12 @@ func TestCreateMovesFromBitboard(t *testing.T) {
 	bitboard = SetBitboard(bitboard, SQUARE_B3)
 	bitboard = SetBitboard(bitboard, SQUARE_D4)
 
-	moves := CreateMovesFromBitboard(SQUARE_D3, bitboard)
-	assert.Len(t, moves, 3)
-	assertMovePresent(t, moves, SQUARE_D3, SQUARE_A5)
-	assertMovePresent(t, moves, SQUARE_D3, SQUARE_B3)
-	assertMovePresent(t, moves, SQUARE_D3, SQUARE_D4)
+	moves := make([]Move, 64)
+	end := CreateMovesFromBitboard(SQUARE_D3, bitboard, moves, 0)
+	assert.Equal(t, 3, end)
+	assertMovePresent(t, moves[0:end], SQUARE_D3, SQUARE_A5)
+	assertMovePresent(t, moves[0:end], SQUARE_D3, SQUARE_B3)
+	assertMovePresent(t, moves[0:end], SQUARE_D3, SQUARE_D4)
 }
 
 func TestGenerateQuiescentMoves(t *testing.T) {

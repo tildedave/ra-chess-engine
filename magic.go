@@ -398,9 +398,11 @@ func GenerateRookSlidingMoves(
 	for _, occupancy := range occupancies {
 		key := hashKey(occupancy, magic)
 		attackBoard := RookMoveBoard(sq, occupancy)
+		moves := make([]Move, 64)
+		end := CreateMovesFromBitboard(sq, attackBoard, moves, 0)
 		attacks[key] = SquareAttacks{
 			board: attackBoard,
-			moves: CreateMovesFromBitboard(sq, attackBoard),
+			moves: moves[0:end],
 		}
 	}
 }
@@ -414,9 +416,11 @@ func GenerateBishopSlidingMoves(
 	for _, occupancy := range occupancies {
 		key := hashKey(occupancy, magic)
 		attackBoard := BishopMoveBoard(sq, occupancy)
+		moves := make([]Move, 64)
+		end := CreateMovesFromBitboard(sq, attackBoard, moves, 0)
 		attacks[key] = SquareAttacks{
 			board: attackBoard,
-			moves: CreateMovesFromBitboard(sq, attackBoard),
+			moves: moves[0:end],
 		}
 	}
 }

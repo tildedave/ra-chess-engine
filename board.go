@@ -599,16 +599,15 @@ func (boardState *BoardState) HasStateOccurred() bool {
 }
 
 // CreateMovesFromBitboard transforms a bitboard and a square to a slice of moves.
-func CreateMovesFromBitboard(sq byte, moveBoard uint64) []Move {
-	moves := make([]Move, 0)
-
+func CreateMovesFromBitboard(sq byte, moveBoard uint64, moves []Move, start int) int {
 	for moveBoard != 0 {
 		destSq := byte(bits.TrailingZeros64(moveBoard))
 		moveBoard ^= 1 << destSq
-		moves = append(moves, CreateMove(sq, destSq))
+		moves[start] = CreateMove(sq, destSq)
+		start++
 	}
 
-	return moves
+	return start
 }
 
 func sanityCheckBitboards(move Move, boardState *BoardState) {

@@ -58,11 +58,15 @@ func CreateMoveBitboards() MoveBitboards {
 
 			kingSqAttacks := SquareAttacks{}
 			kingSqAttacks.board = getKingMoveBitboard(sq)
-			kingSqAttacks.moves = CreateMovesFromBitboard(sq, kingSqAttacks.board)
+			moves := make([]Move, 12)
+			end := CreateMovesFromBitboard(sq, kingSqAttacks.board, moves, 0)
+			kingSqAttacks.moves = moves[0:end]
 
 			knightSqAttacks := SquareAttacks{}
 			knightSqAttacks.board = getKnightMoveBitboard(sq)
-			knightSqAttacks.moves = CreateMovesFromBitboard(sq, knightSqAttacks.board)
+			moves = make([]Move, 12)
+			end = CreateMovesFromBitboard(sq, knightSqAttacks.board, moves, 0)
+			knightSqAttacks.moves = moves[0:end]
 
 			kingAttacks[sq] = kingSqAttacks
 			knightAttacks[sq] = knightSqAttacks
@@ -386,8 +390,7 @@ func generatePieceMoves(
 		pieceMoves = append(pieceMoves, moveBitboards.rookAttacks[sq][rookKey].moves...)
 	}
 
-	for i := range pieceMoves {
-		move := pieceMoves[i]
+	for _, move := range pieceMoves {
 		oppositePiece := boardState.PieceAtSquare(move.to)
 		if oppositePiece != EMPTY_SQUARE {
 			if oppositePiece&0xF0 != p&0xF0 {
@@ -466,33 +469,35 @@ func generatePawnMoves(
 		otherOccupancies = SetBitboard(otherOccupancies, boardState.boardInfo.enPassantTargetSquare)
 	}
 	pawnAttacks := boardState.moveBitboards.pawnAttacks[offset][sq]
-	captures := CreateMovesFromBitboard(sq, pawnAttacks&otherOccupancies)
+	captureEnd := CreateMovesFromBitboard(sq, pawnAttacks&otherOccupancies, moves, start)
 
-	for _, capture := range captures {
+	for i, capture := range moves[start:captureEnd] {
 		var destRank = Rank(capture.to)
+		// NOTE - can probably remove the offset checks here
 		if (offset == WHITE_OFFSET && destRank == RANK_8) || (offset == BLACK_OFFSET && destRank == RANK_1) {
 			// promotion time
 			var flags byte = PROMOTION_MASK | CAPTURE_MASK
 			capture.flags = flags | QUEEN_MASK
-			moves[start] = capture
-			start++
+			moves[i+start] = capture
+
+			// Now add the rest to the end
 			capture.flags = flags | ROOK_MASK
-			moves[start] = capture
-			start++
+			moves[captureEnd] = capture
+			captureEnd++
 			capture.flags = flags | BISHOP_MASK
-			moves[start] = capture
-			start++
+			moves[captureEnd] = capture
+			captureEnd++
 			capture.flags = flags | KNIGHT_MASK
-			moves[start] = capture
-			start++
+			moves[captureEnd] = capture
+			captureEnd++
 		} else {
 			if capture.to == boardState.boardInfo.enPassantTargetSquare {
 				capture.flags |= SPECIAL1_MASK | CAPTURE_MASK
+				moves[i+start] = capture
 			}
-			moves[start] = capture
-			start++
 		}
 	}
+	start = captureEnd
 
 	// TODO: must handle the double moves and being blocked by another piece
 	var sqOffset int8
