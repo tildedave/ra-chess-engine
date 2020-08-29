@@ -258,9 +258,15 @@ func GenerateQuiescentMoves(boardState *BoardState, moves []Move, start int) int
 		sq := byte(bits.TrailingZeros64(occupancy))
 		fromPiece := boardState.board[sq] & 0x0F
 		var attackBoard uint64
+		var flags byte
 		switch fromPiece {
 		case PAWN_MASK:
 			attackBoard = moveBitboards.pawnAttacks[boardState.sideToMove][sq]
+			rank := Rank(sq)
+			if (boardState.sideToMove == WHITE_OFFSET && rank == RANK_7) ||
+				(boardState.sideToMove == BLACK_OFFSET && rank == RANK_2) {
+				flags = PROMOTION_MASK | CAPTURE_MASK | QUEEN_MASK
+			}
 		case KNIGHT_MASK:
 			attackBoard = moveBitboards.knightAttacks[sq].board
 		case KING_MASK:
@@ -277,7 +283,7 @@ func GenerateQuiescentMoves(boardState *BoardState, moves []Move, start int) int
 			attackBoard = (moveBitboards.rookAttacks[sq][rookKey].board | moveBitboards.bishopAttacks[sq][bishopKey].board)
 		}
 
-		start = generateCapturesFromBoard(moves, start, sq, attackBoard&precomputedInfo.otherOccupancy)
+		start = generateCapturesFromBoard(moves, start, sq, attackBoard&precomputedInfo.otherOccupancy, flags)
 
 		occupancy ^= 1 << sq
 	}
@@ -307,10 +313,12 @@ func orderCaptures(boardState *BoardState, moves []Move, start int, end int) {
 	}
 }
 
-func generateCapturesFromBoard(moves []Move, start int, from byte, attackBoard uint64) int {
+func generateCapturesFromBoard(moves []Move, start int, from byte, attackBoard uint64, flags byte) int {
 	for attackBoard != 0 {
 		to := byte(bits.TrailingZeros64(attackBoard))
-		moves[start] = CreateMove(from, to)
+		move := CreateMove(from, to)
+		move.flags = flags
+		moves[start] = move
 		start++
 		attackBoard ^= 1 << to
 	}
