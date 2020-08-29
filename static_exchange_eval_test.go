@@ -46,9 +46,18 @@ func TestStaticExchangeEvaluationGuardedCapture(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_E3, WHITE_MASK|PAWN_MASK)
 	boardState.SetPieceAtSquare(SQUARE_E8, BLACK_MASK|ROOK_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D2, WHITE_MASK|PAWN_MASK)
+	boardState.SetPieceAtSquare(SQUARE_D8, WHITE_MASK|KNIGHT_MASK)
 
 	assert.Equal(t, -MATERIAL_SCORE[ROOK_MASK]+MATERIAL_SCORE[PAWN_MASK],
 		StaticExchangeEvaluation(&boardState, SQUARE_E3, ROOK_MASK, SQUARE_E8))
+
+	assert.Equal(t, MATERIAL_SCORE[KNIGHT_MASK],
+		StaticExchangeEvaluation(&boardState, SQUARE_D8, ROOK_MASK, SQUARE_E8))
+
+	moves := make([]Move, 64)
+	end := GenerateMoveListing(&boardState, moves, 0, false)
+	end = boardState.FilterSEECaptures(moves, 0, end)
+	assert.Equal(t, 0, end)
 }
 
 func TestStaticExchangeEvaluationFromFENString(t *testing.T) {
