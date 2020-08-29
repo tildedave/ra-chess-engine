@@ -319,12 +319,13 @@ func searchAlphaBeta(
 			}
 
 			if score >= beta {
+				lastKiller := moveInfo.killerMoves[currentDepth]
 				moveInfo.killerMoves[currentDepth] = move
 				StoreTranspositionTable(boardState, move, score, TT_FAIL_HIGH, depthLeft)
 				searchStats.cutoffs++
 				if i == 0 {
 					searchStats.hashcutoffs++
-				} else if i == 3 {
+				} else if move == lastKiller {
 					searchStats.killercutoffs++
 				}
 				return score
