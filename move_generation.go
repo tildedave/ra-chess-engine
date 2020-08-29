@@ -478,8 +478,7 @@ func generatePawnMoves(
 
 	for i, capture := range moves[start:captureEnd] {
 		var destRank = Rank(capture.to)
-		// NOTE - can probably remove the offset checks here
-		if (offset == WHITE_OFFSET && destRank == RANK_8) || (offset == BLACK_OFFSET && destRank == RANK_1) {
+		if destRank == RANK_8 || destRank == RANK_1 {
 			// promotion time
 			var flags byte = PROMOTION_MASK | CAPTURE_MASK
 			capture.flags = flags | QUEEN_MASK
