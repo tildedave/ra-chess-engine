@@ -116,7 +116,8 @@ func RunTacticsFen(fen string, variation string, options TacticsOptions) (string
 		thinkingTimeMs = INFINITY
 	}
 
-	go thinkAndChooseMove(&boardState, thinkingTimeMs, config, ch, thinkingChan)
+	stats := SearchStats{}
+	go thinkAndChooseMove(&boardState, thinkingTimeMs, &stats, config, ch, thinkingChan)
 	result := <-ch
 
 	output.Flush()

@@ -103,7 +103,8 @@ ReadLoop:
 			}()
 
 			// TODO - smarter thinking
-			go thinkAndChooseMove(state.boardState, 7400, ExternalSearchConfig{}, ch, thinkingChan)
+			stats := SearchStats{}
+			go thinkAndChooseMove(state.boardState, 7400, &stats, ExternalSearchConfig{}, ch, thinkingChan)
 			result := <-ch
 			move := result.move
 
@@ -184,6 +185,7 @@ func sendThinkingOutput(output *bufio.Writer, thinkingOutput ThinkingOutput) {
 func thinkAndChooseMove(
 	boardState *BoardState,
 	thinkingTimeMs uint,
+	stats *SearchStats,
 	config ExternalSearchConfig,
 	ch chan SearchResult,
 	thinkingChan chan ThinkingOutput,
@@ -209,7 +211,7 @@ func thinkAndChooseMove(
 			default:
 				// TODO: having to copy the board state indicates a bug somewhere
 				state := CopyBoardState(boardState)
-				result := SearchWithConfig(&state, uint(i), config, thinkingChan)
+				result := SearchWithConfig(&state, uint(i), stats, config, thinkingChan)
 				resultCh <- result
 				i = i + 1
 			}

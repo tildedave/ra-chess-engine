@@ -21,7 +21,7 @@ func TestSearchStartingPosition(t *testing.T) {
 	boardState := CreateInitialBoardState()
 
 	originalKey := boardState.hashKey
-	Search(&boardState, 4)
+	Search(&boardState, 4, &SearchStats{})
 
 	assert.Equal(t, originalKey, boardState.hashKey)
 }
@@ -29,7 +29,7 @@ func TestSearchStartingPosition(t *testing.T) {
 func TestSearchMateInOne(t *testing.T) {
 	boardState := CreateMateInOneBoard()
 
-	result := Search(&boardState, 2)
+	result := Search(&boardState, 2, &SearchStats{})
 
 	assert.Equal(t, CHECKMATE_SCORE, result.value)
 	assert.Equal(t, Move{from: SQUARE_D5, to: SQUARE_A2}, result.move)
@@ -39,7 +39,7 @@ func TestSearchMateInOneBlack(t *testing.T) {
 	boardState := CreateMateInOneBoard()
 	FlipBoardColors(&boardState)
 
-	result := Search(&boardState, 2)
+	result := Search(&boardState, 2, &SearchStats{})
 
 	assert.Equal(t, -CHECKMATE_SCORE, result.value)
 	assert.Equal(t, Move{from: SQUARE_D5, to: SQUARE_A2}, result.move)
@@ -50,7 +50,7 @@ func TestSearchAvoidMateInOne(t *testing.T) {
 	boardState.sideToMove = BLACK_OFFSET
 	boardState.SetPieceAtSquare(SQUARE_F5, BLACK_MASK|ROOK_MASK)
 
-	result := Search(&boardState, 2)
+	result := Search(&boardState, 2, &SearchStats{})
 
 	assert.Equal(t, Move{from: SQUARE_F5, to: SQUARE_D5, flags: CAPTURE_MASK}, result.move)
 }
@@ -61,7 +61,7 @@ func TestSearchWhiteForcesPawnPromotion(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_B8, BLACK_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_B5, WHITE_MASK|KING_MASK)
 
-	result := Search(&boardState, 5)
+	result := Search(&boardState, 5, &SearchStats{})
 
 	assert.True(t, result.value > QUEEN_EVAL_SCORE)
 	assert.Equal(t, SQUARE_B5, result.move.from)
@@ -74,7 +74,7 @@ func TestSearchBlackStopsPromotion(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D6, BLACK_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D3, WHITE_MASK|KING_MASK)
 
-	result := Search(&boardState, 5)
+	result := Search(&boardState, 5, &SearchStats{})
 
 	assert.True(t, result.value < QUEEN_EVAL_SCORE)
 }
@@ -85,7 +85,7 @@ func TestSearchWhiteForcesPromotion(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D8, BLACK_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D5, WHITE_MASK|PAWN_MASK)
 
-	result := Search(&boardState, 8)
+	result := Search(&boardState, 8, &SearchStats{})
 	assert.True(t, result.value > 300)
 }
 
@@ -95,14 +95,14 @@ func TestSearchBlackForcesDraw(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D7, BLACK_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D4, WHITE_MASK|PAWN_MASK)
 
-	result := Search(&boardState, 10)
+	result := Search(&boardState, 10, &SearchStats{})
 	assert.True(t, result.value < 300)
 }
 
 func TestSearchWhiteSavesKnightFromCapture(t *testing.T) {
 	boardState, _ := CreateBoardStateFromFENString("rnbqkbnr/ppp1pppp/8/8/3p4/2N5/PPPPPPPP/1RBQKBNR w Kkq - 0 3")
 
-	result := Search(&boardState, 3)
+	result := Search(&boardState, 3, &SearchStats{})
 
 	assert.Equal(t, result.move.from, SQUARE_C3)
 }
@@ -110,7 +110,7 @@ func TestSearchWhiteSavesKnightFromCapture(t *testing.T) {
 func TestDoesNotHangCheckmate(t *testing.T) {
 	boardState, _ := CreateBoardStateFromFENString("5rk1/B3bppp/8/6P1/b1p1pP2/2P5/Pr4P1/R3K1NR w KQ - 0 24")
 
-	result := Search(&boardState, 2)
+	result := Search(&boardState, 2, &SearchStats{})
 
 	assert.True(t, result.value > -INFINITY+100)
 }
@@ -118,10 +118,11 @@ func TestDoesNotHangCheckmate(t *testing.T) {
 func TestSearchWhiteDoesNotHangKnight(t *testing.T) {
 	boardState, _ := CreateBoardStateFromFENString("r2qkbnr/pp2pppp/8/1Np1P3/3p2b1/8/PPP1PPPP/R1BQKB1R w KQkq c6 0 7")
 
-	Search(&boardState, 1)
-	Search(&boardState, 2)
-	Search(&boardState, 3)
-	result := Search(&boardState, 4)
+	stats := SearchStats{}
+	Search(&boardState, 1, &stats)
+	Search(&boardState, 2, &stats)
+	Search(&boardState, 3, &stats)
+	result := Search(&boardState, 4, &stats)
 
 	assert.True(t, result.value >= -100)
 	assert.False(t, result.move.from == SQUARE_B5 && result.move.to == SQUARE_C7)
@@ -129,10 +130,11 @@ func TestSearchWhiteDoesNotHangKnight(t *testing.T) {
 
 func TestSearchWhiteDoesNotUseTranspositionTableOnFirstDepth(t *testing.T) {
 	boardState, _ := CreateBoardStateFromFENString("rnb1k2r/pppp1ppp/4p3/4P3/1b1P3P/8/PPP1NP1P/R1BnKB1R w KQkq - 0 8")
-	Search(&boardState, 1)
-	Search(&boardState, 2)
-	Search(&boardState, 3)
-	result := Search(&boardState, 4)
+	stats := SearchStats{}
+	Search(&boardState, 1, &stats)
+	Search(&boardState, 2, &stats)
+	Search(&boardState, 3, &stats)
+	result := Search(&boardState, 4, &stats)
 
 	assert.False(t, result.move.from == SQUARE_A1 && result.move.to == SQUARE_A1)
 }

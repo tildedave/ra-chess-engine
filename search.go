@@ -95,19 +95,19 @@ type SearchMoveInfo struct {
 	killerMoves [MAX_DEPTH]Move
 }
 
-func Search(boardState *BoardState, depth uint) SearchResult {
-	return SearchWithConfig(boardState, depth, ExternalSearchConfig{}, nil)
+func Search(boardState *BoardState, depth uint, stats *SearchStats) SearchResult {
+	return SearchWithConfig(boardState, depth, stats, ExternalSearchConfig{}, nil)
 }
 
 func SearchWithConfig(
 	boardState *BoardState,
 	depth uint,
+	stats *SearchStats,
 	config ExternalSearchConfig,
 	thinkingChan chan ThinkingOutput,
 ) SearchResult {
 	startTime := time.Now()
 
-	stats := SearchStats{}
 	variation := Variation{}
 	moveInfo := SearchMoveInfo{}
 
@@ -123,7 +123,7 @@ func SearchWithConfig(
 	scores := make([]int, len(moves))
 
 	var moveStart [64]int
-	score := searchAlphaBeta(boardState, &stats, &variation, &moveInfo,
+	score := searchAlphaBeta(boardState, stats, &variation, &moveInfo,
 		thinkingChan,
 		int(depth),
 		0,
@@ -150,7 +150,7 @@ func SearchWithConfig(
 	result.time = time.Now().Sub(startTime)
 	result.move = variation.move[0]
 	result.pv, _ = MoveArrayToPrettyString(variation.move[0:variation.numMoves], boardState)
-	result.stats = stats
+	result.stats = *stats
 	result.depth = depth
 
 	if shouldAbort {
