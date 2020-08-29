@@ -227,7 +227,8 @@ func createPawnAttackBitboards(col byte, row byte) (uint64, uint64) {
 	return whitePawnAttackBitboard, blackPawnAttackBitboard
 }
 
-// GenerateMoveListing - TODO rewrite docstring
+// GenerateMoveListing writes into the moves array beginning at the start index, returning the new end
+// index.
 func GenerateMoveListing(boardState *BoardState, moves []Move, start int, applyOrdering bool) int {
 	precomputedInfo := generatePrecomputedInfo(boardState)
 	occupancy := precomputedInfo.ourOccupancy
