@@ -3,7 +3,6 @@ package main
 import (
 	"errors"
 	"fmt"
-	"math/bits"
 	"math/rand"
 	"strconv"
 	"strings"
@@ -596,18 +595,6 @@ func (boardState *BoardState) RepetitionCount(cutoff int) bool {
 // HasStateOccurred returns true if the position has already occurred in the game
 func (boardState *BoardState) HasStateOccurred() bool {
 	return boardState.RepetitionCount(2)
-}
-
-// CreateMovesFromBitboard transforms a bitboard and a square to a slice of moves.
-func CreateMovesFromBitboard(sq byte, moveBoard uint64, moves []Move, start int) int {
-	for moveBoard != 0 {
-		destSq := byte(bits.TrailingZeros64(moveBoard))
-		moveBoard ^= 1 << destSq
-		moves[start] = CreateMove(sq, destSq)
-		start++
-	}
-
-	return start
 }
 
 func sanityCheckBitboards(move Move, boardState *BoardState) {

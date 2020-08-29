@@ -202,7 +202,7 @@ func TestCreateMovesFromBitboard(t *testing.T) {
 	bitboard = SetBitboard(bitboard, SQUARE_D4)
 
 	moves := make([]Move, 64)
-	end := CreateMovesFromBitboard(SQUARE_D3, bitboard, moves, 0)
+	end := CreateMovesFromBitboard(SQUARE_D3, bitboard, moves, 0, 0)
 	assert.Equal(t, 3, end)
 	assertMovePresent(t, moves[0:end], SQUARE_D3, SQUARE_A5)
 	assertMovePresent(t, moves[0:end], SQUARE_D3, SQUARE_B3)
@@ -221,7 +221,7 @@ func TestGenerateQuiescentMoves(t *testing.T) {
 	assert.Equal(t, 3, end)
 
 	// verify ordering of captures
-	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_A8, flags: 0x0}, moves[0])
-	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_A1, flags: 0x0}, moves[1])
-	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_B5, flags: 0x0}, moves[2])
+	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_A8, flags: CAPTURE_MASK}, moves[0])
+	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_A1, flags: CAPTURE_MASK}, moves[1])
+	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_B5, flags: CAPTURE_MASK}, moves[2])
 }
