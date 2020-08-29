@@ -399,7 +399,7 @@ func GenerateRookSlidingMoves(
 		key := hashKey(occupancy, magic)
 		attackBoard := RookMoveBoard(sq, occupancy)
 		moves := make([]Move, 64)
-		end := CreateMovesFromBitboard(sq, attackBoard, moves, 0, 0)
+		end := CreateMovesFromBitboard(sq, attackBoard, &moves, 0, 0)
 		attacks[key] = SquareAttacks{
 			board: attackBoard,
 			moves: moves[0:end],
@@ -417,7 +417,7 @@ func GenerateBishopSlidingMoves(
 		key := hashKey(occupancy, magic)
 		attackBoard := BishopMoveBoard(sq, occupancy)
 		moves := make([]Move, 64)
-		end := CreateMovesFromBitboard(sq, attackBoard, moves, 0, 0)
+		end := CreateMovesFromBitboard(sq, attackBoard, &moves, 0, 0)
 		attacks[key] = SquareAttacks{
 			board: attackBoard,
 			moves: moves[0:end],

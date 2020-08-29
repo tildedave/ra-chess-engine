@@ -129,8 +129,8 @@ func SearchWithConfig(
 		alpha,
 		beta,
 		searchConfig,
-		moves,
-		moveStart,
+		&moves,
+		&moveStart,
 	)
 
 	result := SearchResult{}
@@ -177,8 +177,8 @@ func searchAlphaBeta(
 	alpha int,
 	beta int,
 	searchConfig SearchConfig,
-	moves []Move,
-	moveStart [64]int,
+	moves *[]Move,
+	moveStart *[64]int,
 ) int {
 	var line Variation
 
@@ -251,16 +251,18 @@ func searchAlphaBeta(
 	var bestMove Move
 	currentAlpha := alpha
 
-	start := moveStart[currentDepth]
+	start := (*moveStart)[currentDepth]
 	var moveEnd int
-	moveStart[currentDepth+1] = start
+	(*moveStart)[currentDepth+1] = start
 
 	for i := 0; i <= 1; i++ {
 		var moveOrdering []Move
 		if i == 0 {
 			moveOrdering = hashMove
 		} else {
-			moveOrdering = moves[start:moveEnd]
+			// TODO - don't want to do this, we should index
+			// Fix this by putting the hashMove onto the move list in this scenario
+			moveOrdering = (*moves)[start:moveEnd]
 		}
 
 		for _, move := range moveOrdering {
@@ -340,7 +342,7 @@ func searchAlphaBeta(
 		if i == 0 {
 			// add the other moves now that we're done with hash move
 			moveEnd = GenerateMoves(boardState, moves, start)
-			moveStart[currentDepth+1] = moveEnd
+			(*moveStart)[currentDepth+1] = moveEnd
 			sortMoves(boardState, moveInfo, currentDepth, moves, start, moveEnd)
 		}
 	}
@@ -372,13 +374,14 @@ func sortMoves(
 	boardState *BoardState,
 	moveInfo *SearchMoveInfo,
 	currentDepth uint,
-	moves []Move,
+	moves *[]Move,
 	start int,
 	end int,
 ) {
 	priorityQueue := make(MovePriorityQueue, 0, end-start)
 
-	for _, move := range moves[start:end] {
+	for i := start; i < end; i++ {
+		move := (*moves)[i]
 		var score int = MOVE_SCORE_NORMAL
 		toPiece := boardState.PieceAtSquare(move.to)
 		if move == moveInfo.killerMoves[currentDepth] {
@@ -402,7 +405,7 @@ func sortMoves(
 	current := start
 	for priorityQueue.Len() > 0 {
 		item := heap.Pop(&priorityQueue).(*Item)
-		moves[current] = item.move
+		(*moves)[current] = item.move
 		current++
 	}
 }
@@ -417,8 +420,8 @@ func searchQuiescent(
 	alpha int,
 	beta int,
 	searchConfig SearchConfig,
-	moves []Move,
-	moveStart [64]int,
+	moves *[]Move,
+	moveStart *[64]int,
 ) int {
 	var line Variation
 	var bestMove Move
@@ -438,15 +441,16 @@ func searchQuiescent(
 		return score
 	}
 
-	start := moveStart[currentDepth]
+	start := (*moveStart)[currentDepth]
 	endAllMoves := GenerateQuiescentMoves(boardState, moves, start)
 	endGoodMoves := boardState.FilterSEECaptures(moves, start, endAllMoves)
-	moveStart[currentDepth+1] = endGoodMoves
+	(*moveStart)[currentDepth+1] = endGoodMoves
 
 	searchStats.qcapturesfiltered += uint64(endAllMoves - endGoodMoves)
 	searchStats.qbranchnodes++
 
-	for _, move := range moves[start:endGoodMoves] {
+	for i := start; i < endGoodMoves; i++ {
+		move := (*moves)[i]
 		ourOffset := boardState.sideToMove
 		boardState.ApplyMove(move)
 		if boardState.IsInCheck(ourOffset) {

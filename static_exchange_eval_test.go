@@ -55,8 +55,8 @@ func TestStaticExchangeEvaluationGuardedCapture(t *testing.T) {
 		StaticExchangeEvaluation(&boardState, SQUARE_D8, ROOK_MASK, SQUARE_E8))
 
 	moves := make([]Move, 64)
-	end := GenerateMoveListing(&boardState, moves, 0, false)
-	end = boardState.FilterSEECaptures(moves, 0, end)
+	end := GenerateMoveListing(&boardState, &moves, 0, false)
+	end = boardState.FilterSEECaptures(&moves, 0, end)
 	assert.Equal(t, 0, end)
 }
 
@@ -82,7 +82,7 @@ func TestStaticExchangeEvaluationStackOverflowQuestion(t *testing.T) {
 	assert.Equal(t, -400, StaticExchangeEvaluation(&boardState, SQUARE_H7, ROOK_MASK, SQUARE_H1))
 
 	moves := make([]Move, 64)
-	end := GenerateMoveListing(&boardState, moves, 0, false)
-	end = boardState.FilterSEECaptures(moves, 0, end)
+	end := GenerateMoveListing(&boardState, &moves, 0, false)
+	end = boardState.FilterSEECaptures(&moves, 0, end)
 	assert.Equal(t, 0, end)
 }
