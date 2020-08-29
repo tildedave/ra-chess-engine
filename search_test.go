@@ -95,7 +95,6 @@ func TestSearchBlackForcesDraw(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D5, WHITE_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D7, BLACK_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D4, WHITE_MASK|PAWN_MASK)
-	fmt.Println(boardState.ToString())
 
 	result := Search(&boardState, 10)
 	fmt.Println(result.String())
