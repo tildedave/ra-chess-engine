@@ -9,9 +9,12 @@ type PawnTableEntry struct {
 	passedPawns               [2]uint64
 	passedPawnAdvanceSquares  [2]uint64
 	passedPawnQueeningSquares [2]uint64
-	doubledPawns              [2]uint64
-	isolatedPawns             [2]uint64
-	connectedPawns            [2]uint64
+	doubledPawnBoard          [2]uint64
+	doubledPawnCount          [2]int
+	isolatedPawnBoard         [2]uint64
+	isolatedPawnCount         [2]int
+	connectedPawnBoard        [2]uint64
+	connectedPawnCount        [2]int
 	pawnsPerRank              [2][8]uint64
 }
 
@@ -137,8 +140,8 @@ func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
 	blackPawns := allPawns & boardState.bitboards.color[BLACK_OFFSET]
 	entry.pawns[WHITE_OFFSET] = whitePawns
 	entry.pawns[BLACK_OFFSET] = blackPawns
-	entry.doubledPawns[WHITE_OFFSET] = GetDoubledPawnBitboard(whitePawns)
-	entry.doubledPawns[BLACK_OFFSET] = GetDoubledPawnBitboard(blackPawns)
+	entry.doubledPawnBoard[WHITE_OFFSET] = GetDoubledPawnBitboard(whitePawns)
+	entry.doubledPawnBoard[BLACK_OFFSET] = GetDoubledPawnBitboard(blackPawns)
 	whitePassers := GetPassedPawnBitboard(whitePawns, blackPawns, WHITE_OFFSET)
 	blackPassers := GetPassedPawnBitboard(blackPawns, whitePawns, BLACK_OFFSET)
 
@@ -179,11 +182,15 @@ func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
 		entry.pawnsPerRank[WHITE_OFFSET][rank] = GetPawnRankBitboard(whitePawns, rank)
 		entry.pawnsPerRank[BLACK_OFFSET][rank] = GetPawnRankBitboard(blackPawns, rank)
 	}
-	entry.isolatedPawns[WHITE_OFFSET] = GetIsolatedPawnBitboard(whitePawns)
-	entry.isolatedPawns[BLACK_OFFSET] = GetIsolatedPawnBitboard(blackPawns)
-	entry.connectedPawns[WHITE_OFFSET] = whitePawns ^ entry.isolatedPawns[WHITE_OFFSET]
-	entry.connectedPawns[BLACK_OFFSET] = blackPawns ^ entry.isolatedPawns[BLACK_OFFSET]
+	entry.isolatedPawnBoard[WHITE_OFFSET] = GetIsolatedPawnBitboard(whitePawns)
+	entry.isolatedPawnBoard[BLACK_OFFSET] = GetIsolatedPawnBitboard(blackPawns)
+	entry.connectedPawnBoard[WHITE_OFFSET] = whitePawns ^ entry.isolatedPawnBoard[WHITE_OFFSET]
+	entry.connectedPawnBoard[BLACK_OFFSET] = blackPawns ^ entry.isolatedPawnBoard[BLACK_OFFSET]
 	boardState.pawnTable[boardState.pawnHashKey] = &entry
-
+	for side := 0; side <= 1; side++ {
+		entry.isolatedPawnCount[side] = bits.OnesCount64(entry.isolatedPawnBoard[side])
+		entry.doubledPawnCount[side] = bits.OnesCount64(entry.doubledPawnBoard[side])
+		entry.connectedPawnCount[side] = bits.OnesCount64(entry.connectedPawnBoard[side])
+	}
 	return &entry
 }

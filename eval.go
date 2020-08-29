@@ -265,14 +265,12 @@ func evalPawnStructure(boardState *BoardState, boardPhase int) (int, int) {
 		blackPawnScore += passedPawnByRankScore[rank] * bits.OnesCount64(blackPassers&rankBlackPawns)
 	}
 
-	whitePawnScore += DOUBLED_PAWN_SCORE * bits.OnesCount64(pawnEntry.isolatedPawns[WHITE_OFFSET])
-	blackPawnScore += DOUBLED_PAWN_SCORE * bits.OnesCount64(pawnEntry.isolatedPawns[BLACK_OFFSET])
+	whitePawnScore += DOUBLED_PAWN_SCORE * pawnEntry.doubledPawnCount[WHITE_OFFSET]
+	blackPawnScore += DOUBLED_PAWN_SCORE * pawnEntry.doubledPawnCount[BLACK_OFFSET]
 
 	if boardPhase != PHASE_ENDGAME {
-		whiteIsolatedPawnCount := bits.OnesCount64(pawnEntry.isolatedPawns[WHITE_OFFSET])
-		blackIsolatedPawnCount := bits.OnesCount64(pawnEntry.isolatedPawns[BLACK_OFFSET])
-		whitePawnScore += ISOLATED_PAWN_SCORE * whiteIsolatedPawnCount
-		blackPawnScore += ISOLATED_PAWN_SCORE * blackIsolatedPawnCount
+		whitePawnScore += ISOLATED_PAWN_SCORE * pawnEntry.isolatedPawnCount[WHITE_OFFSET]
+		blackPawnScore += ISOLATED_PAWN_SCORE * pawnEntry.isolatedPawnCount[BLACK_OFFSET]
 	}
 
 	return whitePawnScore, blackPawnScore

@@ -91,7 +91,7 @@ func TestFilterChecks(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_H2, WHITE_MASK|QUEEN_MASK)
 
 	moves := make([]Move, 64)
-	end := GenerateMoves(&testBoard, moves, 0)
+	end := GenerateMoves(&testBoard, &moves, 0)
 	checks := testBoard.FilterChecks(moves[0:end])
 
 	assertMovePresent(t, checks, SQUARE_H2, SQUARE_H3)

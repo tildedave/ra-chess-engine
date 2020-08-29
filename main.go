@@ -54,6 +54,7 @@ func main() {
 	defer func() {
 		if x := recover(); x != nil {
 			debug.PrintStack()
+			fmt.Printf("Fatal error: %v", x)
 			logger.Fatalf("Fatal error: %v", x)
 		}
 	}()

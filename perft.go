@@ -53,7 +53,7 @@ func RunPerftJson(perftJsonFile string, options PerftOptions) (bool, error) {
 		start := time.Now()
 		moves := make([]Move, 13824)
 		var moveStart [64]int
-		perftResult := Perft(&board, spec.Depth, options, moves, moveStart)
+		perftResult := Perft(&board, spec.Depth, options, &moves, &moveStart)
 		elapsed := time.Since(start)
 		if perftResult.nodes != spec.Nodes {
 			fmt.Printf("NOT OK: %s (depth=%d, expected nodes=%d, actual nodes=%d; duration=%s)\n", spec.Fen, spec.Depth, spec.Nodes, perftResult.nodes, elapsed)
@@ -86,7 +86,7 @@ func RunPerft(fen string, variation string, depth uint, options PerftOptions) (b
 			start := time.Now()
 			moves := make([]Move, 13824)
 			var moveStart [64]int
-			result := Perft(&boardState, i, options, moves, moveStart)
+			result := Perft(&boardState, i, options, &moves, &moveStart)
 			fmt.Printf("%d\t%10d\t%s\n", i, result.nodes, time.Since(start))
 		} else {
 			fmt.Println(err)
@@ -96,7 +96,7 @@ func RunPerft(fen string, variation string, depth uint, options PerftOptions) (b
 	return true, nil
 }
 
-func Perft(boardState *BoardState, depth uint, options PerftOptions, moves []Move, moveStart [64]int) PerftInfo {
+func Perft(boardState *BoardState, depth uint, options PerftOptions, moves *[]Move, moveStart *[64]int) PerftInfo {
 	var perftInfo PerftInfo
 
 	if options.checks && boardState.IsInCheck(boardState.sideToMove) {
@@ -109,14 +109,15 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions, moves []Mov
 	}
 
 	currentDepth := options.depth - depth
-	start := moveStart[currentDepth]
+	start := (*moveStart)[currentDepth]
 	end := GenerateMoves(boardState, moves, start)
-	moveStart[currentDepth+1] = end
+	(*moveStart)[currentDepth+1] = end
 	captures := uint(0)
 	castles := uint(0)
 	promotions := uint(0)
 
-	for _, move := range moves[start:end] {
+	for i := start; i < end; i++ {
+		move := (*moves)[i]
 		var originalHashKey uint64
 		var originalPawnHashKey uint64
 		if options.sanityCheck {
@@ -149,7 +150,7 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions, moves []Mov
 		if boardState.wasCapture[boardState.moveIndex-1] {
 			captures++
 		}
-		if move.IsKingsideCastle() || move.IsQueensideCastle() {
+		if move.IsCastle() {
 			castles++
 		}
 		if move.IsPromotion() {
