@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/heap"
 	"math/bits"
 )
 
@@ -230,6 +231,7 @@ func createPawnAttackBitboards(col byte, row byte) (uint64, uint64) {
 func GenerateMoveListing(boardState *BoardState, moves []Move, start int, applyOrdering bool) int {
 	precomputedInfo := generatePrecomputedInfo(boardState)
 	occupancy := precomputedInfo.ourOccupancy
+	originalStart := start
 	for occupancy != 0 {
 		sq := byte(bits.TrailingZeros64(occupancy))
 		start = GenerateMovesFromSquare(boardState, sq, boardState.sideToMove, moves, start, precomputedInfo)
@@ -238,7 +240,7 @@ func GenerateMoveListing(boardState *BoardState, moves []Move, start int, applyO
 	}
 
 	if applyOrdering {
-		// orderCaptures(boardState, &listing)
+		orderCaptures(boardState, moves, originalStart, start)
 	}
 
 	return start
@@ -246,6 +248,7 @@ func GenerateMoveListing(boardState *BoardState, moves []Move, start int, applyO
 
 func GenerateQuiescentMoves(boardState *BoardState, moves []Move, start int) int {
 	// for now only generate captures
+	originalStart := start
 	precomputedInfo := generatePrecomputedInfo(boardState)
 	occupancy := precomputedInfo.ourOccupancy
 	moveBitboards := boardState.moveBitboards
@@ -278,29 +281,30 @@ func GenerateQuiescentMoves(boardState *BoardState, moves []Move, start int) int
 		occupancy ^= 1 << sq
 	}
 
-	// orderCaptures(boardState, &listing)
+	orderCaptures(boardState, moves, originalStart, start)
 
 	return start
 }
 
-// func orderCaptures(boardState *BoardState, listing *MoveListing) {
-// 	captureQueue := make(MovePriorityQueue, 0, len(listing.captures))
+func orderCaptures(boardState *BoardState, moves []Move, start int, end int) {
+	captureQueue := make(MovePriorityQueue, 0, end-start)
 
-// 	for _, capture := range listing.captures {
-// 		fromPiece := boardState.PieceAtSquare(capture.from)
-// 		toPiece := boardState.PieceAtSquare(capture.to)
-// 		priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
-// 		item := Item{move: capture, score: priority}
-// 		captureQueue.Push(&item)
-// 	}
-// 	heap.Init(&captureQueue)
+	for _, capture := range moves[start:end] {
+		fromPiece := boardState.PieceAtSquare(capture.from)
+		toPiece := boardState.PieceAtSquare(capture.to)
+		priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
+		item := Item{move: capture, score: priority}
+		captureQueue.Push(&item)
+	}
+	heap.Init(&captureQueue)
 
-// 	listing.captures = make([]Move, 0, captureQueue.Len())
-// 	for captureQueue.Len() > 0 {
-// 		item := heap.Pop(&captureQueue).(*Item)
-// 		listing.captures = append(listing.captures, item.move)
-// 	}
-// }
+	current := start
+	for captureQueue.Len() > 0 {
+		item := heap.Pop(&captureQueue).(*Item)
+		moves[current] = item.move
+		current++
+	}
+}
 
 func generateCapturesFromBoard(moves []Move, start int, from byte, attackBoard uint64) int {
 	for attackBoard != 0 {
