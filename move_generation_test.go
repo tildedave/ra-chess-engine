@@ -217,7 +217,8 @@ func TestGenerateQuiescentMoves(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_A8, BLACK_MASK|QUEEN_MASK)
 
 	moves := make([]Move, 64)
-	end := GenerateQuiescentMoves(&testBoard, &moves, 0)
+	moveScores := make([]int, len(moves))
+	end := GenerateQuiescentMoves(&testBoard, &moves, &moveScores, 0)
 	assert.Equal(t, 3, end)
 
 	// verify ordering of captures

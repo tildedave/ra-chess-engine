@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -348,7 +347,7 @@ func searchAlphaBeta(
 			// add the other moves now that we're done with hash move
 			moveEnd = GenerateMoves(boardState, moves, start)
 			(*moveStart)[currentDepth+1] = moveEnd
-			sortMoves(boardState, moveInfo, currentDepth, moves, moveScores, start, moveEnd)
+			SortMoves(boardState, moveInfo, currentDepth, moves, moveScores, start, moveEnd)
 		}
 	}
 
@@ -373,39 +372,6 @@ func searchAlphaBeta(
 	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depthLeft)
 
 	return bestScore
-}
-
-func sortMoves(
-	boardState *BoardState,
-	moveInfo *SearchMoveInfo,
-	currentDepth uint,
-	moves *[]Move,
-	moveScores *[]int,
-	start int,
-	end int,
-) {
-	for i := start; i < end; i++ {
-		move := (*moves)[i]
-		var score int = MOVE_SCORE_NORMAL
-		toPiece := boardState.PieceAtSquare(move.to)
-		if move == moveInfo.killerMoves[currentDepth] {
-			score = MOVE_SCORE_KILLER_MOVE
-		} else if move.flags&PROMOTION_MASK|QUEEN_MASK == PROMOTION_MASK|QUEEN_MASK {
-			// don't bother with scoring underpromotions higher
-			// we probably could avoid the & here since a pawn capture will be ranked
-			// somewhat higher because of MVV priority
-			score = MOVE_SCORE_PROMOTIONS
-		} else if toPiece != EMPTY_SQUARE {
-			fromPiece := boardState.PieceAtSquare(move.from)
-			priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
-			score = MOVE_SCORE_CAPTURES + priority
-		} else {
-			// TODO - check detection
-		}
-		(*moveScores)[i] = score
-	}
-	moveSort := MoveSort{startIndex: start, endIndex: end, moves: moves, moveScores: moveScores}
-	sort.Sort(&moveSort)
 }
 
 func searchQuiescent(
@@ -441,7 +407,7 @@ func searchQuiescent(
 	}
 
 	start := (*moveStart)[currentDepth]
-	endAllMoves := GenerateQuiescentMoves(boardState, moves, start)
+	endAllMoves := GenerateQuiescentMoves(boardState, moves, moveScores, start)
 	endGoodMoves := boardState.FilterSEECaptures(moves, start, endAllMoves)
 	(*moveStart)[currentDepth+1] = endGoodMoves
 
