@@ -1,6 +1,7 @@
 package main
 
 import (
+	"container/heap"
 	"fmt"
 	"strconv"
 	"strings"
@@ -20,6 +21,12 @@ const MOVE_PROMOTIONS = 2
 const MOVE_KILLERS = 3
 const MOVE_CHECKS = 4
 const MOVE_NORMAL = 5
+
+const MOVE_SCORE_NORMAL = 100
+const MOVE_SCORE_CHECKS = 200
+const MOVE_SCORE_CAPTURES = 300
+const MOVE_SCORE_PROMOTIONS = 400
+const MOVE_SCORE_KILLER_MOVE = 500
 
 type SearchStats struct {
 	leafnodes         uint64
@@ -342,27 +349,7 @@ func searchAlphaBeta(
 			// add the other moves now that we're done with hash move
 			moveEnd = GenerateMoves(boardState, moves, start)
 			moveStart[currentDepth+1] = moveEnd
-
-			// TODO - must sort the range, but whatever
-			// moveOrdering[MOVE_CAPTURES] = listing.captures
-			// moveOrdering[MOVE_PROMOTIONS] = listing.promotions
-			// if !inCheck {
-			// 	killerMove := moveInfo.killerMoves[currentDepth]
-			// 	if _, err := boardState.IsMoveLegal(killerMove); err == nil {
-			// 		// IsMoveLegal is pretty dumb and doesn't do enough 'real' checks of the
-			// 		// position to be relied on.  We already have generated all the moves for
-			// 		// this position so this is a simple way to avoid illegal killer moves.
-			// 		// If IsMoveLegal gets smarter we can probably remove this.
-			// 		for _, move := range listing.moves {
-			// 			if move == killerMove {
-			// 				moveOrdering[MOVE_KILLERS] = []Move{killerMove}
-			// 				break
-			// 			}
-			// 		}
-			// 	}
-			// }
-			// moveOrdering[MOVE_NORMAL] = listing.moves
-			// moveOrdering[MOVE_CHECKS] = boardState.FilterChecks(moveOrdering[MOVE_NORMAL])
+			sortMoves(boardState, moveInfo, currentDepth, moves, start, moveEnd)
 		}
 	}
 
@@ -387,6 +374,45 @@ func searchAlphaBeta(
 	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depthLeft)
 
 	return bestScore
+}
+
+func sortMoves(
+	boardState *BoardState,
+	moveInfo *SearchMoveInfo,
+	currentDepth uint,
+	moves []Move,
+	start int,
+	end int,
+) {
+	priorityQueue := make(MovePriorityQueue, 0, end-start)
+
+	for _, move := range moves[start:end] {
+		var score int = MOVE_SCORE_NORMAL
+		toPiece := boardState.PieceAtSquare(move.to)
+		if move == moveInfo.killerMoves[currentDepth] {
+			score = MOVE_SCORE_KILLER_MOVE
+		} else if move.flags&PROMOTION_MASK|QUEEN_MASK == PROMOTION_MASK|QUEEN_MASK {
+			// don't bother with scoring underpromotions higher
+			// we probably could avoid the & here since a pawn capture will be ranked somewhat higher
+			score = MOVE_SCORE_PROMOTIONS
+		} else if toPiece != EMPTY_SQUARE {
+			fromPiece := boardState.PieceAtSquare(move.from)
+			priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
+			score = MOVE_SCORE_CAPTURES + priority
+		} else {
+			// TODO - check detection
+		}
+		item := Item{move: move, score: score}
+		priorityQueue.Push(&item)
+	}
+	heap.Init(&priorityQueue)
+
+	current := start
+	for priorityQueue.Len() > 0 {
+		item := heap.Pop(&priorityQueue).(*Item)
+		moves[current] = item.move
+		current++
+	}
 }
 
 func searchQuiescent(
