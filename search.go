@@ -1,8 +1,8 @@
 package main
 
 import (
-	"container/heap"
 	"fmt"
+	"sort"
 	"strconv"
 	"strings"
 	"time"
@@ -121,6 +121,8 @@ func SearchWithConfig(
 		startTime:     startTime,
 	}
 	moves := make([]Move, 64*256)
+	scores := make([]int, len(moves))
+
 	var moveStart [64]int
 	score := searchAlphaBeta(boardState, &stats, &variation, &moveInfo,
 		thinkingChan,
@@ -130,6 +132,7 @@ func SearchWithConfig(
 		beta,
 		searchConfig,
 		&moves,
+		&scores,
 		&moveStart,
 	)
 
@@ -178,6 +181,7 @@ func searchAlphaBeta(
 	beta int,
 	searchConfig SearchConfig,
 	moves *[]Move,
+	moveScores *[]int,
 	moveStart *[64]int,
 ) int {
 	var line Variation
@@ -224,7 +228,7 @@ func searchAlphaBeta(
 	}
 
 	if depthLeft == 0 {
-		score := searchQuiescent(boardState, searchStats, &line, depthLeft, currentDepth, alpha, beta, searchConfig, moves, moveStart)
+		score := searchQuiescent(boardState, searchStats, &line, depthLeft, currentDepth, alpha, beta, searchConfig, moves, moveScores, moveStart)
 		if score > alpha {
 			copy(variation.move[0:], line.move[0:line.numMoves])
 			variation.numMoves = line.numMoves
@@ -295,6 +299,7 @@ func searchAlphaBeta(
 				-beta, -currentAlpha, // swap alpha and beta
 				searchConfig,
 				moves,
+				moveScores,
 				moveStart,
 			)
 
@@ -343,7 +348,7 @@ func searchAlphaBeta(
 			// add the other moves now that we're done with hash move
 			moveEnd = GenerateMoves(boardState, moves, start)
 			(*moveStart)[currentDepth+1] = moveEnd
-			sortMoves(boardState, moveInfo, currentDepth, moves, start, moveEnd)
+			sortMoves(boardState, moveInfo, currentDepth, moves, moveScores, start, moveEnd)
 		}
 	}
 
@@ -375,11 +380,10 @@ func sortMoves(
 	moveInfo *SearchMoveInfo,
 	currentDepth uint,
 	moves *[]Move,
+	moveScores *[]int,
 	start int,
 	end int,
 ) {
-	priorityQueue := make(MovePriorityQueue, 0, end-start)
-
 	for i := start; i < end; i++ {
 		move := (*moves)[i]
 		var score int = MOVE_SCORE_NORMAL
@@ -388,7 +392,8 @@ func sortMoves(
 			score = MOVE_SCORE_KILLER_MOVE
 		} else if move.flags&PROMOTION_MASK|QUEEN_MASK == PROMOTION_MASK|QUEEN_MASK {
 			// don't bother with scoring underpromotions higher
-			// we probably could avoid the & here since a pawn capture will be ranked somewhat higher
+			// we probably could avoid the & here since a pawn capture will be ranked
+			// somewhat higher because of MVV priority
 			score = MOVE_SCORE_PROMOTIONS
 		} else if toPiece != EMPTY_SQUARE {
 			fromPiece := boardState.PieceAtSquare(move.from)
@@ -397,17 +402,10 @@ func sortMoves(
 		} else {
 			// TODO - check detection
 		}
-		item := Item{move: move, score: score}
-		priorityQueue.Push(&item)
+		(*moveScores)[i] = score
 	}
-	heap.Init(&priorityQueue)
-
-	current := start
-	for priorityQueue.Len() > 0 {
-		item := heap.Pop(&priorityQueue).(*Item)
-		(*moves)[current] = item.move
-		current++
-	}
+	moveSort := MoveSort{startIndex: start, endIndex: end, moves: moves, moveScores: moveScores}
+	sort.Sort(&moveSort)
 }
 
 func searchQuiescent(
@@ -421,6 +419,7 @@ func searchQuiescent(
 	beta int,
 	searchConfig SearchConfig,
 	moves *[]Move,
+	moveScores *[]int,
 	moveStart *[64]int,
 ) int {
 	var line Variation
@@ -458,7 +457,7 @@ func searchQuiescent(
 			continue
 		}
 
-		score := -searchQuiescent(boardState, searchStats, &line, depthLeft-1, currentDepth+1, -beta, -alpha, searchConfig, moves, moveStart)
+		score := -searchQuiescent(boardState, searchStats, &line, depthLeft-1, currentDepth+1, -beta, -alpha, searchConfig, moves, moveScores, moveStart)
 		boardState.UnapplyMove(move)
 
 		if score >= beta {
