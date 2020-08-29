@@ -17,6 +17,29 @@ func (item *Item) String() string {
 	return fmt.Sprintf("%s (%d)", MoveToXboardString(item.move), item.score)
 }
 
+type MoveSort struct {
+	moves      *[]Move
+	moveScores *[]int
+	startIndex int
+	endIndex   int
+}
+
+func (pq MoveSort) Len() int {
+	return pq.endIndex - pq.startIndex
+}
+
+func (pq MoveSort) Less(i, j int) bool {
+	// We want Pop to give us the highest, not lowest, priority so we use greater than here.
+	idx := pq.startIndex
+	return (*pq.moveScores)[idx+i] > (*pq.moveScores)[idx+j]
+}
+
+func (pq MoveSort) Swap(i, j int) {
+	idx := pq.startIndex
+	(*pq.moves)[idx+i], (*pq.moves)[idx+j] = (*pq.moves)[idx+j], (*pq.moves)[idx+i]
+	(*pq.moveScores)[idx+i], (*pq.moveScores)[idx+j] = (*pq.moveScores)[idx+j], (*pq.moveScores)[idx+i]
+}
+
 type MovePriorityQueue []*Item
 
 func (pq MovePriorityQueue) Len() int { return len(pq) }
