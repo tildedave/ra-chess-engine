@@ -97,8 +97,7 @@ func TestSearchBlackForcesDraw(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D4, WHITE_MASK|PAWN_MASK)
 
 	result := Search(&boardState, 10)
-	fmt.Println(result.String())
-	assert.True(t, result.value < 300)
+	assert.True(t, result.value < QUEEN_EVAL_SCORE)
 }
 
 func TestSearchWhiteSavesKnightFromCapture(t *testing.T) {
