@@ -113,7 +113,7 @@ func SearchWithConfig(
 		startingDepth: depth,
 		startTime:     startTime,
 	}
-	moves := make([]Move, 13824)
+	moves := make([]Move, 64*256)
 	var moveStart [64]int
 	score := searchAlphaBeta(boardState, &stats, &variation, &moveInfo,
 		thinkingChan,
@@ -243,15 +243,19 @@ func searchAlphaBeta(
 	bestScore := -INFINITY + 1
 	var bestMove Move
 	currentAlpha := alpha
-	var moveEnd int
 
-	for i := 0; i <= MOVE_NORMAL; i++ {
+	start := moveStart[currentDepth]
+	var moveEnd int
+	moveStart[currentDepth+1] = start
+
+	for i := 0; i <= 1; i++ {
 		var moveOrdering []Move
 		if i == 0 {
 			moveOrdering = hashMove
 		} else {
-			moveOrdering = moves[moveStart[currentDepth]:moveEnd]
+			moveOrdering = moves[start:moveEnd]
 		}
+
 		for _, move := range moveOrdering {
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
 				continue
@@ -336,7 +340,7 @@ func searchAlphaBeta(
 
 		if i == 0 {
 			// add the other moves now that we're done with hash move
-			moveEnd = GenerateMoves(boardState, moves, moveStart[currentDepth])
+			moveEnd = GenerateMoves(boardState, moves, start)
 			moveStart[currentDepth+1] = moveEnd
 
 			// TODO - must sort the range, but whatever
