@@ -393,7 +393,7 @@ func searchQuiescent(
 	// Evaluate the board to see what the position is without making any quiescent moves.
 	score := getLeafResult(boardState, searchStats)
 	if score >= beta {
-		return beta
+		return score
 	}
 	if score >= alpha {
 		bestScore = score
@@ -427,7 +427,7 @@ func searchQuiescent(
 			searchStats.cutoffs++
 			searchStats.qcutoffs++
 
-			return beta
+			return score
 		}
 
 		if score > bestScore {
