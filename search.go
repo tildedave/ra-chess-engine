@@ -20,6 +20,7 @@ type SearchStats struct {
 	qbranchnodes      uint64
 	hashcutoffs       uint64
 	killercutoffs     uint64
+	killer2cutoffs    uint64
 	cutoffs           uint64
 	qcutoffs          uint64
 	qcapturesfiltered uint64
@@ -78,8 +79,8 @@ type ExternalSearchConfig struct {
 }
 
 type SearchMoveInfo struct {
-	// eventually add a second array here
-	killerMoves [MAX_DEPTH]Move
+	killerMoves  [MAX_DEPTH]Move
+	killerMoves2 [MAX_DEPTH]Move
 }
 
 func Search(boardState *BoardState, depth uint, stats *SearchStats) SearchResult {
@@ -308,13 +309,21 @@ func searchAlphaBeta(
 
 			if score >= beta {
 				lastKiller := moveInfo.killerMoves[currentDepth]
-				moveInfo.killerMoves[currentDepth] = move
+				lastKiller2 := moveInfo.killerMoves2[currentDepth]
+				if move == lastKiller {
+					// nothing, we good
+				} else {
+					moveInfo.killerMoves[currentDepth] = move
+					moveInfo.killerMoves2[currentDepth] = lastKiller
+				}
 				StoreTranspositionTable(boardState, move, score, TT_FAIL_HIGH, depthLeft)
 				searchStats.cutoffs++
 				if i == 0 {
 					searchStats.hashcutoffs++
 				} else if move == lastKiller {
 					searchStats.killercutoffs++
+				} else if move == lastKiller2 {
+					searchStats.killer2cutoffs++
 				}
 				return score
 			}
@@ -486,7 +495,7 @@ func SearchValueToString(result SearchResult) string {
 }
 
 func (stats *SearchStats) String() string {
-	return fmt.Sprintf("[nodes=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, tthits=%d, cutoffs=%d, hash cutoffs=%d, killer cutoffs=%d, qcutoffs=%d, qcapturesfiltered=%d]",
+	return fmt.Sprintf("[nodes=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, tthits=%d, cutoffs=%d, hash cutoffs=%d, killer cutoffs={1: %d, 2: %d}, qcutoffs=%d, qcapturesfiltered=%d]",
 		stats.Nodes(),
 		stats.leafnodes,
 		stats.branchnodes,
@@ -495,6 +504,7 @@ func (stats *SearchStats) String() string {
 		stats.cutoffs,
 		stats.hashcutoffs,
 		stats.killercutoffs,
+		stats.killer2cutoffs,
 		stats.qcutoffs,
 		stats.qcapturesfiltered)
 }

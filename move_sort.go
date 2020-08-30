@@ -11,6 +11,7 @@ const MOVE_SCORE_CHECKS = 200
 const MOVE_SCORE_CAPTURES = 300
 const MOVE_SCORE_PROMOTIONS = 400
 const MOVE_SCORE_KILLER_MOVE = 500
+const MOVE_SCORE_KILLER_MOVE2 = 450
 
 type MoveSort struct {
 	moves      []Move
@@ -52,6 +53,8 @@ func SortMoves(
 		toPiece := boardState.PieceAtSquare(move.to)
 		if move == moveInfo.killerMoves[currentDepth] {
 			score = MOVE_SCORE_KILLER_MOVE
+		} else if move == moveInfo.killerMoves2[currentDepth] {
+			score = MOVE_SCORE_KILLER_MOVE2
 		} else if move.flags&PROMOTION_MASK|QUEEN_MASK == PROMOTION_MASK|QUEEN_MASK {
 			// don't bother with scoring underpromotions higher
 			// we probably could avoid the & here since a pawn capture will be ranked
