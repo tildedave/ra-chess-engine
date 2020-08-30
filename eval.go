@@ -22,7 +22,6 @@ const KING_CANNOT_CASTLE_EVAL_SCORE = 70
 const ENDGAME_KING_ON_EDGE_PENALTY = 30
 const ENDGAME_KING_NEAR_EDGE_PENALTY = 10
 const ENDGAME_QUEEN_BONUS_SCORE = 400
-const KING_CASTLED_EVAL_SCORE = 20
 const PAWN_IN_CENTER_EVAL_SCORE = 40
 const PIECE_IN_CENTER_EVAL_SCORE = 25
 const PIECE_ATTACKS_CENTER_EVAL_SCORE = 15
@@ -203,12 +202,7 @@ func Eval(boardState *BoardState) BoardEval {
 		if !boardState.boardInfo.blackHasCastled && !boardState.boardInfo.blackCanCastleKingside && !boardState.boardInfo.blackCanCastleQueenside {
 			blackKingPosition -= KING_CANNOT_CASTLE_EVAL_SCORE
 		}
-		if boardState.boardInfo.whiteHasCastled {
-			whiteKingPosition += KING_CASTLED_EVAL_SCORE
-		}
-		if boardState.boardInfo.blackHasCastled {
-			blackKingPosition += KING_CASTLED_EVAL_SCORE
-		}
+
 		if whiteKingSq == SQUARE_G1 || whiteKingSq == SQUARE_C1 || whiteKingSq == SQUARE_B1 {
 			pawns := bits.OnesCount64(
 				boardState.moveBitboards.kingAttacks[whiteKingSq].board &
