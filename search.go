@@ -377,13 +377,12 @@ func searchQuiescent(
 	moveStart []int,
 ) int {
 	var line Variation
-	var bestMove Move
+	// var bestMove Move
 	bestScore := -INFINITY + 1
 
 	// Evaluate the board to see what the position is without making any quiescent moves.
 	score := getLeafResult(boardState, searchStats)
 	if score >= beta {
-		StoreTranspositionTable(boardState, bestMove, bestScore, TT_FAIL_HIGH, depthLeft)
 		return beta
 	}
 	if score >= alpha {
@@ -417,14 +416,12 @@ func searchQuiescent(
 		if score >= beta {
 			searchStats.cutoffs++
 			searchStats.qcutoffs++
-			StoreTranspositionTable(boardState, bestMove, score, TT_FAIL_HIGH, depthLeft)
 
 			return beta
 		}
 
 		if score > bestScore {
 			bestScore = score
-			bestMove = move
 			if score > alpha {
 				alpha = score
 				variation.move[0] = move
@@ -433,18 +430,6 @@ func searchQuiescent(
 			}
 		}
 	}
-
-	var ttEntryType int
-	if bestScore < alpha {
-		// never raised alpha
-		ttEntryType = TT_FAIL_LOW
-	} else {
-		// we raised alpha, so we have an exact match
-		// TODO(2020) - I'm not clear if we should be storing exact entries for Q-search
-		// Possibly doesn't matter since depthLeft is negative in this code flow
-		ttEntryType = TT_EXACT
-	}
-	StoreTranspositionTable(boardState, bestMove, bestScore, ttEntryType, depthLeft)
 
 	return bestScore
 }
