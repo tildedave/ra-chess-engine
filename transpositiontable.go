@@ -12,6 +12,9 @@ type TranspositionEntry struct {
 	searchPhase int
 }
 
+const TT_INITIAL_SIZE = 1048576
+const PAWN_ENTRY_TABLE_INITIAL_SIZE = 262144
+
 const (
 	TT_FAIL_HIGH = iota
 	TT_FAIL_LOW  = iota
@@ -21,8 +24,8 @@ const (
 var hashArray map[uint64]*TranspositionEntry
 
 func generateTranspositionTable(boardState *BoardState) {
-	boardState.transpositionTable = make(map[uint64]*TranspositionEntry)
-	boardState.pawnTable = make(map[uint64]*PawnTableEntry)
+	boardState.transpositionTable = make(map[uint64]*TranspositionEntry, TT_INITIAL_SIZE)
+	boardState.pawnTable = make(map[uint64]*PawnTableEntry, PAWN_ENTRY_TABLE_INITIAL_SIZE)
 }
 
 func ProbeTranspositionTable(boardState *BoardState) *TranspositionEntry {
