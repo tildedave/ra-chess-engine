@@ -17,8 +17,8 @@ func TestMoveSort(t *testing.T) {
 	captureQueue := MoveSort{
 		startIndex: 0,
 		endIndex:   len(moves),
-		moves:      &moves,
-		moveScores: &moveScores,
+		moves:      moves[:],
+		moveScores: moveScores[:],
 	}
 	sort.Sort(&captureQueue)
 

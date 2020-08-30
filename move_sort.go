@@ -7,8 +7,8 @@ import (
 // from https://golang.org/pkg/container/heap/
 
 type MoveSort struct {
-	moves      *[]Move
-	moveScores *[]int
+	moves      []Move
+	moveScores []int
 	startIndex int
 	endIndex   int
 }
@@ -20,26 +20,26 @@ func (pq MoveSort) Len() int {
 func (pq MoveSort) Less(i, j int) bool {
 	// We want Pop to give us the highest, not lowest, priority so we use greater than here.
 	idx := pq.startIndex
-	return (*pq.moveScores)[idx+i] > (*pq.moveScores)[idx+j]
+	return pq.moveScores[idx+i] > pq.moveScores[idx+j]
 }
 
 func (pq MoveSort) Swap(i, j int) {
 	idx := pq.startIndex
-	(*pq.moves)[idx+i], (*pq.moves)[idx+j] = (*pq.moves)[idx+j], (*pq.moves)[idx+i]
-	(*pq.moveScores)[idx+i], (*pq.moveScores)[idx+j] = (*pq.moveScores)[idx+j], (*pq.moveScores)[idx+i]
+	pq.moves[idx+i], pq.moves[idx+j] = pq.moves[idx+j], pq.moves[idx+i]
+	pq.moveScores[idx+i], pq.moveScores[idx+j] = pq.moveScores[idx+j], pq.moveScores[idx+i]
 }
 
 func SortMoves(
 	boardState *BoardState,
 	moveInfo *SearchMoveInfo,
 	currentDepth uint,
-	moves *[]Move,
-	moveScores *[]int,
+	moves []Move,
+	moveScores []int,
 	start int,
 	end int,
 ) {
 	for i := start; i < end; i++ {
-		move := (*moves)[i]
+		move := moves[i]
 		var score int = MOVE_SCORE_NORMAL
 		toPiece := boardState.PieceAtSquare(move.to)
 		if move == moveInfo.killerMoves[currentDepth] {
@@ -56,21 +56,21 @@ func SortMoves(
 		} else {
 			// TODO - check detection
 		}
-		(*moveScores)[i] = score
+		moveScores[i] = score
 	}
 	moveSort := MoveSort{startIndex: start, endIndex: end, moves: moves, moveScores: moveScores}
 	sort.Sort(&moveSort)
 }
 
-func SortQuiescentMoves(boardState *BoardState, moves *[]Move, moveScores *[]int, start int, end int) {
+func SortQuiescentMoves(boardState *BoardState, moves []Move, moveScores []int, start int, end int) {
 	moveSort := MoveSort{startIndex: start, endIndex: end, moves: moves, moveScores: moveScores}
 
 	for i := start; i < end; i++ {
-		capture := (*moves)[i]
+		capture := moves[i]
 		fromPiece := boardState.PieceAtSquare(capture.from)
 		toPiece := boardState.PieceAtSquare(capture.to)
 		priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
-		(*moveScores)[i] = priority
+		moveScores[i] = priority
 	}
 	sort.Sort(&moveSort)
 }
