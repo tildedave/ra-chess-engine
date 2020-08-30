@@ -106,7 +106,6 @@ func TestIsMoveCheck(t *testing.T) {
 	moves := make([]Move, 64)
 	end := GenerateMoves(&testBoard, moves[:], 0)
 	checks := filterChecks(&testBoard, moves[0:end])
-	fmt.Println(testBoard.ToString())
 
 	assertMovePresent(t, checks, SQUARE_H2, SQUARE_H3)
 	assertMovePresent(t, checks, SQUARE_H2, SQUARE_G3)

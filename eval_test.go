@@ -68,5 +68,5 @@ func TestEvalKingSafety(t *testing.T) {
 
 	boardEval := Eval(&testBoard)
 
-	assert.Equal(t, boardEval.kingPosition, KING_PAWN_COVER_EVAL_SCORE*3+KING_IN_CENTER_EVAL_SCORE)
+	assert.Equal(t, boardEval.kingPosition, KING_PAWN_COVER_EVAL_SCORE*3-KING_IN_CENTER_EVAL_SCORE)
 }
