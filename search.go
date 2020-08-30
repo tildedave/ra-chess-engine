@@ -171,10 +171,11 @@ func searchAlphaBeta(
 	moveStart []int,
 ) int {
 	var line Variation
+	var hashMove Move
+	var hasHashMove bool
 
 	isDebug := searchConfig.isDebug
 
-	var hashMove = make([]Move, 0)
 	if entry := ProbeTranspositionTable(boardState); entry != nil {
 		if currentDepth > 0 {
 			if entry.depth >= depthLeft {
@@ -197,7 +198,8 @@ func searchAlphaBeta(
 		}
 		move := entry.move
 		if _, err := boardState.IsMoveLegal(move); err == nil {
-			hashMove = append(hashMove, move)
+			hashMove = move
+			hasHashMove = true
 		}
 	}
 
@@ -243,19 +245,18 @@ func searchAlphaBeta(
 
 	start := moveStart[currentDepth]
 	var moveEnd int
-	moveStart[currentDepth+1] = start
+	if hasHashMove {
+		moves[start] = hashMove
+		moveStart[currentDepth+1] = start + 1
+		moveEnd = start + 1
+	} else {
+		moveStart[currentDepth+1] = start
+		moveEnd = start
+	}
 
 	for i := 0; i <= 1; i++ {
-		var moveOrdering []Move
-		if i == 0 {
-			moveOrdering = hashMove
-		} else {
-			// TODO - don't want to do this, we should index
-			// Fix this by putting the hashMove onto the move list in this scenario
-			moveOrdering = moves[start:moveEnd]
-		}
-
-		for _, move := range moveOrdering {
+		for j := start; j < moveEnd; j++ {
+			move := moves[j]
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
 				continue
 			}
