@@ -30,6 +30,7 @@ const PAWN_ON_SEVENTH_RANK_SCORE = 300
 const PAWN_PASSED_ON_SIXTH_RANK_SCORE = 200
 const ISOLATED_PAWN_SCORE = -20
 const DOUBLED_PAWN_SCORE = -10
+const DEVELOPMENT_PENALTY = -15
 
 const (
 	PHASE_OPENING    = iota
@@ -47,7 +48,9 @@ type BoardEval struct {
 	whitePawnScore    int
 	blackPawnScore    int
 	pawnScore         int
-	development       int
+	developmentScore  int
+	whiteDevelopment  int
+	blackDevelopment  int
 	kingPosition      int
 	whiteKingPosition int
 	blackKingPosition int
@@ -88,6 +91,7 @@ func Eval(boardState *BoardState) BoardEval {
 		boardPhase = PHASE_MIDDLEGAME
 	}
 
+	var pieceBoards [2][7]uint64
 	blackMaterial := 0
 	whiteMaterial := 0
 	blackPawnMaterial := 0
@@ -106,6 +110,8 @@ func Eval(boardState *BoardState) BoardEval {
 		pieceBoard := boardState.bitboards.piece[pieceMask]
 		whitePieceBoard := whiteOccupancy & pieceBoard
 		blackPieceBoard := blackOccupancy & pieceBoard
+		pieceBoards[WHITE_OFFSET][pieceMask] = whitePieceBoard
+		pieceBoards[BLACK_OFFSET][pieceMask] = blackPieceBoard
 
 		whitePieceMaterial := bits.OnesCount64(whitePieceBoard) * MATERIAL_SCORE[pieceMask]
 		blackPieceMaterial := bits.OnesCount64(blackPieceBoard) * MATERIAL_SCORE[pieceMask]
@@ -150,6 +156,8 @@ func Eval(boardState *BoardState) BoardEval {
 	kings := boardState.bitboards.piece[KING_MASK]
 	blackKingSq := byte(bits.TrailingZeros64(boardState.bitboards.color[BLACK_OFFSET] & kings))
 	whiteKingSq := byte(bits.TrailingZeros64(boardState.bitboards.color[WHITE_OFFSET] & kings))
+	var whiteDevelopment int
+	var blackDevelopment int
 
 	if boardPhase != PHASE_ENDGAME {
 		// prioritize center control
@@ -178,6 +186,9 @@ func Eval(boardState *BoardState) BoardEval {
 				}
 			}
 		}
+
+		// Penalize pieces on original squares
+		whiteDevelopment, blackDevelopment = evalDevelopment(boardState, &pieceBoards)
 
 		// penalize king position
 		if blackKingSq > SQUARE_C8 && blackKingSq < SQUARE_G8 {
@@ -250,6 +261,9 @@ func Eval(boardState *BoardState) BoardEval {
 		pawnScore:         whitePawnScore - blackPawnScore,
 		whiteKingPosition: whiteKingPosition,
 		blackKingPosition: blackKingPosition,
+		developmentScore:  whiteDevelopment - blackDevelopment,
+		whiteDevelopment:  whiteDevelopment,
+		blackDevelopment:  blackDevelopment,
 		centerControl:     centerControl,
 		hasMatingMaterial: hasMatingMaterial,
 	}
@@ -281,8 +295,48 @@ func evalPawnStructure(boardState *BoardState, boardPhase int) (int, int) {
 	return whitePawnScore, blackPawnScore
 }
 
+func evalDevelopment(boardState *BoardState, pieceBoards *[2][7]uint64) (int, int) {
+	whiteDevelopment := 0
+	blackDevelopment := 0
+
+	if boardState.board[SQUARE_B1] == KNIGHT_MASK|WHITE_MASK {
+		whiteDevelopment += DEVELOPMENT_PENALTY
+	}
+	if boardState.board[SQUARE_C1] == BISHOP_MASK|WHITE_MASK {
+		whiteDevelopment += DEVELOPMENT_PENALTY
+	}
+	if boardState.board[SQUARE_D1] == QUEEN_MASK|WHITE_MASK {
+		whiteDevelopment += DEVELOPMENT_PENALTY
+	}
+	if boardState.board[SQUARE_F1] == BISHOP_MASK|WHITE_MASK {
+		whiteDevelopment += DEVELOPMENT_PENALTY
+	}
+	if boardState.board[SQUARE_G1] == KNIGHT_MASK|WHITE_MASK {
+		whiteDevelopment += DEVELOPMENT_PENALTY
+	}
+
+	// Now black
+	if boardState.board[SQUARE_B8] == KNIGHT_MASK|BLACK_MASK {
+		blackDevelopment += DEVELOPMENT_PENALTY
+	}
+	if boardState.board[SQUARE_C8] == BISHOP_MASK|BLACK_MASK {
+		blackDevelopment += DEVELOPMENT_PENALTY
+	}
+	if boardState.board[SQUARE_D8] == QUEEN_MASK|BLACK_MASK {
+		blackDevelopment += DEVELOPMENT_PENALTY
+	}
+	if boardState.board[SQUARE_F8] == BISHOP_MASK|BLACK_MASK {
+		blackDevelopment += DEVELOPMENT_PENALTY
+	}
+	if boardState.board[SQUARE_G8] == KNIGHT_MASK|BLACK_MASK {
+		blackDevelopment += DEVELOPMENT_PENALTY
+	}
+
+	return whiteDevelopment, blackDevelopment
+}
+
 func (eval BoardEval) value() int {
-	score := eval.material + eval.kingPosition + eval.centerControl + eval.pawnScore
+	score := eval.material + eval.kingPosition + eval.centerControl + eval.pawnScore + eval.developmentScore
 	if eval.sideToMove == BLACK_OFFSET {
 		return -score
 	}
@@ -300,7 +354,7 @@ func BoardEvalToString(eval BoardEval) string {
 		phaseString = "opening"
 	}
 
-	return fmt.Sprintf("VALUE: %d\n\tphase=%s\n\tmaterial=%d (white: %d, black: %d)\n\tpawns=%d (white: %d, black: %d)\n\tkingPosition=%d (white: %d, black: %d)\n\tcenterControl=%d",
+	return fmt.Sprintf("VALUE: %d\n\tphase=%s\n\tmaterial=%d (white: %d, black: %d)\n\tpawns=%d (white: %d, black: %d)\n\tkingPosition=%d (white: %d, black: %d)\n\tdevelopment=%d (white: %d, black: %d)\n\tcenterControl=%d",
 		eval.value(),
 		phaseString,
 		eval.material,
@@ -312,6 +366,9 @@ func BoardEvalToString(eval BoardEval) string {
 		eval.kingPosition,
 		eval.whiteKingPosition,
 		eval.blackKingPosition,
+		eval.developmentScore,
+		eval.whiteDevelopment,
+		eval.blackDevelopment,
 		eval.centerControl)
 }
 
