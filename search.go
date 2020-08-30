@@ -80,7 +80,8 @@ func Search(
 	stats *SearchStats,
 	moveInfo *SearchMoveInfo,
 ) SearchResult {
-	return SearchWithConfig(boardState, depth, 0, stats, moveInfo, ExternalSearchConfig{}, nil)
+	eval := getLeafResult(boardState, stats)
+	return SearchWithConfig(boardState, depth, eval, stats, moveInfo, ExternalSearchConfig{}, nil)
 }
 
 func SearchWithConfig(
