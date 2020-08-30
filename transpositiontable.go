@@ -55,7 +55,11 @@ func (entry *TranspositionEntry) String() string {
 	case TT_EXACT:
 		entryTypeAsString = "exact"
 	}
-	return fmt.Sprintf("{score=%d, depth=%d, type=%s}", entry.score, entry.depth, entryTypeAsString)
+	return fmt.Sprintf("%s {score=%d, depth=%d, type=%s}",
+		MoveToXboardString(entry.move),
+		entry.score,
+		entry.depth,
+		entryTypeAsString)
 }
 
 func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType int, depth int) {
