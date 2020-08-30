@@ -9,6 +9,19 @@ import (
 
 var _ = fmt.Println
 
+func filterChecks(boardState *BoardState, moves []Move) []Move {
+	checks := make([]Move, 0)
+	checkInfo := makeCheckDetectionInfo(boardState)
+
+	for _, move := range moves {
+		if boardState.IsMoveCheck(move, &checkInfo) {
+			checks = append(checks, move)
+		}
+	}
+
+	return checks
+}
+
 func TestNotInCheck(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|KING_MASK)
@@ -84,7 +97,7 @@ func TestEnPassantRemovesCheck(t *testing.T) {
 	assert.False(t, testBoard.IsInCheck(BLACK_OFFSET))
 }
 
-func TestFilterChecks(t *testing.T) {
+func TestIsMoveCheck(t *testing.T) {
 	var testBoard BoardState = CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_A1, WHITE_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A3, BLACK_MASK|KING_MASK)
@@ -92,12 +105,16 @@ func TestFilterChecks(t *testing.T) {
 
 	moves := make([]Move, 64)
 	end := GenerateMoves(&testBoard, moves[:], 0)
-	checks := testBoard.FilterChecks(moves[0:end])
+	checks := filterChecks(&testBoard, moves[0:end])
+	fmt.Println(testBoard.ToString())
 
 	assertMovePresent(t, checks, SQUARE_H2, SQUARE_H3)
 	assertMovePresent(t, checks, SQUARE_H2, SQUARE_G3)
 	assertMovePresent(t, checks, SQUARE_H2, SQUARE_D6)
 	assertMovePresent(t, checks, SQUARE_H2, SQUARE_B2)
+	assertMovePresent(t, checks, SQUARE_H2, SQUARE_A2)
+
+	assert.Len(t, checks, 5)
 }
 
 func TestKingAttack(t *testing.T) {

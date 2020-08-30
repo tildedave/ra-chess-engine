@@ -6,6 +6,12 @@ import (
 
 // from https://golang.org/pkg/container/heap/
 
+const MOVE_SCORE_NORMAL = 100
+const MOVE_SCORE_CHECKS = 200
+const MOVE_SCORE_CAPTURES = 300
+const MOVE_SCORE_PROMOTIONS = 400
+const MOVE_SCORE_KILLER_MOVE = 500
+
 type MoveSort struct {
 	moves      []Move
 	moveScores []int
@@ -38,6 +44,8 @@ func SortMoves(
 	start int,
 	end int,
 ) {
+	checkDetectionInfo := makeCheckDetectionInfo(boardState)
+
 	for i := start; i < end; i++ {
 		move := moves[i]
 		var score int = MOVE_SCORE_NORMAL
@@ -53,7 +61,7 @@ func SortMoves(
 			fromPiece := boardState.PieceAtSquare(move.from)
 			priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
 			score = MOVE_SCORE_CAPTURES + priority
-		} else {
+		} else if boardState.IsMoveCheck(move, &checkDetectionInfo) {
 			// TODO - check detection
 		}
 		moveScores[i] = score
