@@ -45,17 +45,6 @@ type ThinkingOutput struct {
 	pv    string
 }
 
-type Variation struct {
-	move     [MAX_MOVES]Move
-	numMoves uint
-}
-
-func CopyVariation(line *Variation, move Move, restLine *Variation) {
-	line.move[0] = move
-	copy(line.move[1:], restLine.move[0:restLine.numMoves])
-	line.numMoves = restLine.numMoves + 1
-}
-
 func (result *SearchResult) IsCheckmate() bool {
 	return result.flags&CHECKMATE_FLAG == CHECKMATE_FLAG
 }
@@ -96,7 +85,6 @@ func SearchWithConfig(
 ) SearchResult {
 	startTime := time.Now()
 
-	variation := Variation{}
 	moveInfo := SearchMoveInfo{}
 
 	alpha := -INFINITY
@@ -111,7 +99,7 @@ func SearchWithConfig(
 	scores := make([]int, len(moves))
 
 	var moveStart [64]int
-	score := searchAlphaBeta(boardState, stats, &variation, &moveInfo,
+	score := searchAlphaBeta(boardState, stats, &moveInfo,
 		thinkingChan,
 		int(depth),
 		0,
@@ -136,8 +124,10 @@ func SearchWithConfig(
 	}
 	result.value = score
 	result.time = time.Now().Sub(startTime)
-	result.move = variation.move[0]
-	result.pv, _ = MoveArrayToPrettyString(variation.move[0:variation.numMoves], boardState)
+	pv := extractPV(boardState)
+	// TODO - guard against null
+	result.move = pv[0]
+	result.pv, _ = MoveArrayToPrettyString(pv, boardState)
 	result.stats = *stats
 	result.depth = depth
 
@@ -159,7 +149,6 @@ func SearchWithConfig(
 func searchAlphaBeta(
 	boardState *BoardState,
 	searchStats *SearchStats,
-	variation *Variation,
 	moveInfo *SearchMoveInfo,
 	thinkingChan chan ThinkingOutput,
 	depthLeft int,
@@ -171,7 +160,6 @@ func searchAlphaBeta(
 	moveScores []int,
 	moveStart []int,
 ) int {
-	var line Variation
 	var hashMove Move
 	var hasHashMove bool
 
@@ -217,12 +205,7 @@ func searchAlphaBeta(
 	}
 
 	if depthLeft == 0 {
-		score := searchQuiescent(boardState, searchStats, &line, depthLeft, currentDepth, alpha, beta, searchConfig, moves, moveScores, moveStart)
-		if score > alpha {
-			copy(variation.move[0:], line.move[0:line.numMoves])
-			variation.numMoves = line.numMoves
-		}
-		return score
+		return searchQuiescent(boardState, searchStats, depthLeft, currentDepth, alpha, beta, searchConfig, moves, moveScores, moveStart)
 	}
 
 	if boardState.HasStateOccurred() {
@@ -282,7 +265,10 @@ func searchAlphaBeta(
 			}
 			searchConfig.isDebug = false
 
-			score := -searchAlphaBeta(boardState, searchStats, &line, moveInfo, thinkingChan,
+			score := -searchAlphaBeta(boardState,
+				searchStats,
+				moveInfo,
+				thinkingChan,
 				depthLeft-1, currentDepth+1,
 				-beta, -currentAlpha, // swap alpha and beta
 				searchConfig,
@@ -294,9 +280,7 @@ func searchAlphaBeta(
 			boardState.UnapplyMove(move)
 
 			if debugMode {
-				var moveLine Variation
-				CopyVariation(&moveLine, move, &line)
-				str := MoveArrayToXboardString(moveLine.move[0:moveLine.numMoves])
+				str := MoveArrayToXboardString(extractPV(boardState))
 				entry := boardState.transpositionTable[hashKey]
 				var entryType string
 				if entry != nil {
@@ -333,9 +317,8 @@ func searchAlphaBeta(
 				bestMove = move
 				if bestScore > alpha {
 					currentAlpha = score
-					CopyVariation(variation, move, &line)
 					if currentDepth == 0 && thinkingChan != nil {
-						sendToThinkingChannel(boardState, searchStats, variation, thinkingChan, searchConfig, bestScore, depthLeft)
+						sendToThinkingChannel(boardState, searchStats, thinkingChan, searchConfig, bestScore, depthLeft)
 					}
 				}
 			}
@@ -375,7 +358,6 @@ func searchAlphaBeta(
 func searchQuiescent(
 	boardState *BoardState,
 	searchStats *SearchStats,
-	variation *Variation,
 	// depthLeft will always be negative
 	depthLeft int,
 	currentDepth uint,
@@ -386,7 +368,6 @@ func searchQuiescent(
 	moveScores []int,
 	moveStart []int,
 ) int {
-	var line Variation
 	// var bestMove Move
 	bestScore := -INFINITY + 1
 
@@ -420,7 +401,7 @@ func searchQuiescent(
 			continue
 		}
 
-		score := -searchQuiescent(boardState, searchStats, &line, depthLeft-1, currentDepth+1, -beta, -alpha, searchConfig, moves, moveScores, moveStart)
+		score := -searchQuiescent(boardState, searchStats, depthLeft-1, currentDepth+1, -beta, -alpha, searchConfig, moves, moveScores, moveStart)
 		boardState.UnapplyMove(move)
 
 		if score >= beta {
@@ -434,9 +415,6 @@ func searchQuiescent(
 			bestScore = score
 			if score > alpha {
 				alpha = score
-				variation.move[0] = move
-				copy(variation.move[1:], line.move[0:line.numMoves])
-				variation.numMoves = line.numMoves + 1
 			}
 		}
 	}
@@ -527,13 +505,12 @@ func (m Move) IsQuiescentPawnPush(boardState *BoardState) bool {
 func sendToThinkingChannel(
 	boardState *BoardState,
 	searchStats *SearchStats,
-	variation *Variation,
 	thinkingChan chan ThinkingOutput,
 	searchConfig SearchConfig,
 	score int,
 	depthLeft int,
 ) {
-	pv, _ := MoveArrayToPrettyString(variation.move[0:variation.numMoves], boardState)
+	pv, _ := MoveArrayToPrettyString(extractPV(boardState), boardState)
 	timeNanos := time.Now().Sub(searchConfig.startTime).Nanoseconds()
 	var scoreString string
 	absScore := score
@@ -559,4 +536,25 @@ func sendToThinkingChannel(
 		nodes: searchStats.Nodes(),
 		pv:    pv,
 	}
+}
+
+func extractPV(boardState *BoardState) []Move {
+	pvMoves := make([]Move, 0)
+	e := ProbeTranspositionTable(boardState)
+	for e != nil {
+		move := e.move
+		pvMoves = append(pvMoves, move)
+		boardState.ApplyMove(move)
+		// Avoid repetitions in moves
+		if boardState.HasStateOccurred() {
+			break
+		}
+		e = ProbeTranspositionTable(boardState)
+	}
+	for j := len(pvMoves) - 1; j >= 0; j-- {
+		move := pvMoves[j]
+		boardState.UnapplyMove(move)
+	}
+
+	return pvMoves
 }
