@@ -187,12 +187,12 @@ func searchAlphaBeta(
 				case TT_FAIL_HIGH:
 					if entry.score >= beta {
 						searchStats.tthits++
-						return beta
+						return entry.score
 					}
 				case TT_FAIL_LOW:
 					if entry.score <= alpha {
 						searchStats.tthits++
-						return alpha
+						return entry.score
 					}
 				}
 			}
