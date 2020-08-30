@@ -5,6 +5,31 @@ import (
 	"math/bits"
 )
 
+type CheckDetectionInfo struct {
+	bishopMask uint64
+	rookMask   uint64
+	knightMask uint64
+	pawnMask   uint64
+}
+
+func makeCheckDetectionInfo(boardState *BoardState) CheckDetectionInfo {
+	otherSide := oppositeColorOffset(boardState.sideToMove)
+
+	enemyKingSq := bits.TrailingZeros64(boardState.bitboards.piece[KING_MASK] & boardState.bitboards.color[otherSide])
+	allOccupancies := boardState.bitboards.color[WHITE_OFFSET] | boardState.bitboards.color[BLACK_OFFSET]
+	bishopKey := hashKey(allOccupancies, boardState.moveBitboards.bishopMagics[enemyKingSq])
+	rookKey := hashKey(allOccupancies, boardState.moveBitboards.rookMagics[enemyKingSq])
+	bishopMask := boardState.moveBitboards.bishopAttacks[enemyKingSq][bishopKey].board
+	rookMask := boardState.moveBitboards.rookAttacks[enemyKingSq][rookKey].board
+
+	return CheckDetectionInfo{
+		bishopMask: bishopMask,
+		rookMask:   rookMask,
+		knightMask: boardState.moveBitboards.knightAttacks[enemyKingSq].board,
+		pawnMask:   boardState.moveBitboards.pawnAttacks[otherSide][enemyKingSq],
+	}
+}
+
 var _ = fmt.Println
 
 func (boardState *BoardState) IsInCheck(offset int) bool {
@@ -27,43 +52,22 @@ func (boardState *BoardState) IsInCheck(offset int) bool {
 	return boardState.IsSquareUnderAttack(allOccupancies, kingSq, oppositeColorOffset, offset)
 }
 
-func (boardState *BoardState) FilterChecks(moves []Move) []Move {
-	offset := oppositeColorOffset(boardState.sideToMove)
-	enemyKingSq := bits.TrailingZeros64(boardState.bitboards.piece[KING_MASK] & boardState.bitboards.color[offset])
-
-	allOccupancies := boardState.bitboards.color[WHITE_OFFSET] | boardState.bitboards.color[BLACK_OFFSET]
-	bishopKey := hashKey(allOccupancies, boardState.moveBitboards.bishopMagics[enemyKingSq])
-	rookKey := hashKey(allOccupancies, boardState.moveBitboards.rookMagics[enemyKingSq])
-	bishopMask := boardState.moveBitboards.bishopAttacks[enemyKingSq][bishopKey].board
-	rookMask := boardState.moveBitboards.rookAttacks[enemyKingSq][rookKey].board
-	checks := make([]Move, 0, len(moves))
-
-	for _, move := range moves {
-		switch boardState.board[move.from] & 0x0F {
-		case KNIGHT_MASK:
-			if IsBitboardSet(boardState.moveBitboards.knightAttacks[enemyKingSq].board, move.to) {
-				checks = append(checks, move)
-			}
-		case PAWN_MASK:
-			if IsBitboardSet(boardState.moveBitboards.pawnAttacks[offset][enemyKingSq], move.to) {
-				checks = append(checks, move)
-			}
-		case QUEEN_MASK:
-			if IsBitboardSet(bishopMask, move.to) || IsBitboardSet(rookMask, move.to) {
-				checks = append(checks, move)
-			}
-		case BISHOP_MASK:
-			if IsBitboardSet(bishopMask, move.to) {
-				checks = append(checks, move)
-			}
-		case ROOK_MASK:
-			if IsBitboardSet(rookMask, move.to) {
-				checks = append(checks, move)
-			}
-		}
+func (boardState *BoardState) IsMoveCheck(move Move, checkInfo *CheckDetectionInfo) bool {
+	switch boardState.board[move.from] & 0x0F {
+	case KNIGHT_MASK:
+		return IsBitboardSet(checkInfo.knightMask, move.to)
+	case PAWN_MASK:
+		return IsBitboardSet(checkInfo.pawnMask, move.to)
+	case QUEEN_MASK:
+		return IsBitboardSet(checkInfo.bishopMask, move.to) ||
+			IsBitboardSet(checkInfo.rookMask, move.to)
+	case BISHOP_MASK:
+		return IsBitboardSet(checkInfo.bishopMask, move.to)
+	case ROOK_MASK:
+		return IsBitboardSet(checkInfo.rookMask, move.to)
 	}
 
-	return checks
+	return false
 }
 
 func (boardState *BoardState) TestCastleLegality(move Move) bool {

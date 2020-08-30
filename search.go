@@ -14,19 +14,6 @@ var THREEFOLD_REP_FLAG byte = 0x10
 
 const MAX_DEPTH uint = 32
 
-const MOVE_HASH_MOVE = 0
-const MOVE_CAPTURES = 1
-const MOVE_PROMOTIONS = 2
-const MOVE_KILLERS = 3
-const MOVE_CHECKS = 4
-const MOVE_NORMAL = 5
-
-const MOVE_SCORE_NORMAL = 100
-const MOVE_SCORE_CHECKS = 200
-const MOVE_SCORE_CAPTURES = 300
-const MOVE_SCORE_PROMOTIONS = 400
-const MOVE_SCORE_KILLER_MOVE = 500
-
 type SearchStats struct {
 	leafnodes         uint64
 	branchnodes       uint64
