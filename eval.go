@@ -16,11 +16,11 @@ const PAWN_EVAL_SCORE = 100
 const ROOK_EVAL_SCORE = 500
 const KNIGHT_EVAL_SCORE = 300
 const BISHOP_EVAL_SCORE = 320
-const KING_IN_CENTER_EVAL_SCORE = 50
+const KING_IN_CENTER_EVAL_SCORE = -30
 const KING_PAWN_COVER_EVAL_SCORE = 10
-const KING_CANNOT_CASTLE_EVAL_SCORE = 70
-const ENDGAME_KING_ON_EDGE_PENALTY = 30
-const ENDGAME_KING_NEAR_EDGE_PENALTY = 10
+const KING_CANNOT_CASTLE_EVAL_SCORE = -30
+const ENDGAME_KING_ON_EDGE_SCORE = -30
+const ENDGAME_KING_NEAR_EDGE_SCORE = -10
 const ENDGAME_QUEEN_BONUS_SCORE = 400
 const PAWN_IN_CENTER_EVAL_SCORE = 40
 const PIECE_IN_CENTER_EVAL_SCORE = 25
@@ -29,7 +29,7 @@ const PAWN_ON_SEVENTH_RANK_SCORE = 300
 const PAWN_PASSED_ON_SIXTH_RANK_SCORE = 200
 const ISOLATED_PAWN_SCORE = -20
 const DOUBLED_PAWN_SCORE = -10
-const DEVELOPMENT_PENALTY = -15
+const LACK_OF_DEVELOPMENT_SCORE = -15
 
 const (
 	PHASE_OPENING    = iota
@@ -191,16 +191,16 @@ func Eval(boardState *BoardState) BoardEval {
 
 		// penalize king position
 		if blackKingSq > SQUARE_C8 && blackKingSq < SQUARE_G8 {
-			blackKingPosition -= KING_IN_CENTER_EVAL_SCORE
+			blackKingPosition += KING_IN_CENTER_EVAL_SCORE
 		}
 		if whiteKingSq > SQUARE_C1 && whiteKingSq < SQUARE_G1 {
-			whiteKingPosition -= KING_IN_CENTER_EVAL_SCORE
+			whiteKingPosition += KING_IN_CENTER_EVAL_SCORE
 		}
 		if !boardState.boardInfo.whiteHasCastled && !boardState.boardInfo.whiteCanCastleKingside && !boardState.boardInfo.whiteCanCastleQueenside {
-			whiteKingPosition -= KING_CANNOT_CASTLE_EVAL_SCORE
+			whiteKingPosition += KING_CANNOT_CASTLE_EVAL_SCORE
 		}
 		if !boardState.boardInfo.blackHasCastled && !boardState.boardInfo.blackCanCastleKingside && !boardState.boardInfo.blackCanCastleQueenside {
-			blackKingPosition -= KING_CANNOT_CASTLE_EVAL_SCORE
+			blackKingPosition += KING_CANNOT_CASTLE_EVAL_SCORE
 		}
 
 		if whiteKingSq == SQUARE_G1 || whiteKingSq == SQUARE_C1 || whiteKingSq == SQUARE_B1 {
@@ -221,15 +221,15 @@ func Eval(boardState *BoardState) BoardEval {
 	} else {
 		// prioritize king position
 		if IsBitboardSet(edges, whiteKingSq) {
-			whiteKingPosition -= ENDGAME_KING_ON_EDGE_PENALTY
+			whiteKingPosition += ENDGAME_KING_ON_EDGE_SCORE
 		} else if IsBitboardSet(nextToEdges, whiteKingSq) {
-			whiteKingPosition -= ENDGAME_KING_NEAR_EDGE_PENALTY
+			whiteKingPosition += ENDGAME_KING_NEAR_EDGE_SCORE
 		}
 
 		if IsBitboardSet(edges, blackKingSq) {
-			blackKingPosition -= ENDGAME_KING_ON_EDGE_PENALTY
+			blackKingPosition += ENDGAME_KING_ON_EDGE_SCORE
 		} else if IsBitboardSet(nextToEdges, blackKingSq) {
-			blackKingPosition -= ENDGAME_KING_NEAR_EDGE_PENALTY
+			blackKingPosition += ENDGAME_KING_NEAR_EDGE_SCORE
 		}
 
 		// if you have a queen and enemy doesn't that's a good thing
@@ -294,38 +294,38 @@ func evalDevelopment(boardState *BoardState, boardPhase int, pieceBoards *[2][7]
 	blackDevelopment := 0
 
 	if boardState.board[SQUARE_B1] == KNIGHT_MASK|WHITE_MASK {
-		whiteDevelopment += DEVELOPMENT_PENALTY
+		whiteDevelopment += LACK_OF_DEVELOPMENT_SCORE
 	}
 	if boardState.board[SQUARE_C1] == BISHOP_MASK|WHITE_MASK {
-		whiteDevelopment += DEVELOPMENT_PENALTY
+		whiteDevelopment += LACK_OF_DEVELOPMENT_SCORE
 	}
 	if boardState.board[SQUARE_F1] == BISHOP_MASK|WHITE_MASK {
-		whiteDevelopment += DEVELOPMENT_PENALTY
+		whiteDevelopment += LACK_OF_DEVELOPMENT_SCORE
 	}
 	if boardState.board[SQUARE_G1] == KNIGHT_MASK|WHITE_MASK {
-		whiteDevelopment += DEVELOPMENT_PENALTY
+		whiteDevelopment += LACK_OF_DEVELOPMENT_SCORE
 	}
 
 	// Now black
 	if boardState.board[SQUARE_B8] == KNIGHT_MASK|BLACK_MASK {
-		blackDevelopment += DEVELOPMENT_PENALTY
+		blackDevelopment += LACK_OF_DEVELOPMENT_SCORE
 	}
 	if boardState.board[SQUARE_C8] == BISHOP_MASK|BLACK_MASK {
-		blackDevelopment += DEVELOPMENT_PENALTY
+		blackDevelopment += LACK_OF_DEVELOPMENT_SCORE
 	}
 	if boardState.board[SQUARE_F8] == BISHOP_MASK|BLACK_MASK {
-		blackDevelopment += DEVELOPMENT_PENALTY
+		blackDevelopment += LACK_OF_DEVELOPMENT_SCORE
 	}
 	if boardState.board[SQUARE_G8] == KNIGHT_MASK|BLACK_MASK {
-		blackDevelopment += DEVELOPMENT_PENALTY
+		blackDevelopment += LACK_OF_DEVELOPMENT_SCORE
 	}
 
 	if boardPhase == PHASE_MIDDLEGAME {
 		if boardState.board[SQUARE_D1] == QUEEN_MASK|WHITE_MASK {
-			whiteDevelopment += DEVELOPMENT_PENALTY
+			whiteDevelopment += LACK_OF_DEVELOPMENT_SCORE
 		}
 		if boardState.board[SQUARE_D8] == QUEEN_MASK|BLACK_MASK {
-			blackDevelopment += DEVELOPMENT_PENALTY
+			blackDevelopment += LACK_OF_DEVELOPMENT_SCORE
 		}
 	}
 
