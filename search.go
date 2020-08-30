@@ -112,6 +112,11 @@ func SearchWithConfig(
 	)
 
 	result := SearchResult{}
+
+	pv, isDraw := extractPV(boardState)
+	if isDraw {
+		result.flags = DRAW_FLAG
+	}
 	if boardState.sideToMove == BLACK_OFFSET {
 		score = -score
 	}
@@ -124,7 +129,6 @@ func SearchWithConfig(
 	}
 	result.value = score
 	result.time = time.Now().Sub(startTime)
-	pv := extractPV(boardState)
 	// TODO - guard against null
 	result.move = pv[0]
 	result.pv, _ = MoveArrayToPrettyString(pv, boardState)
@@ -280,7 +284,8 @@ func searchAlphaBeta(
 			boardState.UnapplyMove(move)
 
 			if debugMode {
-				str := MoveArrayToXboardString(extractPV(boardState))
+				pv, _ := extractPV(boardState)
+				str := MoveArrayToXboardString(pv)
 				entry := boardState.transpositionTable[hashKey]
 				var entryType string
 				if entry != nil {
@@ -461,12 +466,12 @@ func SearchValueToString(result SearchResult) string {
 		if score < 0 {
 			score = -score
 		}
-		movesToCheckmate := CHECKMATE_SCORE - score + 1
-		return fmt.Sprintf("Mate(%d)", movesToCheckmate)
+		movesToCheckmate := (CHECKMATE_SCORE - score + 1) / 2
+		return fmt.Sprintf("\033[1;34mMate(%d)\033[0m", movesToCheckmate)
 	}
 
 	if result.IsDraw() {
-		return fmt.Sprintf("Draw")
+		return fmt.Sprintf("\033[1;33mDraw\033[0m")
 	}
 
 	return strconv.Itoa(result.value)
@@ -510,7 +515,8 @@ func sendToThinkingChannel(
 	score int,
 	depthLeft int,
 ) {
-	pv, _ := MoveArrayToPrettyString(extractPV(boardState), boardState)
+	pvMoves, _ := extractPV(boardState)
+	pv, _ := MoveArrayToPrettyString(pvMoves, boardState)
 	timeNanos := time.Now().Sub(searchConfig.startTime).Nanoseconds()
 	var scoreString string
 	absScore := score
@@ -539,7 +545,8 @@ func sendToThinkingChannel(
 }
 
 // extractPV will return the move list for a given position from the transposition table.
-func extractPV(boardState *BoardState) []Move {
+func extractPV(boardState *BoardState) ([]Move, bool) {
+	isDraw := false
 	pvMoves := make([]Move, 0)
 	e := ProbeTranspositionTable(boardState)
 	for e != nil {
@@ -551,6 +558,11 @@ func extractPV(boardState *BoardState) []Move {
 		boardState.ApplyMove(move)
 		// Avoid repetitions in moves
 		if boardState.HasStateOccurred() {
+			isDraw = true
+			break
+		}
+		if !Eval(boardState).hasMatingMaterial {
+			isDraw = true
 			break
 		}
 		e = ProbeTranspositionTable(boardState)
@@ -560,5 +572,5 @@ func extractPV(boardState *BoardState) []Move {
 		boardState.UnapplyMove(move)
 	}
 
-	return pvMoves
+	return pvMoves, isDraw
 }
