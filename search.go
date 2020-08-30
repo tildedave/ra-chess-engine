@@ -538,11 +538,15 @@ func sendToThinkingChannel(
 	}
 }
 
+// extractPV will return the move list for a given position from the transposition table.
 func extractPV(boardState *BoardState) []Move {
 	pvMoves := make([]Move, 0)
 	e := ProbeTranspositionTable(boardState)
 	for e != nil {
 		move := e.move
+		if _, err := boardState.IsMoveLegal(move); err != nil {
+			break
+		}
 		pvMoves = append(pvMoves, move)
 		boardState.ApplyMove(move)
 		// Avoid repetitions in moves
