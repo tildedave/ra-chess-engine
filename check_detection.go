@@ -97,7 +97,7 @@ func (boardState *BoardState) IsCheckmate() bool {
 	}
 
 	moves := make([]Move, 256)
-	end := GenerateMoves(boardState, &moves, 0)
+	end := GenerateMoves(boardState, moves[:], 0)
 	offset := boardState.sideToMove
 
 	for _, move := range moves[0:end] {

@@ -130,9 +130,9 @@ func SearchWithConfig(
 		alpha,
 		beta,
 		searchConfig,
-		&moves,
-		&scores,
-		&moveStart,
+		moves[:],
+		scores[:],
+		moveStart[:],
 	)
 
 	result := SearchResult{}
@@ -179,9 +179,9 @@ func searchAlphaBeta(
 	alpha int,
 	beta int,
 	searchConfig SearchConfig,
-	moves *[]Move,
-	moveScores *[]int,
-	moveStart *[64]int,
+	moves []Move,
+	moveScores []int,
+	moveStart []int,
 ) int {
 	var line Variation
 
@@ -254,9 +254,9 @@ func searchAlphaBeta(
 	var bestMove Move
 	currentAlpha := alpha
 
-	start := (*moveStart)[currentDepth]
+	start := moveStart[currentDepth]
 	var moveEnd int
-	(*moveStart)[currentDepth+1] = start
+	moveStart[currentDepth+1] = start
 
 	for i := 0; i <= 1; i++ {
 		var moveOrdering []Move
@@ -265,7 +265,7 @@ func searchAlphaBeta(
 		} else {
 			// TODO - don't want to do this, we should index
 			// Fix this by putting the hashMove onto the move list in this scenario
-			moveOrdering = (*moves)[start:moveEnd]
+			moveOrdering = moves[start:moveEnd]
 		}
 
 		for _, move := range moveOrdering {
@@ -347,7 +347,7 @@ func searchAlphaBeta(
 		if i == 0 {
 			// add the other moves now that we're done with hash move
 			moveEnd = GenerateMoves(boardState, moves, start)
-			(*moveStart)[currentDepth+1] = moveEnd
+			moveStart[currentDepth+1] = moveEnd
 			SortMoves(boardState, moveInfo, currentDepth, moves, moveScores, start, moveEnd)
 		}
 	}
@@ -385,9 +385,9 @@ func searchQuiescent(
 	alpha int,
 	beta int,
 	searchConfig SearchConfig,
-	moves *[]Move,
-	moveScores *[]int,
-	moveStart *[64]int,
+	moves []Move,
+	moveScores []int,
+	moveStart []int,
 ) int {
 	var line Variation
 	var bestMove Move
@@ -407,16 +407,16 @@ func searchQuiescent(
 		return score
 	}
 
-	start := (*moveStart)[currentDepth]
+	start := moveStart[currentDepth]
 	endAllMoves := GenerateQuiescentMoves(boardState, moves, moveScores, start)
 	endGoodMoves := boardState.FilterSEECaptures(moves, start, endAllMoves)
-	(*moveStart)[currentDepth+1] = endGoodMoves
+	moveStart[currentDepth+1] = endGoodMoves
 
 	searchStats.qcapturesfiltered += uint64(endAllMoves - endGoodMoves)
 	searchStats.qbranchnodes++
 
 	for i := start; i < endGoodMoves; i++ {
-		move := (*moves)[i]
+		move := moves[i]
 		ourOffset := boardState.sideToMove
 		boardState.ApplyMove(move)
 		if boardState.IsInCheck(ourOffset) {

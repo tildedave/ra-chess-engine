@@ -35,7 +35,7 @@ func filterCaptures(moves []Move, boardState *BoardState) []Move {
 
 func generateMovesFromBoard(boardState *BoardState) []Move {
 	moves := make([]Move, 64)
-	end := GenerateMoves(boardState, &moves, 0)
+	end := GenerateMoves(boardState, moves[:], 0)
 	return moves[:end]
 }
 
@@ -202,7 +202,7 @@ func TestCreateMovesFromBitboard(t *testing.T) {
 	bitboard = SetBitboard(bitboard, SQUARE_D4)
 
 	moves := make([]Move, 64)
-	end := CreateMovesFromBitboard(SQUARE_D3, bitboard, &moves, 0, 0)
+	end := CreateMovesFromBitboard(SQUARE_D3, bitboard, moves[:], 0, 0)
 	assert.Equal(t, 3, end)
 	assertMovePresent(t, moves[0:end], SQUARE_D3, SQUARE_A5)
 	assertMovePresent(t, moves[0:end], SQUARE_D3, SQUARE_B3)
@@ -218,7 +218,7 @@ func TestGenerateQuiescentMoves(t *testing.T) {
 
 	moves := make([]Move, 64)
 	moveScores := make([]int, len(moves))
-	end := GenerateQuiescentMoves(&testBoard, &moves, &moveScores, 0)
+	end := GenerateQuiescentMoves(&testBoard, moves[:], moveScores[:], 0)
 	assert.Equal(t, 3, end)
 
 	// verify ordering of captures

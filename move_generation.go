@@ -59,13 +59,13 @@ func CreateMoveBitboards() MoveBitboards {
 			kingSqAttacks := SquareAttacks{}
 			kingSqAttacks.board = getKingMoveBitboard(sq)
 			moves := make([]Move, 12)
-			end := CreateMovesFromBitboard(sq, kingSqAttacks.board, &moves, 0, 0)
+			end := CreateMovesFromBitboard(sq, kingSqAttacks.board, moves[:], 0, 0)
 			kingSqAttacks.moves = moves[0:end]
 
 			knightSqAttacks := SquareAttacks{}
 			knightSqAttacks.board = getKnightMoveBitboard(sq)
 			moves = make([]Move, 12)
-			end = CreateMovesFromBitboard(sq, knightSqAttacks.board, &moves, 0, 0)
+			end = CreateMovesFromBitboard(sq, knightSqAttacks.board, moves[:], 0, 0)
 			knightSqAttacks.moves = moves[0:end]
 
 			kingAttacks[sq] = kingSqAttacks
@@ -228,7 +228,7 @@ func createPawnAttackBitboards(col byte, row byte) (uint64, uint64) {
 
 // GenerateMoves writes into the moves array beginning at the start index, returning the new end
 // index.
-func GenerateMoves(boardState *BoardState, moves *[]Move, start int) int {
+func GenerateMoves(boardState *BoardState, moves []Move, start int) int {
 	precomputedInfo := generatePrecomputedInfo(boardState)
 	occupancy := precomputedInfo.ourOccupancy
 
@@ -242,7 +242,7 @@ func GenerateMoves(boardState *BoardState, moves *[]Move, start int) int {
 	return start
 }
 
-func GenerateQuiescentMoves(boardState *BoardState, moves *[]Move, moveScores *[]int, start int) int {
+func GenerateQuiescentMoves(boardState *BoardState, moves []Move, moveScores []int, start int) int {
 	// for now only generate captures
 	originalStart := start
 	precomputedInfo := generatePrecomputedInfo(boardState)
@@ -288,10 +288,10 @@ func GenerateQuiescentMoves(boardState *BoardState, moves *[]Move, moveScores *[
 	return start
 }
 
-func CreateMovesFromBitboard(from byte, bitboard uint64, moves *[]Move, start int, flags byte) int {
+func CreateMovesFromBitboard(from byte, bitboard uint64, moves []Move, start int, flags byte) int {
 	for bitboard != 0 {
 		to := byte(bits.TrailingZeros64(bitboard))
-		(*moves)[start] = Move{from: from, to: to, flags: flags}
+		moves[start] = Move{from: from, to: to, flags: flags}
 		start++
 		bitboard ^= 1 << to
 	}
@@ -320,7 +320,7 @@ func GenerateMovesFromSquare(
 	boardState *BoardState,
 	sq byte,
 	offset int,
-	moves *[]Move,
+	moves []Move,
 	start int,
 	precomputedInfo *PrecomputedInfo,
 ) int {
@@ -337,7 +337,7 @@ func generatePieceMoves(
 	p byte,
 	sq byte,
 	offset int,
-	moves *[]Move,
+	moves []Move,
 	start int,
 	precomputedInfo *PrecomputedInfo,
 ) int {
@@ -377,14 +377,14 @@ func generatePieceMoves(
 		if oppositePiece != EMPTY_SQUARE {
 			if oppositePiece&0xF0 != p&0xF0 {
 				move.flags |= CAPTURE_MASK
-				(*moves)[start] = move
+				moves[start] = move
 				start++
 			} else {
 				// same color, just skip it
 				// I think this is how we need to filter out the precomputed sliding moves
 			}
 		} else {
-			(*moves)[start] = move
+			moves[start] = move
 			start++
 		}
 	}
@@ -398,7 +398,7 @@ func generatePieceMoves(
 				boardState.board[SQUARE_F1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_G1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_H1] == WHITE_MASK|ROOK_MASK {
-				(*moves)[start] = CreateKingsideCastle(sq, SQUARE_G1)
+				moves[start] = CreateKingsideCastle(sq, SQUARE_G1)
 				start++
 			}
 			if boardState.boardInfo.whiteCanCastleQueenside &&
@@ -406,7 +406,7 @@ func generatePieceMoves(
 				boardState.board[SQUARE_C1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_B1] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_A1] == WHITE_MASK|ROOK_MASK {
-				(*moves)[start] = CreateQueensideCastle(sq, SQUARE_C1)
+				moves[start] = CreateQueensideCastle(sq, SQUARE_C1)
 				start++
 			}
 		} else {
@@ -414,7 +414,7 @@ func generatePieceMoves(
 				boardState.board[SQUARE_F8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_G8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_H8] == BLACK_MASK|ROOK_MASK {
-				(*moves)[start] = CreateKingsideCastle(sq, SQUARE_G8)
+				moves[start] = CreateKingsideCastle(sq, SQUARE_G8)
 				start++
 			}
 			if boardState.boardInfo.blackCanCastleQueenside &&
@@ -422,7 +422,7 @@ func generatePieceMoves(
 				boardState.board[SQUARE_C8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_B8] == EMPTY_SQUARE &&
 				boardState.board[SQUARE_A8] == BLACK_MASK|ROOK_MASK {
-				(*moves)[start] = CreateQueensideCastle(sq, SQUARE_C8)
+				moves[start] = CreateQueensideCastle(sq, SQUARE_C8)
 				start++
 			}
 		}
@@ -436,7 +436,7 @@ func generatePawnMoves(
 	p byte,
 	sq byte,
 	offset int,
-	moves *[]Move,
+	moves []Move,
 	start int,
 	precomputedInfo *PrecomputedInfo,
 ) int {
@@ -456,28 +456,28 @@ func generatePawnMoves(
 	originalEnd := captureEnd
 
 	for i := start; i < originalEnd; i++ {
-		capture := (*moves)[i]
+		capture := moves[i]
 		var destRank = Rank(capture.to)
 		if destRank == RANK_8 || destRank == RANK_1 {
 			// promotion time
 			var flags byte = PROMOTION_MASK | CAPTURE_MASK
 			capture.flags = flags | QUEEN_MASK
-			(*moves)[i] = capture
+			moves[i] = capture
 
 			// Now add the rest to the end
 			capture.flags = flags | ROOK_MASK
-			(*moves)[captureEnd] = capture
+			moves[captureEnd] = capture
 			captureEnd++
 			capture.flags = flags | BISHOP_MASK
-			(*moves)[captureEnd] = capture
+			moves[captureEnd] = capture
 			captureEnd++
 			capture.flags = flags | KNIGHT_MASK
-			(*moves)[captureEnd] = capture
+			moves[captureEnd] = capture
 			captureEnd++
 		} else {
 			if capture.to == boardState.boardInfo.enPassantTargetSquare {
 				capture.flags |= SPECIAL1_MASK | CAPTURE_MASK
-				(*moves)[i] = capture
+				moves[i] = capture
 			}
 		}
 	}
@@ -498,17 +498,17 @@ func generatePawnMoves(
 		// promotion
 		if (isWhite && sourceRank == RANK_7) || (!isWhite && sourceRank == RANK_2) {
 			// promotions are color-maskless
-			(*moves)[start] = CreatePromotion(sq, dest, QUEEN_MASK)
+			moves[start] = CreatePromotion(sq, dest, QUEEN_MASK)
 			start++
-			(*moves)[start] = CreatePromotion(sq, dest, BISHOP_MASK)
+			moves[start] = CreatePromotion(sq, dest, BISHOP_MASK)
 			start++
-			(*moves)[start] = CreatePromotion(sq, dest, KNIGHT_MASK)
+			moves[start] = CreatePromotion(sq, dest, KNIGHT_MASK)
 			start++
-			(*moves)[start] = CreatePromotion(sq, dest, ROOK_MASK)
+			moves[start] = CreatePromotion(sq, dest, ROOK_MASK)
 			start++
 		} else {
 			// empty square
-			(*moves)[start] = CreateMove(sq, dest)
+			moves[start] = CreateMove(sq, dest)
 			start++
 
 			if (isWhite && sourceRank == RANK_2) ||
@@ -517,7 +517,7 @@ func generatePawnMoves(
 				dest = uint8(int8(dest) + sqOffset)
 
 				if boardState.board[dest] == EMPTY_SQUARE {
-					(*moves)[start] = CreateMove(sq, dest)
+					moves[start] = CreateMove(sq, dest)
 					start++
 				}
 			}
