@@ -24,13 +24,7 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	// unset
 
 	var offset = boardState.sideToMove
-	var otherOffset int
-	switch offset {
-	case WHITE_OFFSET:
-		otherOffset = BLACK_OFFSET
-	case BLACK_OFFSET:
-		otherOffset = WHITE_OFFSET
-	}
+	var otherOffset = oppositeColorOffset(boardState.sideToMove)
 
 	if capturedPiece != EMPTY_SQUARE {
 		boardState.bitboards.color[otherOffset] = FlipBitboard(boardState.bitboards.color[otherOffset], move.to)
@@ -204,6 +198,20 @@ func (boardState *BoardState) ApplyMove(move Move) {
 	boardState.repetitionInfo.pawnMoveOrCapture[boardState.moveIndex] = movePiece == PAWN_MASK || capturedPiece != 0
 }
 
+func (boardState *BoardState) ApplyNullMove() {
+	boardState.boardInfoHistory[boardState.moveIndex] = boardState.boardInfo
+	boardState.moveIndex++
+	boardState.sideToMove = oppositeColorOffset(boardState.sideToMove)
+	boardState.hashKey ^= boardState.hashInfo.sideToMove
+}
+
+func (boardState *BoardState) UnapplyNullMove() {
+	boardState.moveIndex--
+	boardState.boardInfo = boardState.boardInfoHistory[boardState.moveIndex]
+	boardState.sideToMove = oppositeColorOffset(boardState.sideToMove)
+	boardState.hashKey ^= boardState.hashInfo.sideToMove
+}
+
 func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
 	if move.from == move.to {
 		return false, errMoveUninitialized
@@ -257,12 +265,7 @@ func (boardState *BoardState) IsMoveLegal(move Move) (bool, error) {
 }
 
 func (boardState *BoardState) UnapplyMove(move Move) {
-	switch boardState.sideToMove {
-	case WHITE_OFFSET:
-		boardState.sideToMove = BLACK_OFFSET
-	case BLACK_OFFSET:
-		boardState.sideToMove = WHITE_OFFSET
-	}
+	boardState.sideToMove = oppositeColorOffset(boardState.sideToMove)
 	if boardState.sideToMove == BLACK_OFFSET {
 		boardState.fullmoveNumber--
 	}
