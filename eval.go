@@ -188,7 +188,7 @@ func Eval(boardState *BoardState) BoardEval {
 		}
 
 		// Penalize pieces on original squares
-		whiteDevelopment, blackDevelopment = evalDevelopment(boardState, &pieceBoards)
+		whiteDevelopment, blackDevelopment = evalDevelopment(boardState, boardPhase, &pieceBoards)
 
 		// penalize king position
 		if blackKingSq > SQUARE_C8 && blackKingSq < SQUARE_G8 {
@@ -295,7 +295,7 @@ func evalPawnStructure(boardState *BoardState, boardPhase int) (int, int) {
 	return whitePawnScore, blackPawnScore
 }
 
-func evalDevelopment(boardState *BoardState, pieceBoards *[2][7]uint64) (int, int) {
+func evalDevelopment(boardState *BoardState, boardPhase int, pieceBoards *[2][7]uint64) (int, int) {
 	whiteDevelopment := 0
 	blackDevelopment := 0
 
@@ -303,9 +303,6 @@ func evalDevelopment(boardState *BoardState, pieceBoards *[2][7]uint64) (int, in
 		whiteDevelopment += DEVELOPMENT_PENALTY
 	}
 	if boardState.board[SQUARE_C1] == BISHOP_MASK|WHITE_MASK {
-		whiteDevelopment += DEVELOPMENT_PENALTY
-	}
-	if boardState.board[SQUARE_D1] == QUEEN_MASK|WHITE_MASK {
 		whiteDevelopment += DEVELOPMENT_PENALTY
 	}
 	if boardState.board[SQUARE_F1] == BISHOP_MASK|WHITE_MASK {
@@ -322,14 +319,20 @@ func evalDevelopment(boardState *BoardState, pieceBoards *[2][7]uint64) (int, in
 	if boardState.board[SQUARE_C8] == BISHOP_MASK|BLACK_MASK {
 		blackDevelopment += DEVELOPMENT_PENALTY
 	}
-	if boardState.board[SQUARE_D8] == QUEEN_MASK|BLACK_MASK {
-		blackDevelopment += DEVELOPMENT_PENALTY
-	}
 	if boardState.board[SQUARE_F8] == BISHOP_MASK|BLACK_MASK {
 		blackDevelopment += DEVELOPMENT_PENALTY
 	}
 	if boardState.board[SQUARE_G8] == KNIGHT_MASK|BLACK_MASK {
 		blackDevelopment += DEVELOPMENT_PENALTY
+	}
+
+	if boardPhase == PHASE_MIDDLEGAME {
+		if boardState.board[SQUARE_D1] == QUEEN_MASK|WHITE_MASK {
+			whiteDevelopment += DEVELOPMENT_PENALTY
+		}
+		if boardState.board[SQUARE_D8] == QUEEN_MASK|BLACK_MASK {
+			blackDevelopment += DEVELOPMENT_PENALTY
+		}
 	}
 
 	return whiteDevelopment, blackDevelopment
