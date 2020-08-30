@@ -199,13 +199,18 @@ func Eval(boardState *BoardState) BoardEval {
 			blackKingPosition += KING_CASTLED_EVAL_SCORE
 		}
 		if whiteKingSq == SQUARE_G1 || whiteKingSq == SQUARE_C1 || whiteKingSq == SQUARE_B1 {
-			pawns := bits.OnesCount64(boardState.moveBitboards.kingAttacks[whiteKingSq].board &
-				pawnProtectionBoard[WHITE_OFFSET])
+			pawns := bits.OnesCount64(
+				boardState.moveBitboards.kingAttacks[whiteKingSq].board &
+					pawnProtectionBoard[WHITE_OFFSET] &
+					boardState.bitboards.piece[PAWN_MASK] &
+					boardState.bitboards.color[WHITE_OFFSET])
 			whiteKingPosition += pawns * KING_PAWN_COVER_EVAL_SCORE
 		}
 		if blackKingSq == SQUARE_G8 || blackKingSq == SQUARE_C8 || blackKingSq == SQUARE_B8 {
 			pawns := bits.OnesCount64(boardState.moveBitboards.kingAttacks[blackKingSq].board &
-				pawnProtectionBoard[BLACK_OFFSET])
+				pawnProtectionBoard[BLACK_OFFSET] &
+				boardState.bitboards.piece[PAWN_MASK] &
+				boardState.bitboards.color[BLACK_OFFSET])
 			blackKingPosition += pawns * KING_PAWN_COVER_EVAL_SCORE
 		}
 	} else {
@@ -295,12 +300,18 @@ func BoardEvalToString(eval BoardEval) string {
 		phaseString = "opening"
 	}
 
-	return fmt.Sprintf("phase=%s, material=%d (white: %d, black: %d), kingPosition=%d, centerControl=%d",
+	return fmt.Sprintf("VALUE: %d\n\tphase=%s\n\tmaterial=%d (white: %d, black: %d)\n\tpawns=%d (white: %d, black: %d)\n\tkingPosition=%d (white: %d, black: %d)\n\tcenterControl=%d",
+		eval.value(),
 		phaseString,
 		eval.material,
 		eval.whiteMaterial,
 		eval.blackMaterial,
+		eval.pawnScore,
+		eval.whitePawnScore,
+		eval.blackPawnScore,
 		eval.kingPosition,
+		eval.whiteKingPosition,
+		eval.blackKingPosition,
 		eval.centerControl)
 }
 
