@@ -118,10 +118,7 @@ func SearchWithConfig(
 
 	result := SearchResult{}
 
-	pv, isDraw := extractPV(boardState)
-	if isDraw {
-		result.flags = DRAW_FLAG
-	}
+	pv, _ := extractPV(boardState)
 	if boardState.sideToMove == BLACK_OFFSET {
 		score = -score
 	}
