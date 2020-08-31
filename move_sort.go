@@ -85,3 +85,19 @@ func SortQuiescentMoves(boardState *BoardState, moves []Move, moveScores []int, 
 	}
 	sort.Sort(&moveSort)
 }
+
+func SortMovesFirstPly(
+	boardState *BoardState,
+	moveInfo *SearchMoveInfo,
+	moves []Move,
+	start int,
+	end int,
+) {
+	moveSort := MoveSort{
+		startIndex: start,
+		endIndex:   end,
+		moves:      moves,
+		moveScores: moveInfo.firstPlyScores[start:end],
+	}
+	sort.Sort(&moveSort)
+}

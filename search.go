@@ -68,24 +68,29 @@ type ExternalSearchConfig struct {
 }
 
 type SearchMoveInfo struct {
-	killerMoves  [MAX_DEPTH]Move
-	killerMoves2 [MAX_DEPTH]Move
+	killerMoves    [MAX_DEPTH]Move
+	killerMoves2   [MAX_DEPTH]Move
+	firstPlyScores [MAX_MOVES]int
 }
 
-func Search(boardState *BoardState, depth uint, stats *SearchStats) SearchResult {
-	return SearchWithConfig(boardState, depth, stats, ExternalSearchConfig{}, nil)
+func Search(
+	boardState *BoardState,
+	depth uint,
+	stats *SearchStats,
+	moveInfo *SearchMoveInfo,
+) SearchResult {
+	return SearchWithConfig(boardState, depth, stats, moveInfo, ExternalSearchConfig{}, nil)
 }
 
 func SearchWithConfig(
 	boardState *BoardState,
 	depth uint,
 	stats *SearchStats,
+	moveInfo *SearchMoveInfo,
 	config ExternalSearchConfig,
 	thinkingChan chan ThinkingOutput,
 ) SearchResult {
 	startTime := time.Now()
-
-	moveInfo := SearchMoveInfo{}
 
 	alpha := -INFINITY
 	beta := INFINITY
@@ -99,7 +104,7 @@ func SearchWithConfig(
 	scores := make([]int, len(moves))
 
 	var moveStart [64]int
-	score := searchAlphaBeta(boardState, stats, &moveInfo,
+	score := searchAlphaBeta(boardState, stats, moveInfo,
 		thinkingChan,
 		int(depth),
 		0,
@@ -283,6 +288,10 @@ func searchAlphaBeta(
 
 			boardState.UnapplyMove(move)
 
+			if currentDepth == 0 && i == 1 {
+				moveInfo.firstPlyScores[j] = score
+			}
+
 			if debugMode {
 				pv, _ := extractPV(boardState)
 				str := MoveArrayToXboardString(pv)
@@ -333,7 +342,17 @@ func searchAlphaBeta(
 			// add the other moves now that we're done with hash move
 			moveEnd = GenerateMoves(boardState, moves, start)
 			moveStart[currentDepth+1] = moveEnd
-			SortMoves(boardState, moveInfo, currentDepth, moves, moveScores, start, moveEnd)
+			if currentDepth > 0 {
+				SortMoves(boardState, moveInfo, currentDepth, moves, moveScores, start, moveEnd)
+			} else {
+				SortMovesFirstPly(boardState, moveInfo, moves, start, moveEnd)
+				if isDebug {
+					fmt.Printf("[%d] Move ordering: %s\nScores: %v\n",
+						depthLeft,
+						MoveArrayToXboardString(moves[start:moveEnd]),
+						moveInfo.firstPlyScores[start:moveEnd])
+				}
+			}
 		}
 	}
 
