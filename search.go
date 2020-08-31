@@ -118,7 +118,10 @@ func SearchWithConfig(
 
 	result := SearchResult{}
 
-	pv, _ := extractPV(boardState)
+	pv, isDraw := extractPV(boardState)
+	if isDraw {
+		result.flags = DRAW_FLAG
+	}
 	if boardState.sideToMove == BLACK_OFFSET {
 		score = -score
 	}
@@ -565,7 +568,8 @@ func extractPV(boardState *BoardState) ([]Move, bool) {
 	isDraw := false
 	pvMoves := make([]Move, 0)
 	e := ProbeTranspositionTable(boardState)
-	for e != nil {
+	lastDepth := INFINITY
+	for e != nil && e.depth <= lastDepth {
 		move := e.move
 		if _, err := boardState.IsMoveLegal(move); err != nil {
 			break
@@ -580,6 +584,7 @@ func extractPV(boardState *BoardState) ([]Move, bool) {
 			isDraw = true
 			break
 		}
+		lastDepth = e.depth
 		e = ProbeTranspositionTable(boardState)
 	}
 	for j := len(pvMoves) - 1; j >= 0; j-- {
