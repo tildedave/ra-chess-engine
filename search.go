@@ -577,7 +577,6 @@ func extractPV(boardState *BoardState) ([]Move, bool) {
 		boardState.ApplyMove(move)
 		// Avoid repetitions in moves
 		if boardState.HasStateOccurred() {
-			isDraw = true
 			break
 		}
 		if !Eval(boardState).hasMatingMaterial {
