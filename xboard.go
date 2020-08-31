@@ -194,6 +194,7 @@ func thinkAndChooseMove(
 	// NOTE - There seems to be a bug in the TT where the wrong move is being returned
 	// For now clear out the TT before starting to think
 	generateTranspositionTable(boardState)
+	searchMoveInfo := SearchMoveInfo{}
 
 	searchQuit := make(chan bool)
 	resultCh := make(chan SearchResult)
@@ -211,7 +212,7 @@ func thinkAndChooseMove(
 			default:
 				// TODO: having to copy the board state indicates a bug somewhere
 				state := CopyBoardState(boardState)
-				result := SearchWithConfig(&state, uint(i), stats, config, thinkingChan)
+				result := SearchWithConfig(&state, uint(i), stats, &searchMoveInfo, config, thinkingChan)
 				resultCh <- result
 				i = i + 1
 			}
