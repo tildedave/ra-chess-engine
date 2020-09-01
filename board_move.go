@@ -203,6 +203,7 @@ func (boardState *BoardState) ApplyNullMove() {
 	boardState.moveIndex++
 	boardState.sideToMove = oppositeColorOffset(boardState.sideToMove)
 	boardState.boardInfo.lastMoveWasNullMove = true
+	boardState.boardInfo.enPassantTargetSquare = 0
 	boardState.hashKey ^= boardState.hashInfo.sideToMove
 }
 

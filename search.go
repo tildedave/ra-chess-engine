@@ -135,8 +135,9 @@ func SearchWithConfig(
 	}
 	result.value = score
 	result.time = time.Now().Sub(startTime)
-	// TODO - guard against null
-	result.move = pv[0]
+	if len(pv) > 0 {
+		result.move = pv[0]
+	}
 	result.pv, _ = MoveArrayToPrettyString(pv, boardState)
 	result.stats = *stats
 	result.depth = depth
@@ -253,7 +254,6 @@ func searchAlphaBeta(
 	// i = 2 -> everything else
 
 	for i := 0; i <= 2; i++ {
-		// TODO - don't do null move if previous move was null move (maybe this doesn't matter)
 		nonPawnBitboard := boardState.bitboards.color[WHITE_OFFSET] | boardState.bitboards.color[BLACK_OFFSET]
 		nonPawnBitboard ^= boardState.bitboards.piece[PAWN_MASK]
 		nonPawnBitboard ^= boardState.bitboards.piece[KING_MASK]
@@ -269,7 +269,8 @@ func searchAlphaBeta(
 				thinkingChan,
 				depthLeft-R-1,
 				currentDepth+1,
-				-beta, -currentAlpha, // swap alpha and beta
+				-beta,
+				-beta+1, // swap alpha and beta
 				searchConfig,
 				moves,
 				moveScores,
@@ -300,6 +301,7 @@ func searchAlphaBeta(
 
 			offset := boardState.sideToMove
 			boardState.ApplyMove(move)
+
 			if boardState.IsInCheck(offset) {
 				boardState.UnapplyMove(move)
 				continue
