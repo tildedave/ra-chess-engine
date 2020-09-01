@@ -9,7 +9,7 @@
 5rk1/1q3ppp/pn3Q2/1p6/8/1P1N1P2/PBP4P/2KR4 b - - 0 0 bm gxf6; id "testMorphyMate2";
 8/7p/5k2/5p2/p1p2P2/Pr1pPK2/1P1R3P/8 b - - bm Rxb2; id "testWac002";
 r5r1/pQ5p/1qp2R2/2k1p3/4P3/2PP4/P1P3PP/6K1 w - - bm Rxc6; id "testWac126";
-r1bq4/1p4kp/3p1n2/5pB1/p1pQ4/8/1P4PP/4RRK1 w - - bm Re8; id "testWcsac002";
+r1bq4/1p4kp/3p1n2/5pB1/p1pQ4/8/1P4PP/4RRK1 w - - bm Re8 Rf3; id "testWcsac002";
 2k1r3/1p2Bq2/p2Qp3/Pb1p1p1P/2pP1P2/2P5/2P2KP1/1R6 w - - bm Rxb5; id "testWac247";
 r2Nqb1r/pQ1bp1pp/1pn1p3/2kp4/P1p2B2/2P5/1PP2PPP/R3KB1R w KQ - bm Qxc6; id "testWcsac482";
 5bk1/5pp1/3N2b1/2B4p/6P1/1R4QP/1P2rP1K/5q2 b - - bm h4; id "testWcsac527";
