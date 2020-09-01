@@ -254,7 +254,11 @@ func searchAlphaBeta(
 
 	for i := 0; i <= 2; i++ {
 		// TODO - don't do null move if previous move was null move (maybe this doesn't matter)
-		if i == 1 && !inCheck {
+		nonPawnBitboard := boardState.bitboards.color[WHITE_OFFSET] | boardState.bitboards.color[BLACK_OFFSET]
+		nonPawnBitboard ^= boardState.bitboards.piece[PAWN_MASK]
+		nonPawnBitboard ^= boardState.bitboards.piece[KING_MASK]
+
+		if i == 1 && !inCheck && nonPawnBitboard != 0 && !boardState.boardInfo.lastMoveWasNullMove {
 			// null move logic here
 			boardState.ApplyNullMove()
 
@@ -278,7 +282,10 @@ func searchAlphaBeta(
 				searchStats.nullcutoffs++
 				return score
 			}
+		}
 
+		if i == 1 {
+			// Don't execute the next loop for i = 1
 			moveEnd = start
 		}
 
