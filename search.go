@@ -262,7 +262,13 @@ func searchAlphaBeta(
 			// null move logic here
 			boardState.ApplyNullMove()
 
-			R := 2
+			var R int
+			if boardState.bitboards.piece[QUEEN_MASK] != 0 || boardState.bitboards.piece[ROOK_MASK] != 0 {
+				R = 3
+			} else {
+				R = 2
+			}
+
 			score := -searchAlphaBeta(boardState,
 				searchStats,
 				moveInfo,
