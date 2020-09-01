@@ -202,6 +202,7 @@ func (boardState *BoardState) ApplyNullMove() {
 	boardState.boardInfoHistory[boardState.moveIndex] = boardState.boardInfo
 	boardState.moveIndex++
 	boardState.sideToMove = oppositeColorOffset(boardState.sideToMove)
+	boardState.boardInfo.lastMoveWasNullMove = true
 	boardState.hashKey ^= boardState.hashInfo.sideToMove
 }
 

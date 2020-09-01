@@ -213,6 +213,7 @@ type BoardInfo struct {
 	blackHasCastled         bool
 	whiteHasCastled         bool
 	enPassantTargetSquare   uint8
+	lastMoveWasNullMove     bool
 }
 
 type RepetitionInfo struct {
