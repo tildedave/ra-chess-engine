@@ -274,11 +274,17 @@ func searchAlphaBeta(
 			}
 			searchConfig.isDebug = false
 
+			D := 0
+			if IsPawnNearPromotion(boardState, move) {
+				D = 1
+			}
+
 			score := -searchAlphaBeta(boardState,
 				searchStats,
 				moveInfo,
 				thinkingChan,
-				depthLeft-1, currentDepth+1,
+				depthLeft-1+D,
+				currentDepth+1,
 				-beta, -currentAlpha, // swap alpha and beta
 				searchConfig,
 				moves,
@@ -516,8 +522,8 @@ func (stats *SearchStats) Nodes() uint64 {
 }
 
 // Used to determine if we should extend search
-func (m Move) IsQuiescentPawnPush(boardState *BoardState) bool {
-	movePiece := boardState.board[m.from]
+func IsPawnNearPromotion(boardState *BoardState, m Move) bool {
+	movePiece := boardState.board[m.to]
 	if movePiece&0x0F != PAWN_MASK {
 		return false
 	}
