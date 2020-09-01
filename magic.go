@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
-	"math/bits"
 	"math/rand"
 	"os"
 	"path"
@@ -262,7 +261,7 @@ func GenerateBishopOccupancies(sq byte, includeEdges bool) []uint64 {
 
 func GenerateRookMagic(sq byte, r *rand.Rand) (Magic, int) {
 	mask := RookMask(sq)
-	numBits := uint(bits.OnesCount64(mask))
+	numBits := uint(OnesCount64(mask))
 	occupancies := GenerateRookOccupancies(sq, false)
 
 	occupancyMoves := make(map[uint64]uint64)
@@ -276,7 +275,7 @@ func GenerateRookMagic(sq byte, r *rand.Rand) (Magic, int) {
 
 func GenerateBishopMagic(sq byte, r *rand.Rand) (Magic, int) {
 	mask := BishopMask(sq)
-	numBits := uint(bits.OnesCount64(mask))
+	numBits := uint(OnesCount64(mask))
 	occupancies := GenerateBishopOccupancies(sq, false)
 
 	occupancyMoves := make(map[uint64]uint64)

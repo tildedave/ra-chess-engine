@@ -1,9 +1,5 @@
 package main
 
-import (
-	"math/bits"
-)
-
 type PrecomputedInfo struct {
 	side           int
 	otherSide      int
@@ -233,7 +229,7 @@ func GenerateMoves(boardState *BoardState, moves []Move, start int) int {
 	occupancy := precomputedInfo.ourOccupancy
 
 	for occupancy != 0 {
-		sq := byte(bits.TrailingZeros64(occupancy))
+		sq := byte(TrailingZeros64(occupancy))
 		start = GenerateMovesFromSquare(boardState, sq, boardState.sideToMove, moves, start, precomputedInfo)
 
 		occupancy ^= 1 << sq
@@ -250,7 +246,7 @@ func GenerateQuiescentMoves(boardState *BoardState, moves []Move, moveScores []i
 	moveBitboards := boardState.moveBitboards
 
 	for occupancy != 0 {
-		sq := byte(bits.TrailingZeros64(occupancy))
+		sq := byte(TrailingZeros64(occupancy))
 		fromPiece := boardState.board[sq] & 0x0F
 		var attackBoard uint64
 		var flags byte = CAPTURE_MASK
@@ -290,7 +286,7 @@ func GenerateQuiescentMoves(boardState *BoardState, moves []Move, moveScores []i
 
 func CreateMovesFromBitboard(from byte, bitboard uint64, moves []Move, start int, flags byte) int {
 	for bitboard != 0 {
-		to := byte(bits.TrailingZeros64(bitboard))
+		to := byte(TrailingZeros64(bitboard))
 		moves[start] = Move{from: from, to: to, flags: flags}
 		start++
 		bitboard ^= 1 << to

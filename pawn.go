@@ -1,9 +1,5 @@
 package main
 
-import (
-	"math/bits"
-)
-
 type PawnTableEntry struct {
 	pawns                     [2]uint64
 	passedPawns               [2]uint64
@@ -24,7 +20,7 @@ func GetDoubledPawnBitboard(pawnBitboard uint64) uint64 {
 	var doubledBitboard uint64
 	originalBoard := pawnBitboard
 	for pawnBitboard != 0 {
-		sq := byte(bits.TrailingZeros64(pawnBitboard))
+		sq := byte(TrailingZeros64(pawnBitboard))
 		pawnBitboard ^= 1 << sq
 
 		col := sq % 8
@@ -47,7 +43,7 @@ func GetDoubledPawnBitboard(pawnBitboard uint64) uint64 {
 
 			// For every pawn in the overlap, we don't need to check its column again
 			for overlapBoard != 0 {
-				sq := byte(bits.TrailingZeros64(overlapBoard))
+				sq := byte(TrailingZeros64(overlapBoard))
 				overlapBoard ^= 1 << sq
 				pawnBitboard ^= 1 << sq
 			}
@@ -59,7 +55,7 @@ func GetDoubledPawnBitboard(pawnBitboard uint64) uint64 {
 func GetPassedPawnBitboard(pawnBitboard uint64, otherSidePawnBitboard uint64, sideToMove int) uint64 {
 	var passedPawnBoard uint64
 	for pawnBitboard != 0 {
-		sq := byte(bits.TrailingZeros64(pawnBitboard))
+		sq := byte(TrailingZeros64(pawnBitboard))
 		pawnBitboard ^= 1 << sq
 
 		col := sq % 8
@@ -102,7 +98,7 @@ func GetIsolatedPawnBitboard(pawnBitboard uint64) uint64 {
 	var bitboard uint64
 	originalBoard := pawnBitboard
 	for pawnBitboard != 0 {
-		sq := byte(bits.TrailingZeros64(pawnBitboard))
+		sq := byte(TrailingZeros64(pawnBitboard))
 		pawnBitboard ^= 1 << sq
 
 		col := sq % 8
@@ -153,7 +149,7 @@ func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
 	var whiteAdvanceSquares uint64
 	var blackAdvanceSquares uint64
 	for whitePassers != 0 {
-		sq := byte(bits.TrailingZeros64(whitePassers))
+		sq := byte(TrailingZeros64(whitePassers))
 		whitePassers ^= 1 << sq
 
 		whiteQueeningSquares = SetBitboard(whiteQueeningSquares, 56+sq%8)
@@ -165,7 +161,7 @@ func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
 		whiteAdvanceSquares = FollowRay(whiteAdvanceSquares, sq%8, row, NORTH, distance)
 	}
 	for blackPassers != 0 {
-		sq := byte(bits.TrailingZeros64(blackPassers))
+		sq := byte(TrailingZeros64(blackPassers))
 		blackPassers ^= 1 << sq
 
 		row := sq / 8
@@ -188,9 +184,9 @@ func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
 	entry.connectedPawnBoard[BLACK_OFFSET] = blackPawns ^ entry.isolatedPawnBoard[BLACK_OFFSET]
 	boardState.pawnTable[boardState.pawnHashKey] = &entry
 	for side := 0; side <= 1; side++ {
-		entry.isolatedPawnCount[side] = bits.OnesCount64(entry.isolatedPawnBoard[side])
-		entry.doubledPawnCount[side] = bits.OnesCount64(entry.doubledPawnBoard[side])
-		entry.connectedPawnCount[side] = bits.OnesCount64(entry.connectedPawnBoard[side])
+		entry.isolatedPawnCount[side] = OnesCount64(entry.isolatedPawnBoard[side])
+		entry.doubledPawnCount[side] = OnesCount64(entry.doubledPawnBoard[side])
+		entry.connectedPawnCount[side] = OnesCount64(entry.connectedPawnBoard[side])
 	}
 	return &entry
 }

@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/bits"
 )
 
 type CheckDetectionInfo struct {
@@ -15,7 +14,7 @@ type CheckDetectionInfo struct {
 func makeCheckDetectionInfo(boardState *BoardState) CheckDetectionInfo {
 	otherSide := oppositeColorOffset(boardState.sideToMove)
 
-	enemyKingSq := bits.TrailingZeros64(boardState.bitboards.piece[KING_MASK] & boardState.bitboards.color[otherSide])
+	enemyKingSq := TrailingZeros64(boardState.bitboards.piece[KING_MASK] & boardState.bitboards.color[otherSide])
 	allOccupancies := boardState.bitboards.color[WHITE_OFFSET] | boardState.bitboards.color[BLACK_OFFSET]
 	bishopKey := hashKey(allOccupancies, boardState.moveBitboards.bishopMagics[enemyKingSq])
 	rookKey := hashKey(allOccupancies, boardState.moveBitboards.rookMagics[enemyKingSq])
@@ -36,10 +35,10 @@ func (boardState *BoardState) IsInCheck(offset int) bool {
 	var kingSq byte
 	var oppositeColorOffset int
 	if offset == WHITE_OFFSET {
-		kingSq = byte(bits.TrailingZeros64(boardState.bitboards.color[WHITE_OFFSET] & boardState.bitboards.piece[KING_MASK]))
+		kingSq = byte(TrailingZeros64(boardState.bitboards.color[WHITE_OFFSET] & boardState.bitboards.piece[KING_MASK]))
 		oppositeColorOffset = BLACK_OFFSET
 	} else {
-		kingSq = byte(bits.TrailingZeros64(boardState.bitboards.color[BLACK_OFFSET] & boardState.bitboards.piece[KING_MASK]))
+		kingSq = byte(TrailingZeros64(boardState.bitboards.color[BLACK_OFFSET] & boardState.bitboards.piece[KING_MASK]))
 		oppositeColorOffset = WHITE_OFFSET
 	}
 

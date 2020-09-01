@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/bits"
 )
 
 type EvalOptions struct {
@@ -112,8 +111,8 @@ func Eval(boardState *BoardState) BoardEval {
 		pieceBoards[WHITE_OFFSET][pieceMask] = whitePieceBoard
 		pieceBoards[BLACK_OFFSET][pieceMask] = blackPieceBoard
 
-		whitePieceMaterial := bits.OnesCount64(whitePieceBoard) * MATERIAL_SCORE[pieceMask]
-		blackPieceMaterial := bits.OnesCount64(blackPieceBoard) * MATERIAL_SCORE[pieceMask]
+		whitePieceMaterial := OnesCount64(whitePieceBoard) * MATERIAL_SCORE[pieceMask]
+		blackPieceMaterial := OnesCount64(blackPieceBoard) * MATERIAL_SCORE[pieceMask]
 
 		whiteMaterial += whitePieceMaterial
 		blackMaterial += blackPieceMaterial
@@ -153,8 +152,8 @@ func Eval(boardState *BoardState) BoardEval {
 	centerControl := 0
 
 	kings := boardState.bitboards.piece[KING_MASK]
-	blackKingSq := byte(bits.TrailingZeros64(boardState.bitboards.color[BLACK_OFFSET] & kings))
-	whiteKingSq := byte(bits.TrailingZeros64(boardState.bitboards.color[WHITE_OFFSET] & kings))
+	blackKingSq := byte(TrailingZeros64(boardState.bitboards.color[BLACK_OFFSET] & kings))
+	whiteKingSq := byte(TrailingZeros64(boardState.bitboards.color[WHITE_OFFSET] & kings))
 	var whiteDevelopment int
 	var blackDevelopment int
 
@@ -166,8 +165,8 @@ func Eval(boardState *BoardState) BoardEval {
 		for _, sq := range [4]byte{SQUARE_D4, SQUARE_E4, SQUARE_D5, SQUARE_E5} {
 			squareAttackBoard := boardState.GetSquareAttackersBoard(allOccupancies, sq)
 
-			centerControl += (PIECE_ATTACKS_CENTER_EVAL_SCORE * bits.OnesCount64(squareAttackBoard&whiteOccupancy))
-			centerControl -= (PIECE_ATTACKS_CENTER_EVAL_SCORE * bits.OnesCount64(squareAttackBoard&blackOccupancy))
+			centerControl += (PIECE_ATTACKS_CENTER_EVAL_SCORE * OnesCount64(squareAttackBoard&whiteOccupancy))
+			centerControl -= (PIECE_ATTACKS_CENTER_EVAL_SCORE * OnesCount64(squareAttackBoard&blackOccupancy))
 
 			p := boardState.PieceAtSquare(sq)
 			if p != 0x00 {
@@ -204,7 +203,7 @@ func Eval(boardState *BoardState) BoardEval {
 		}
 
 		if whiteKingSq == SQUARE_G1 || whiteKingSq == SQUARE_C1 || whiteKingSq == SQUARE_B1 {
-			pawns := bits.OnesCount64(
+			pawns := OnesCount64(
 				boardState.moveBitboards.kingAttacks[whiteKingSq].board &
 					pawnProtectionBoard[WHITE_OFFSET] &
 					boardState.bitboards.piece[PAWN_MASK] &
@@ -212,7 +211,7 @@ func Eval(boardState *BoardState) BoardEval {
 			whiteKingPosition += pawns * KING_PAWN_COVER_EVAL_SCORE
 		}
 		if blackKingSq == SQUARE_G8 || blackKingSq == SQUARE_C8 || blackKingSq == SQUARE_B8 {
-			pawns := bits.OnesCount64(boardState.moveBitboards.kingAttacks[blackKingSq].board &
+			pawns := OnesCount64(boardState.moveBitboards.kingAttacks[blackKingSq].board &
 				pawnProtectionBoard[BLACK_OFFSET] &
 				boardState.bitboards.piece[PAWN_MASK] &
 				boardState.bitboards.color[BLACK_OFFSET])
@@ -274,8 +273,8 @@ func evalPawnStructure(boardState *BoardState, boardPhase int) (int, int) {
 	for _, rank := range []byte{RANK_5, RANK_6, RANK_7} {
 		rankWhitePawns := pawnEntry.pawnsPerRank[WHITE_OFFSET][rank]
 		rankBlackPawns := pawnEntry.pawnsPerRank[BLACK_OFFSET][8-rank+1]
-		whitePawnScore += passedPawnByRankScore[rank] * bits.OnesCount64(whitePassers&rankWhitePawns)
-		blackPawnScore += passedPawnByRankScore[rank] * bits.OnesCount64(blackPassers&rankBlackPawns)
+		whitePawnScore += passedPawnByRankScore[rank] * OnesCount64(whitePassers&rankWhitePawns)
+		blackPawnScore += passedPawnByRankScore[rank] * OnesCount64(blackPassers&rankBlackPawns)
 	}
 
 	whitePawnScore += DOUBLED_PAWN_SCORE * pawnEntry.doubledPawnCount[WHITE_OFFSET]

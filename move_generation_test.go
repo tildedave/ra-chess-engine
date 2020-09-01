@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"math/bits"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -163,11 +162,11 @@ func TestCreateMoveBitboardsPawnAsserts(t *testing.T) {
 }
 
 func TestGetKingMoveBitboard(t *testing.T) {
-	assert.Equal(t, 8, bits.OnesCount64(getKingMoveBitboard(SQUARE_D4)))
-	assert.Equal(t, 5, bits.OnesCount64(getKingMoveBitboard(SQUARE_A2)))
-	assert.Equal(t, 5, bits.OnesCount64(getKingMoveBitboard(SQUARE_H2)))
-	assert.Equal(t, 8, bits.OnesCount64(getKingMoveBitboard(SQUARE_B4)))
-	assert.Equal(t, 8, bits.OnesCount64(getKingMoveBitboard(SQUARE_G4)))
+	assert.Equal(t, 8, OnesCount64(getKingMoveBitboard(SQUARE_D4)))
+	assert.Equal(t, 5, OnesCount64(getKingMoveBitboard(SQUARE_A2)))
+	assert.Equal(t, 5, OnesCount64(getKingMoveBitboard(SQUARE_H2)))
+	assert.Equal(t, 8, OnesCount64(getKingMoveBitboard(SQUARE_B4)))
+	assert.Equal(t, 8, OnesCount64(getKingMoveBitboard(SQUARE_G4)))
 	assert.Equal(t, SetBitboard(SetBitboard(SetBitboard(0, SQUARE_A2), SQUARE_B2), SQUARE_B1),
 		getKingMoveBitboard(SQUARE_A1))
 }
@@ -188,8 +187,8 @@ func TestCreateMoveBitboardsKnightAsserts(t *testing.T) {
 		default:
 			expectedNumber = 8
 		}
-		assert.Equal(t, expectedNumber, bits.OnesCount64(getKnightMoveBitboard(idx(i, 3))))
-		assert.Equal(t, expectedNumber, bits.OnesCount64(getKnightMoveBitboard(idx(3, i))))
+		assert.Equal(t, expectedNumber, OnesCount64(getKnightMoveBitboard(idx(i, 3))))
+		assert.Equal(t, expectedNumber, OnesCount64(getKnightMoveBitboard(idx(3, i))))
 	}
 	assert.Equal(t, SetBitboard(SetBitboard(0, SQUARE_B3), SQUARE_C2),
 		getKnightMoveBitboard(SQUARE_A1))
