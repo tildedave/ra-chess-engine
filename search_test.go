@@ -85,7 +85,13 @@ func TestSearchWhiteForcesPromotion(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D8, BLACK_MASK|KING_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D5, WHITE_MASK|PAWN_MASK)
 
-	result := Search(&boardState, 8, &SearchStats{}, &SearchMoveInfo{})
+	searchMoveInfo := SearchMoveInfo{}
+	stats := SearchStats{}
+	var result SearchResult
+	for d := uint(1); d <= 10; d++ {
+		result = Search(&boardState, d, &stats, &searchMoveInfo)
+	}
+
 	assert.True(t, result.value > 300)
 }
 
