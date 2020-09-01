@@ -602,7 +602,7 @@ func (boardState *BoardState) HasStateOccurred() bool {
 	return boardState.RepetitionCount(2)
 }
 
-func sanityCheckBitboards(move Move, boardState *BoardState) {
+func sanityCheckBitboards(reason string, boardState *BoardState) {
 	for row := byte(0); row < 8; row++ {
 		for col := byte(0); col < 8; col++ {
 			sq := idx(col, row)
@@ -659,7 +659,7 @@ func sanityCheckBitboards(move Move, boardState *BoardState) {
 			if isError {
 				fmt.Println(boardState.ToString())
 				fmt.Println(BitboardToString(bitboard))
-				fmt.Println(MoveToString(move, boardState))
+				fmt.Println(reason)
 				panic(message)
 			}
 		}

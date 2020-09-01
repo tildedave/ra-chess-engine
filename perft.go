@@ -124,7 +124,7 @@ func Perft(boardState *BoardState, depth uint, options PerftOptions, moves []Mov
 			testMoveLegality(boardState, move)
 			originalHashKey = boardState.hashKey
 			originalPawnHashKey = boardState.pawnHashKey
-			sanityCheckBitboards(move, boardState)
+			sanityCheckBitboards(MoveToString(move, boardState), boardState)
 		}
 
 		if move.IsCastle() && !boardState.TestCastleLegality(move) {
