@@ -23,6 +23,7 @@ type SearchStats struct {
 	killer2cutoffs    uint64
 	cutoffs           uint64
 	qcutoffs          uint64
+	nullcutoffs       uint64
 	qcapturesfiltered uint64
 	tthits            uint64
 }
@@ -213,7 +214,7 @@ func searchAlphaBeta(
 		depthLeft++
 	}
 
-	if depthLeft == 0 {
+	if depthLeft <= 0 {
 		return searchQuiescent(boardState, searchStats, depthLeft, currentDepth, alpha, beta, searchConfig, moves, moveScores, moveStart)
 	}
 
@@ -247,7 +248,40 @@ func searchAlphaBeta(
 		moveEnd = start
 	}
 
-	for i := 0; i <= 1; i++ {
+	// i = 0 -> hash
+	// i = 1 -> null move
+	// i = 2 -> everything else
+
+	for i := 0; i <= 2; i++ {
+		// TODO - don't do null move if previous move was null move (maybe this doesn't matter)
+		if i == 1 && !inCheck {
+			// null move logic here
+			boardState.ApplyNullMove()
+
+			R := 2
+			score := -searchAlphaBeta(boardState,
+				searchStats,
+				moveInfo,
+				thinkingChan,
+				depthLeft-R-1,
+				currentDepth+1,
+				-beta, -currentAlpha, // swap alpha and beta
+				searchConfig,
+				moves,
+				moveScores,
+				moveStart,
+			)
+
+			boardState.UnapplyNullMove()
+
+			if score >= beta {
+				searchStats.nullcutoffs++
+				return score
+			}
+
+			moveEnd = start
+		}
+
 		for j := start; j < moveEnd; j++ {
 			move := moves[j]
 			if move.IsCastle() && !boardState.TestCastleLegality(move) {
@@ -294,7 +328,7 @@ func searchAlphaBeta(
 
 			boardState.UnapplyMove(move)
 
-			if currentDepth == 0 && i == 1 {
+			if currentDepth == 0 && i == 2 {
 				moveInfo.firstPlyScores[j] = score
 			}
 
@@ -344,7 +378,7 @@ func searchAlphaBeta(
 			}
 		}
 
-		if i == 0 {
+		if i == 1 {
 			// add the other moves now that we're done with hash move
 			moveEnd = GenerateMoves(boardState, moves, start)
 			moveStart[currentDepth+1] = moveEnd
@@ -503,7 +537,10 @@ func SearchValueToString(result SearchResult) string {
 }
 
 func (stats *SearchStats) String() string {
-	return fmt.Sprintf("[nodes=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, tthits=%d, cutoffs=%d, hash cutoffs=%d, killer cutoffs={1: %d, 2: %d}, qcutoffs=%d, qcapturesfiltered=%d]",
+	return fmt.Sprintf(
+		"[nodes=%d, leafnodes=%d, branchnodes=%d, qbranchnodes=%d, tthits=%d, cutoffs=%d, "+
+			"hash cutoffs=%d, null cutoffs=%d, killer cutoffs={1: %d, 2: %d}, "+
+			"qcutoffs=%d, qcapturesfiltered=%d]",
 		stats.Nodes(),
 		stats.leafnodes,
 		stats.branchnodes,
@@ -511,6 +548,7 @@ func (stats *SearchStats) String() string {
 		stats.tthits,
 		stats.cutoffs,
 		stats.hashcutoffs,
+		stats.nullcutoffs,
 		stats.killercutoffs,
 		stats.killer2cutoffs,
 		stats.qcutoffs,
