@@ -80,12 +80,14 @@ func Search(
 	stats *SearchStats,
 	moveInfo *SearchMoveInfo,
 ) SearchResult {
-	return SearchWithConfig(boardState, depth, stats, moveInfo, ExternalSearchConfig{}, nil)
+	eval := getLeafResult(boardState, stats)
+	return SearchWithConfig(boardState, depth, eval, stats, moveInfo, ExternalSearchConfig{}, nil)
 }
 
 func SearchWithConfig(
 	boardState *BoardState,
 	depth uint,
+	lastValue int,
 	stats *SearchStats,
 	moveInfo *SearchMoveInfo,
 	config ExternalSearchConfig,
@@ -93,8 +95,6 @@ func SearchWithConfig(
 ) SearchResult {
 	startTime := time.Now()
 
-	alpha := -INFINITY
-	beta := INFINITY
 	searchConfig := SearchConfig{
 		isDebug:       config.isDebug,
 		debugMoves:    config.debugMoves,
@@ -103,19 +103,40 @@ func SearchWithConfig(
 	}
 	moves := make([]Move, 64*256)
 	scores := make([]int, len(moves))
-
 	var moveStart [64]int
-	score := searchAlphaBeta(boardState, stats, moveInfo,
-		thinkingChan,
-		int(depth),
-		0,
-		alpha,
-		beta,
-		searchConfig,
-		moves[:],
-		scores[:],
-		moveStart[:],
-	)
+	var score int
+
+	g := lastValue
+	upper := INFINITY
+	lower := -INFINITY
+	for lower < upper {
+		var beta int
+		if g == lower {
+			beta = g + 1
+		} else {
+			beta = g
+		}
+		g = searchAlphaBeta(
+			boardState,
+			stats,
+			moveInfo,
+			thinkingChan,
+			int(depth),
+			0,
+			beta-1,
+			beta,
+			searchConfig,
+			moves[:],
+			scores[:],
+			moveStart[:],
+		)
+		if g < beta {
+			upper = g
+		} else {
+			lower = g
+		}
+	}
+	score = g
 
 	result := SearchResult{}
 
@@ -144,6 +165,15 @@ func SearchWithConfig(
 
 	if shouldAbort {
 		close(thinkingChan)
+	} else if thinkingChan != nil {
+		sendToThinkingChannel(
+			boardState,
+			stats,
+			thinkingChan,
+			searchConfig,
+			result.value,
+			int(result.depth),
+		)
 	}
 
 	return result
@@ -384,11 +414,8 @@ func searchAlphaBeta(
 			if score > bestScore {
 				bestScore = score
 				bestMove = move
-				if bestScore > alpha {
+				if bestScore >= alpha {
 					currentAlpha = score
-					if currentDepth == 0 && thinkingChan != nil {
-						sendToThinkingChannel(boardState, searchStats, thinkingChan, searchConfig, bestScore, depthLeft)
-					}
 				}
 			}
 		}
@@ -453,7 +480,7 @@ func searchQuiescent(
 	// Evaluate the board to see what the position is without making any quiescent moves.
 	score := getLeafResult(boardState, searchStats)
 	if score >= beta {
-		return beta
+		return score
 	}
 	if score >= alpha {
 		bestScore = score
@@ -487,7 +514,7 @@ func searchQuiescent(
 			searchStats.cutoffs++
 			searchStats.qcutoffs++
 
-			return beta
+			return score
 		}
 
 		if score > bestScore {
@@ -498,7 +525,7 @@ func searchQuiescent(
 		}
 	}
 
-	return bestScore
+	return alpha
 }
 
 func getLeafResult(boardState *BoardState, searchStats *SearchStats) int {

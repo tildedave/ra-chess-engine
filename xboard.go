@@ -201,6 +201,7 @@ func thinkAndChooseMove(
 
 	go func() {
 		var i uint = 1
+		var lastValue int = 0
 		// var res SearchResult
 
 		for {
@@ -212,7 +213,15 @@ func thinkAndChooseMove(
 			default:
 				// TODO: having to copy the board state indicates a bug somewhere
 				state := CopyBoardState(boardState)
-				result := SearchWithConfig(&state, uint(i), stats, &searchMoveInfo, config, thinkingChan)
+				result := SearchWithConfig(
+					&state,
+					uint(i),
+					lastValue,
+					stats,
+					&searchMoveInfo,
+					config,
+					thinkingChan)
+				lastValue = result.value
 				resultCh <- result
 				i = i + 1
 			}
