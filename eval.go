@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"math/bits"
+	"strings"
 )
 
 type EvalOptions struct {
@@ -44,15 +45,11 @@ type BoardEval struct {
 	centerControl     int
 	whiteMaterial     int
 	blackMaterial     int
-	whitePawnScore    int
-	blackPawnScore    int
-	pawnScore         int
+	pieceScore        [2][7]int
+	pieceCount        [2][7]int
 	developmentScore  int
 	whiteDevelopment  int
 	blackDevelopment  int
-	kingPosition      int
-	whiteKingPosition int
-	blackKingPosition int
 	hasMatingMaterial bool
 }
 
@@ -91,6 +88,9 @@ func Eval(boardState *BoardState) BoardEval {
 	}
 
 	var pieceBoards [2][7]uint64
+	var pieceCount [2][7]int
+	// var attackBoards [2][7]uint64
+	var pieceScore [2][7]int
 	blackMaterial := 0
 	whiteMaterial := 0
 	blackPawnMaterial := 0
@@ -105,15 +105,18 @@ func Eval(boardState *BoardState) BoardEval {
 	whiteOccupancy := boardState.bitboards.color[WHITE_OFFSET]
 	blackOccupancy := boardState.bitboards.color[BLACK_OFFSET]
 
-	for pieceMask := byte(1); pieceMask <= 6; pieceMask++ {
+	for pieceMask := PIECE_MASK_MIN; pieceMask <= PIECE_MASK_MAX; pieceMask++ {
 		pieceBoard := boardState.bitboards.piece[pieceMask]
 		whitePieceBoard := whiteOccupancy & pieceBoard
 		blackPieceBoard := blackOccupancy & pieceBoard
 		pieceBoards[WHITE_OFFSET][pieceMask] = whitePieceBoard
 		pieceBoards[BLACK_OFFSET][pieceMask] = blackPieceBoard
 
-		whitePieceMaterial := bits.OnesCount64(whitePieceBoard) * MATERIAL_SCORE[pieceMask]
-		blackPieceMaterial := bits.OnesCount64(blackPieceBoard) * MATERIAL_SCORE[pieceMask]
+		pieceCount[WHITE_OFFSET][pieceMask] = bits.OnesCount64(whitePieceBoard)
+		pieceCount[BLACK_OFFSET][pieceMask] = bits.OnesCount64(blackPieceBoard)
+
+		whitePieceMaterial := pieceCount[WHITE_OFFSET][pieceMask] * MATERIAL_SCORE[pieceMask]
+		blackPieceMaterial := pieceCount[BLACK_OFFSET][pieceMask] * MATERIAL_SCORE[pieceMask]
 
 		whiteMaterial += whitePieceMaterial
 		blackMaterial += blackPieceMaterial
@@ -144,7 +147,8 @@ func Eval(boardState *BoardState) BoardEval {
 		boardPhase = PHASE_ENDGAME
 	}
 
-	whitePawnScore, blackPawnScore := evalPawnStructure(boardState, boardPhase)
+	pieceScore[WHITE_OFFSET][PAWN_MASK],
+		pieceScore[BLACK_OFFSET][PAWN_MASK] = evalPawnStructure(boardState, boardPhase)
 
 	// TODO - endgame: determine passed pawns and prioritize them
 
@@ -237,18 +241,17 @@ func Eval(boardState *BoardState) BoardEval {
 		}
 	}
 
+	pieceScore[WHITE_OFFSET][KING_MASK] = whiteKingPosition
+	pieceScore[BLACK_OFFSET][KING_MASK] = blackKingPosition
+
 	return BoardEval{
 		sideToMove:        boardState.sideToMove,
 		phase:             boardPhase,
 		material:          whiteMaterial - blackMaterial,
 		blackMaterial:     blackMaterial,
 		whiteMaterial:     whiteMaterial,
-		whitePawnScore:    whitePawnScore,
-		blackPawnScore:    blackPawnScore,
-		kingPosition:      whiteKingPosition - blackKingPosition,
-		pawnScore:         whitePawnScore - blackPawnScore,
-		whiteKingPosition: whiteKingPosition,
-		blackKingPosition: blackKingPosition,
+		pieceScore:        pieceScore,
+		pieceCount:        pieceCount,
 		developmentScore:  whiteDevelopment - blackDevelopment,
 		whiteDevelopment:  whiteDevelopment,
 		blackDevelopment:  blackDevelopment,
@@ -327,7 +330,11 @@ func evalDevelopment(boardState *BoardState, boardPhase int, pieceBoards *[2][7]
 }
 
 func (eval BoardEval) value() int {
-	score := eval.material + eval.kingPosition + eval.centerControl + eval.pawnScore + eval.developmentScore
+	totalPieceScore := 0
+	for i := PIECE_MASK_MIN; i <= PIECE_MASK_MAX; i++ {
+		totalPieceScore += eval.pieceScore[WHITE_OFFSET][i] - eval.pieceScore[BLACK_OFFSET][i]
+	}
+	score := eval.material + eval.centerControl + totalPieceScore + eval.developmentScore
 	if eval.sideToMove == BLACK_OFFSET {
 		return -score
 	}
@@ -345,18 +352,40 @@ func BoardEvalToString(eval BoardEval) string {
 		phaseString = "opening"
 	}
 
-	return fmt.Sprintf("VALUE: %d\n\tphase=%s\n\tmaterial=%d (white: %d, black: %d)\n\tpawns=%d (white: %d, black: %d)\n\tkingPosition=%d (white: %d, black: %d)\n\tdevelopment=%d (white: %d, black: %d)\n\tcenterControl=%d",
+	pieces := ""
+	for j := PAWN_MASK; j <= KING_MASK; j++ {
+		if eval.pieceCount[WHITE_OFFSET][j] == 0 && eval.pieceCount[BLACK_OFFSET][j] == 0 {
+			continue
+		}
+
+		for mask := WHITE_OFFSET; mask <= BLACK_OFFSET; mask++ {
+			if eval.pieceCount[mask][j] != 0 {
+				pieceStr := ""
+				for i := 0; i < eval.pieceCount[mask][j]; i++ {
+					m := WHITE_MASK
+					if mask == BLACK_OFFSET {
+						m = BLACK_MASK
+					}
+					pieceStr += string(pieceToString(j | m))
+				}
+				pieces += fmt.Sprintf("%d (%s) ", eval.pieceScore[mask][j], pieceStr)
+			}
+		}
+	}
+
+	totalPieceScore := 0
+	for i := PIECE_MASK_MIN; i <= PIECE_MASK_MAX; i++ {
+		totalPieceScore += eval.pieceScore[WHITE_OFFSET][i] - eval.pieceScore[BLACK_OFFSET][i]
+	}
+
+	return fmt.Sprintf("VALUE: %d\n\tphase=%s\n\tmaterial=%d (white: %d, black: %d)\n\tpieces=%d [%s]\n\tdevelopment=%d (white: %d, black: %d)\n\tcenterControl=%d",
 		eval.value(),
 		phaseString,
 		eval.material,
 		eval.whiteMaterial,
 		eval.blackMaterial,
-		eval.pawnScore,
-		eval.whitePawnScore,
-		eval.blackPawnScore,
-		eval.kingPosition,
-		eval.whiteKingPosition,
-		eval.blackKingPosition,
+		totalPieceScore,
+		strings.Trim(pieces, " "),
 		eval.developmentScore,
 		eval.whiteDevelopment,
 		eval.blackDevelopment,

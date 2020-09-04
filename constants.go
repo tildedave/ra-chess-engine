@@ -9,6 +9,8 @@ const QUEEN_MASK byte = 0x05
 const KING_MASK byte = 0x06
 const BLACK_MASK byte = 0x80
 const WHITE_MASK byte = 0x40
+const PIECE_MASK_MIN = PAWN_MASK
+const PIECE_MASK_MAX = KING_MASK
 
 // Bitboard constants
 const WHITE_OFFSET int = 0
