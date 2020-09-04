@@ -18,7 +18,6 @@ const KNIGHT_EVAL_SCORE = 300
 const BISHOP_EVAL_SCORE = 320
 const KING_IN_CENTER_EVAL_SCORE = -30
 const KING_PAWN_COVER_EVAL_SCORE = 10
-const KING_CANNOT_CASTLE_EVAL_SCORE = -30
 const ENDGAME_KING_ON_EDGE_SCORE = -30
 const ENDGAME_KING_NEAR_EDGE_SCORE = -10
 const ENDGAME_QUEEN_BONUS_SCORE = 400
@@ -27,9 +26,10 @@ const PIECE_IN_CENTER_EVAL_SCORE = 25
 const PIECE_ATTACKS_CENTER_EVAL_SCORE = 15
 const PAWN_ON_SEVENTH_RANK_SCORE = 300
 const PAWN_PASSED_ON_SIXTH_RANK_SCORE = 200
-const ISOLATED_PAWN_SCORE = -20
+const ISOLATED_PAWN_SCORE = -10
 const DOUBLED_PAWN_SCORE = -10
 const LACK_OF_DEVELOPMENT_SCORE = -15
+const LACK_OF_DEVELOPMENT_SCORE_QUEEN = -5
 
 const (
 	PHASE_OPENING    = iota
@@ -196,12 +196,6 @@ func Eval(boardState *BoardState) BoardEval {
 		if whiteKingSq > SQUARE_C1 && whiteKingSq < SQUARE_G1 {
 			whiteKingPosition += KING_IN_CENTER_EVAL_SCORE
 		}
-		if !boardState.boardInfo.whiteHasCastled && !boardState.boardInfo.whiteCanCastleKingside && !boardState.boardInfo.whiteCanCastleQueenside {
-			whiteKingPosition += KING_CANNOT_CASTLE_EVAL_SCORE
-		}
-		if !boardState.boardInfo.blackHasCastled && !boardState.boardInfo.blackCanCastleKingside && !boardState.boardInfo.blackCanCastleQueenside {
-			blackKingPosition += KING_CANNOT_CASTLE_EVAL_SCORE
-		}
 
 		if whiteKingSq == SQUARE_G1 || whiteKingSq == SQUARE_C1 || whiteKingSq == SQUARE_B1 {
 			pawns := bits.OnesCount64(
@@ -322,10 +316,10 @@ func evalDevelopment(boardState *BoardState, boardPhase int, pieceBoards *[2][7]
 
 	if boardPhase == PHASE_MIDDLEGAME {
 		if boardState.board[SQUARE_D1] == QUEEN_MASK|WHITE_MASK {
-			whiteDevelopment += LACK_OF_DEVELOPMENT_SCORE
+			whiteDevelopment += LACK_OF_DEVELOPMENT_SCORE_QUEEN
 		}
 		if boardState.board[SQUARE_D8] == QUEEN_MASK|BLACK_MASK {
-			blackDevelopment += LACK_OF_DEVELOPMENT_SCORE
+			blackDevelopment += LACK_OF_DEVELOPMENT_SCORE_QUEEN
 		}
 	}
 
