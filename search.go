@@ -355,8 +355,8 @@ func searchAlphaBeta(
 				if entry != nil {
 					entryType = EntryTypeToString(entry.entryType)
 				}
-				fmt.Printf("[%d; %s] value=%d (alpha=%d, beta=%d) nodes=%d pv=%s result=%s\n",
-					depthLeft, MoveToString(move, boardState), score, currentAlpha, beta, searchStats.Nodes()-nodesStarting, str,
+				fmt.Printf("[%d; %s] value=%d (alpha=%d, beta=%d, bestScore=%d) nodes=%d pv=%s result=%s\n",
+					depthLeft, MoveToString(move, boardState), score, currentAlpha, beta, bestScore, searchStats.Nodes()-nodesStarting, str,
 					entryType)
 			}
 
@@ -386,8 +386,8 @@ func searchAlphaBeta(
 				bestMove = move
 				if bestScore > alpha {
 					currentAlpha = score
-					if currentDepth == 0 && thinkingChan != nil {
-						sendToThinkingChannel(boardState, searchStats, thinkingChan, searchConfig, bestScore, depthLeft)
+					if currentDepth == 0 && thinkingChan != nil && !shouldAbort {
+						sendToThinkingChannel(bestMove, boardState, searchStats, thinkingChan, searchConfig, bestScore, depthLeft)
 					}
 				}
 			}
@@ -586,6 +586,7 @@ func IsPawnNearPromotion(boardState *BoardState, m Move) bool {
 }
 
 func sendToThinkingChannel(
+	move Move,
 	boardState *BoardState,
 	searchStats *SearchStats,
 	thinkingChan chan ThinkingOutput,
@@ -593,8 +594,11 @@ func sendToThinkingChannel(
 	score int,
 	depthLeft int,
 ) {
+	boardState.ApplyMove(move)
 	pvMoves, _ := extractPV(boardState)
-	pv, _ := MoveArrayToPrettyString(pvMoves, boardState)
+	boardState.UnapplyMove(move)
+	fullPV := append([]Move{move}, pvMoves...)
+	pv, _ := MoveArrayToPrettyString(fullPV, boardState)
 	timeNanos := time.Now().Sub(searchConfig.startTime).Nanoseconds()
 	var scoreString string
 	absScore := score
