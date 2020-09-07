@@ -10,6 +10,7 @@ type PawnTableEntry struct {
 	passedPawnAdvanceSquares  [2]uint64
 	passedPawnQueeningSquares [2]uint64
 	doubledPawnBoard          [2]uint64
+	attackBoard               [2]uint64
 	doubledPawnCount          [2]int
 	isolatedPawnBoard         [2]uint64
 	isolatedPawnCount         [2]int
@@ -31,6 +32,7 @@ func GetPawnRankBitboard(pawnBitboard uint64, rank byte) uint64 {
 
 func computePawnStructure(
 	entry *PawnTableEntry,
+	boardState *BoardState,
 	pawnBitboard uint64,
 	otherSidePawnBitboard uint64,
 	side int,
@@ -40,6 +42,7 @@ func computePawnStructure(
 	var isolatedPawnBoard uint64
 	var doubledPawnBoard uint64
 	var pawnColumnBoard uint64
+	var attackBoard uint64
 
 	for pawnBitboard != 0 {
 		sq := byte(bits.TrailingZeros64(pawnBitboard))
@@ -76,11 +79,13 @@ func computePawnStructure(
 			isolatedPawnBoard = SetBitboard(isolatedPawnBoard, sq)
 		}
 
+		attackBoard |= boardState.moveBitboards.pawnAttacks[side][sq]
 		doubledPawns := columnBoard & (originalBoard ^ (1 << sq))
 		doubledPawnBoard |= doubledPawns
 		pawnColumnBoard |= columnBoard
 	}
 
+	entry.attackBoard[side] = attackBoard
 	entry.passedPawns[side] = passedPawnBoard
 	entry.isolatedPawnBoard[side] = isolatedPawnBoard
 	entry.doubledPawnBoard[side] = doubledPawnBoard
@@ -103,8 +108,8 @@ func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
 	entry.pawns[WHITE_OFFSET] = whitePawns
 	entry.pawns[BLACK_OFFSET] = blackPawns
 
-	computePawnStructure(&entry, whitePawns, blackPawns, WHITE_OFFSET)
-	computePawnStructure(&entry, blackPawns, whitePawns, BLACK_OFFSET)
+	computePawnStructure(&entry, boardState, whitePawns, blackPawns, WHITE_OFFSET)
+	computePawnStructure(&entry, boardState, blackPawns, whitePawns, BLACK_OFFSET)
 
 	whitePassers := entry.passedPawns[WHITE_OFFSET]
 	blackPassers := entry.passedPawns[BLACK_OFFSET]

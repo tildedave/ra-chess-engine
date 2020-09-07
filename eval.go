@@ -107,6 +107,9 @@ var ATTACK_SCORE = [100]int{
 	500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
 }
 
+var KNIGHT_PAWN_ADJUST = [9]int{-20, -16, -12, -8, -4, 0, 4, 8, 12}
+var ROOK_PAWN_ADJUST = [9]int{15, 12, 9, 6, 3, 0, -3, -6, -9}
+
 const (
 	PHASE_OPENING    = iota
 	PHASE_MIDDLEGAME = iota
@@ -455,14 +458,20 @@ func evalPiece(
 		}
 
 		knightColumn := Column(sq)
-		knightRank := Rank(sq)
-		// Rank is between 1 and 8.  KNIGHT_RANK_SCORE is 0-indexed (0 -> 7).
-		if side == WHITE_OFFSET {
-			score += KNIGHT_RANK_SCORE[knightRank-1]
-		} else {
-			score += KNIGHT_RANK_SCORE[8-knightRank]
+
+		// no points for kamikaze into a pawn so you trade for a bishop
+		if !IsBitboardSet(pawnEntry.attackBoard[otherSide], sq) {
+			knightRank := Rank(sq)
+			// Rank is between 1 and 8.  KNIGHT_RANK_SCORE is 0-indexed (0 -> 7).
+			if side == WHITE_OFFSET {
+				score += KNIGHT_RANK_SCORE[knightRank-1]
+			} else {
+				score += KNIGHT_RANK_SCORE[8-knightRank]
+			}
 		}
 		score += KNIGHT_COLUMN_SCORE[knightColumn-1]
+
+		score += KNIGHT_PAWN_ADJUST[bits.OnesCount64(pawnEntry.pawns[side])]
 
 	case ROOK_MASK:
 		rookKey := hashKey(allOccupancies, moveBitboards.rookMagics[sq])
@@ -506,13 +515,20 @@ func evalPiece(
 			score += ROOK_RANK_SCORE[8-rookRank]
 		}
 
+		score += ROOK_PAWN_ADJUST[bits.OnesCount64(pawnEntry.pawns[side])]
+
 		// Passed pawn support
 		passedPawnSupportBoard := attackBoard & pawnEntry.passedPawns[side]
 		if passedPawnSupportBoard != 0 {
 			rookCol := Column(sq)
 			for passedPawnSupportBoard != 0 {
 				pawnSq := bits.TrailingZeros64(passedPawnSupportBoard)
-				if Column(uint8(pawnSq)) == rookCol {
+				pawnRank := Rank(uint8(pawnSq))
+				var isBehind = rookRank < pawnRank
+				if side == BLACK_OFFSET {
+					isBehind = !isBehind
+				}
+				if Column(uint8(pawnSq)) == rookCol && isBehind {
 					score += ROOK_SUPPORT_PASSED_PAWN_SCORE
 				}
 				passedPawnSupportBoard ^= 1 << pawnSq

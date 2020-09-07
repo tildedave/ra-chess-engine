@@ -7,21 +7,22 @@ import (
 )
 
 func TestDoubledPawnBitboard(t *testing.T) {
+	boardState := CreateEmptyBoardState()
 	entry := PawnTableEntry{}
 	whitePawns := SetBitboardMultiple(0, SQUARE_D4, SQUARE_E5)
-	computePawnStructure(&entry, whitePawns, 0, WHITE_OFFSET)
+	computePawnStructure(&entry, &boardState, whitePawns, 0, WHITE_OFFSET)
 	assert.Equal(t, uint64(0), entry.doubledPawnBoard[WHITE_OFFSET])
 
 	whitePawns = SetBitboardMultiple(0, SQUARE_D4, SQUARE_E4)
-	computePawnStructure(&entry, whitePawns, 0, WHITE_OFFSET)
+	computePawnStructure(&entry, &boardState, whitePawns, 0, WHITE_OFFSET)
 	assert.Equal(t, uint64(0), entry.doubledPawnBoard[WHITE_OFFSET])
 
 	whitePawns = SetBitboardMultiple(0, SQUARE_D4, SQUARE_D3)
-	computePawnStructure(&entry, whitePawns, 0, WHITE_OFFSET)
+	computePawnStructure(&entry, &boardState, whitePawns, 0, WHITE_OFFSET)
 	assert.Equal(t, whitePawns, entry.doubledPawnBoard[WHITE_OFFSET])
 
 	whitePawns = SetBitboardMultiple(0, SQUARE_A4, SQUARE_A3, SQUARE_A2)
-	computePawnStructure(&entry, whitePawns, 0, WHITE_OFFSET)
+	computePawnStructure(&entry, &boardState, whitePawns, 0, WHITE_OFFSET)
 	assert.Equal(t, whitePawns, entry.doubledPawnBoard[WHITE_OFFSET])
 }
 
@@ -50,24 +51,25 @@ func TestOpenFiles(t *testing.T) {
 }
 
 func TestPassedPawnBitboard(t *testing.T) {
+	boardState := CreateEmptyBoardState()
 	entry := PawnTableEntry{}
 	bitboard := SetBitboard(0, SQUARE_D4)
 	otherBitboard := SetBitboard(0, SQUARE_D7)
 
-	computePawnStructure(&entry, bitboard, otherBitboard, WHITE_OFFSET)
+	computePawnStructure(&entry, &boardState, bitboard, otherBitboard, WHITE_OFFSET)
 	assert.Equal(t, uint64(0), entry.passedPawns[WHITE_OFFSET])
 
-	computePawnStructure(&entry, otherBitboard, bitboard, BLACK_OFFSET)
+	computePawnStructure(&entry, &boardState, otherBitboard, bitboard, BLACK_OFFSET)
 	assert.Equal(t, uint64(0), entry.passedPawns[BLACK_OFFSET])
 
-	computePawnStructure(&entry, bitboard, 0, WHITE_OFFSET)
+	computePawnStructure(&entry, &boardState, bitboard, 0, WHITE_OFFSET)
 	assert.Equal(t, bitboard, entry.passedPawns[WHITE_OFFSET])
 
 	bitboard = SetBitboard(0, SQUARE_A2)
 	otherBitboard = SetBitboard(0, SQUARE_H4)
 
-	computePawnStructure(&entry, bitboard, otherBitboard, WHITE_OFFSET)
-	computePawnStructure(&entry, otherBitboard, bitboard, BLACK_OFFSET)
+	computePawnStructure(&entry, &boardState, bitboard, otherBitboard, WHITE_OFFSET)
+	computePawnStructure(&entry, &boardState, otherBitboard, bitboard, BLACK_OFFSET)
 
 	assert.Equal(t, bitboard, entry.passedPawns[WHITE_OFFSET])
 	assert.Equal(t, otherBitboard, entry.passedPawns[BLACK_OFFSET])
@@ -79,22 +81,23 @@ func TestGetPawnRankBitboard(t *testing.T) {
 }
 
 func TestGetIsolatedPawnBitboard(t *testing.T) {
+	boardState := CreateEmptyBoardState()
 	entry := PawnTableEntry{}
 	bitboard := SetBitboardMultiple(0, SQUARE_H5, SQUARE_G4)
 
-	computePawnStructure(&entry, bitboard, 0, WHITE_OFFSET)
+	computePawnStructure(&entry, &boardState, bitboard, 0, WHITE_OFFSET)
 	assert.Equal(t, uint64(0), entry.isolatedPawnBoard[WHITE_OFFSET])
 
 	bitboard = SetBitboard(0, SQUARE_D4)
-	computePawnStructure(&entry, bitboard, 0, WHITE_OFFSET)
+	computePawnStructure(&entry, &boardState, bitboard, 0, WHITE_OFFSET)
 	assert.Equal(t, bitboard, entry.isolatedPawnBoard[WHITE_OFFSET])
 
 	// From wikipedia
-	boardState, _ := CreateBoardStateFromFENString("8/8/8/PP2P2P/2P3P1/4P3/8/8 w - - 0 1")
+	boardState, _ = CreateBoardStateFromFENString("8/8/8/PP2P2P/2P3P1/4P3/8/8 w - - 0 1")
 	pawnBoard := boardState.bitboards.piece[PAWN_MASK]
 
 	bitboard = SetBitboardMultiple(0, SQUARE_E3, SQUARE_E5)
-	computePawnStructure(&entry, bitboard, 0, WHITE_OFFSET)
+	computePawnStructure(&entry, &boardState, bitboard, 0, WHITE_OFFSET)
 
 	assert.Equal(t, bitboard, entry.isolatedPawnBoard[WHITE_OFFSET])
 	assert.Equal(t,
