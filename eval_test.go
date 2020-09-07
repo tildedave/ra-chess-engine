@@ -11,6 +11,9 @@ var _ = fmt.Println
 
 func TestEvalEmptyBoard(t *testing.T) {
 	testBoard := CreateEmptyBoardState()
+	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|KING_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_H8, BLACK_MASK|KING_MASK)
+
 	boardEval := Eval(&testBoard)
 
 	assert.Equal(t, 0, boardEval.material)
@@ -19,6 +22,8 @@ func TestEvalEmptyBoard(t *testing.T) {
 func TestEvalPawn(t *testing.T) {
 	testBoard := CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_A1, WHITE_MASK|KING_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_H8, BLACK_MASK|KING_MASK)
 
 	boardEval := Eval(&testBoard)
 
@@ -27,8 +32,10 @@ func TestEvalPawn(t *testing.T) {
 
 func TestEvalPawnAgainstBishop(t *testing.T) {
 	testBoard := CreateEmptyBoardState()
+	testBoard.SetPieceAtSquare(SQUARE_A1, WHITE_MASK|KING_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_A3, BLACK_MASK|BISHOP_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_H8, BLACK_MASK|KING_MASK)
 
 	boardEval := Eval(&testBoard)
 
@@ -38,6 +45,8 @@ func TestEvalPawnAgainstBishop(t *testing.T) {
 func TestEvalPassedPawns(t *testing.T) {
 	testBoard := CreateEmptyBoardState()
 	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_A1, WHITE_MASK|KING_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_H8, BLACK_MASK|KING_MASK)
 
 	boardEval := Eval(&testBoard)
 	fmt.Println(boardEval)
@@ -57,6 +66,29 @@ func TestEvalStartingPositionCenterControl(t *testing.T) {
 	boardEval := Eval(&testBoard)
 
 	assert.Equal(t, boardEval.material, 0)
+}
+
+func TestEvalBlockedPawns(t *testing.T) {
+	testBoard := CreateEmptyBoardState()
+	testBoard.SetPieceAtSquare(SQUARE_A1, WHITE_MASK|KING_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_A2, WHITE_MASK|PAWN_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_B2, WHITE_MASK|PAWN_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_A3, WHITE_MASK|KNIGHT_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_H8, BLACK_MASK|KING_MASK)
+	// blocked
+	testBoard.SetPieceAtSquare(SQUARE_H7, BLACK_MASK|PAWN_MASK)
+	testBoard.SetPieceAtSquare(SQUARE_H6, BLACK_MASK|BISHOP_MASK)
+	// not blocked
+	testBoard.SetPieceAtSquare(SQUARE_G7, BLACK_MASK|PAWN_MASK)
+	entry := GetPawnTableEntry(&testBoard)
+
+	eval := createEvalBitboards(&testBoard, entry)
+
+	assert.True(t, IsBitboardSet(eval.blockedPawns[WHITE_OFFSET], SQUARE_A2))
+	assert.True(t, IsBitboardSet(eval.blockedPawns[BLACK_OFFSET], SQUARE_H7))
+
+	assert.False(t, IsBitboardSet(eval.blockedPawns[WHITE_OFFSET], SQUARE_B2))
+	assert.False(t, IsBitboardSet(eval.blockedPawns[BLACK_OFFSET], SQUARE_G7))
 }
 
 func TestEvalKingSafety(t *testing.T) {

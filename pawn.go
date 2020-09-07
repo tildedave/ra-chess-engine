@@ -140,6 +140,8 @@ func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
 	blackPawns := allPawns & boardState.bitboards.color[BLACK_OFFSET]
 	entry.pawns[WHITE_OFFSET] = whitePawns
 	entry.pawns[BLACK_OFFSET] = blackPawns
+
+	// TODO - avoid looping over the pawns more than once
 	entry.doubledPawnBoard[WHITE_OFFSET] = GetDoubledPawnBitboard(whitePawns)
 	entry.doubledPawnBoard[BLACK_OFFSET] = GetDoubledPawnBitboard(blackPawns)
 	whitePassers := GetPassedPawnBitboard(whitePawns, blackPawns, WHITE_OFFSET)
