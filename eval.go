@@ -91,6 +91,21 @@ var ROOK_RANK_SCORE = [8]int{
 	0,  // Rank 8
 }
 
+// From https://www.chessprogramming.org/CPW-Engine_eval
+// SafetyTable
+var ATTACK_SCORE = [100]int{
+	0, 0, 1, 2, 3, 5, 7, 9, 12, 15,
+	18, 22, 26, 30, 35, 39, 44, 50, 56, 62,
+	68, 75, 82, 85, 89, 97, 105, 113, 122, 131,
+	140, 150, 169, 180, 191, 202, 213, 225, 237, 248,
+	260, 272, 283, 295, 307, 319, 330, 342, 354, 366,
+	377, 389, 401, 412, 424, 436, 448, 459, 471, 483,
+	494, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+	500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+	500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+	500, 500, 500, 500, 500, 500, 500, 500, 500, 500,
+}
+
 const (
 	PHASE_OPENING    = iota
 	PHASE_MIDDLEGAME = iota
@@ -106,6 +121,7 @@ type BoardEval struct {
 	blackMaterial     int
 	pieceScore        [2][7]int
 	pieceCount        [2][7]int
+	kingAttackScore   int
 	developmentScore  int
 	whiteDevelopment  int
 	blackDevelopment  int
@@ -114,6 +130,7 @@ type BoardEval struct {
 
 type EvalInfo struct {
 	numKingAttacks   [2]int
+	numKingAttackers [2]int
 	kingAttackWeight [2]int
 }
 
@@ -330,6 +347,17 @@ func Eval(boardState *BoardState) BoardEval {
 	pieceScore[WHITE_OFFSET][KING_MASK] = whiteKingPosition
 	pieceScore[BLACK_OFFSET][KING_MASK] = blackKingPosition
 
+	var kingAttackScore int
+	for side := WHITE_OFFSET; side <= BLACK_OFFSET; side++ {
+		if pieceCount[side][QUEEN_MASK] > 0 && evalInfo.numKingAttackers[side] > 1 {
+			if side == WHITE_OFFSET {
+				kingAttackScore += ATTACK_SCORE[evalInfo.kingAttackWeight[side]]
+			} else {
+				kingAttackScore -= ATTACK_SCORE[evalInfo.kingAttackWeight[side]]
+			}
+		}
+	}
+
 	return BoardEval{
 		sideToMove:        boardState.sideToMove,
 		phase:             boardPhase,
@@ -338,6 +366,7 @@ func Eval(boardState *BoardState) BoardEval {
 		whiteMaterial:     whiteMaterial,
 		pieceScore:        pieceScore,
 		pieceCount:        pieceCount,
+		kingAttackScore:   kingAttackScore,
 		developmentScore:  whiteDevelopment - blackDevelopment,
 		whiteDevelopment:  whiteDevelopment,
 		blackDevelopment:  blackDevelopment,
@@ -397,8 +426,11 @@ func evalPiece(
 		// Attacking pieces
 		// Attacking king
 		numKingAttacks := bits.OnesCount64(attackBoard & evalBitboards.kingSquares[otherSide])
-		evalInfo.numKingAttacks[side] += numKingAttacks
-		evalInfo.kingAttackWeight[side] += 2 * numKingAttacks
+		if numKingAttacks != 0 {
+			evalInfo.numKingAttackers[side]++
+			evalInfo.numKingAttacks[side] += numKingAttacks
+			evalInfo.kingAttackWeight[side] += 2 * numKingAttacks
+		}
 
 		numBlockedPawns := bits.OnesCount64(attackBoard & evalBitboards.blockedPawns[side])
 		score += int(numBlockedPawns) * PIECE_BEHIND_BLOCKED_PAWN_SCORE[BISHOP_MASK]
@@ -415,8 +447,11 @@ func evalPiece(
 	case KNIGHT_MASK:
 		attackBoard := moveBitboards.knightAttacks[sq].board
 		numKingAttacks := bits.OnesCount64(attackBoard & evalBitboards.kingSquares[otherSide])
-		evalInfo.numKingAttacks[side] += numKingAttacks
-		evalInfo.kingAttackWeight[side] += 2 * numKingAttacks
+		if numKingAttacks != 0 {
+			evalInfo.numKingAttackers[side]++
+			evalInfo.numKingAttacks[side] += numKingAttacks
+			evalInfo.kingAttackWeight[side] += 2 * numKingAttacks
+		}
 
 		knightColumn := Column(sq)
 		knightRank := Rank(sq)
@@ -434,8 +469,11 @@ func evalPiece(
 
 		// Attacking near enemy king
 		numKingAttacks := bits.OnesCount64(attackBoard & evalBitboards.kingSquares[otherSide])
-		evalInfo.numKingAttacks[side] += numKingAttacks
-		evalInfo.kingAttackWeight[side] += 3 * numKingAttacks
+		if numKingAttacks != 0 {
+			evalInfo.numKingAttackers[side]++
+			evalInfo.numKingAttacks[side] += numKingAttacks
+			evalInfo.kingAttackWeight[side] += 3 * numKingAttacks
+		}
 
 		// Blocked pawn
 		numBlockedPawns := bits.OnesCount64(attackBoard & evalBitboards.blockedPawns[side])
@@ -474,8 +512,11 @@ func evalPiece(
 		bishopKey := hashKey(allOccupancies, moveBitboards.bishopMagics[sq])
 		attackBoard := (moveBitboards.rookAttacks[sq][rookKey].board | moveBitboards.bishopAttacks[sq][bishopKey].board)
 		numKingAttacks := bits.OnesCount64(attackBoard & evalBitboards.kingSquares[otherSide])
-		evalInfo.numKingAttacks[side] += numKingAttacks
-		evalInfo.kingAttackWeight[side] += 4 * numKingAttacks
+		if numKingAttacks != 0 {
+			evalInfo.numKingAttackers[side]++
+			evalInfo.numKingAttacks[side] += numKingAttacks
+			evalInfo.kingAttackWeight[side] += 4 * numKingAttacks
+		}
 
 	case KING_MASK:
 	}
@@ -531,7 +572,7 @@ func (eval BoardEval) value() int {
 	for i := PIECE_MASK_MIN; i <= PIECE_MASK_MAX; i++ {
 		totalPieceScore += eval.pieceScore[WHITE_OFFSET][i] - eval.pieceScore[BLACK_OFFSET][i]
 	}
-	score := eval.material + eval.centerControl + totalPieceScore + eval.developmentScore
+	score := eval.material + eval.centerControl + totalPieceScore + eval.developmentScore + eval.kingAttackScore
 	if eval.sideToMove == BLACK_OFFSET {
 		return -score
 	}
@@ -575,7 +616,7 @@ func BoardEvalToString(eval BoardEval) string {
 		totalPieceScore += eval.pieceScore[WHITE_OFFSET][i] - eval.pieceScore[BLACK_OFFSET][i]
 	}
 
-	return fmt.Sprintf("VALUE: %d\n\tphase=%s\n\tmaterial=%d (white: %d, black: %d)\n\tpieces=%d [%s]\n\tdevelopment=%d (white: %d, black: %d)\n\tcenterControl=%d",
+	return fmt.Sprintf("VALUE: %d\n\tphase=%s\n\tmaterial=%d (white: %d, black: %d)\n\tpieces=%d [%s]\n\tdevelopment=%d (white: %d, black: %d)\n\tcenterControl=%d\n\tattackScore=%d",
 		eval.value(),
 		phaseString,
 		eval.material,
@@ -586,7 +627,8 @@ func BoardEvalToString(eval BoardEval) string {
 		eval.developmentScore,
 		eval.whiteDevelopment,
 		eval.blackDevelopment,
-		eval.centerControl)
+		eval.centerControl,
+		eval.kingAttackScore)
 }
 
 func RunEvalFile(epdFile string, variation string, options EvalOptions) (bool, error) {
