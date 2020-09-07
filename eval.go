@@ -35,6 +35,8 @@ const IMBALANCED_PIECE_SCORE = 100
 const ROOK_SUPPORT_PASSED_PAWN_SCORE = 50
 const BISHOP_SAME_COLOR_PAWN_SCORE = -10
 const KNIGHT_SUPPORTED_BY_PAWN_SCORE = 15
+const ROOK_OPEN_FILE_SCORE = 45
+const ROOK_HALF_OPEN_FILE_SCORE = 30
 
 var PIECE_BEHIND_BLOCKED_PAWN_SCORE = [7]int{
 	0,
@@ -429,8 +431,11 @@ func evalPiece(
 		score += int(numBlockedPawns) * PIECE_BEHIND_BLOCKED_PAWN_SCORE[ROOK_MASK]
 
 		// Bonus on open file
-
-		// Bonus on half-open file (only enemy pawns)
+		if IsBitboardSet(pawnEntry.openFileBoard, sq) {
+			score += ROOK_OPEN_FILE_SCORE
+		} else if IsBitboardSet(pawnEntry.halfOpenFileBoard[otherSide], sq) {
+			score += ROOK_HALF_OPEN_FILE_SCORE
+		}
 
 		// Bonus on 6th/7th rank
 

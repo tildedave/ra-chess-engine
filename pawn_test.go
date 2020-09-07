@@ -25,6 +25,30 @@ func TestDoubledPawnBitboard(t *testing.T) {
 	assert.Equal(t, whitePawns, entry.doubledPawnBoard[WHITE_OFFSET])
 }
 
+func TestOpenFiles(t *testing.T) {
+	boardState := CreateEmptyBoardState()
+	boardState.SetPieceAtSquare(SQUARE_D4, PAWN_MASK|WHITE_MASK)
+	boardState.SetPieceAtSquare(SQUARE_E5, PAWN_MASK|WHITE_MASK)
+	boardState.SetPieceAtSquare(SQUARE_D7, PAWN_MASK|BLACK_MASK)
+	boardState.SetPieceAtSquare(SQUARE_A7, PAWN_MASK|BLACK_MASK)
+	entry := GetPawnTableEntry(&boardState)
+
+	assert.True(t, IsBitboardSet(entry.halfOpenFileBoard[WHITE_OFFSET], SQUARE_E5))
+	assert.True(t, IsBitboardSet(entry.halfOpenFileBoard[BLACK_OFFSET], SQUARE_A7))
+
+	assert.False(t, IsBitboardSet(entry.halfOpenFileBoard[WHITE_OFFSET], SQUARE_D4))
+	assert.False(t, IsBitboardSet(entry.halfOpenFileBoard[BLACK_OFFSET], SQUARE_D7))
+
+	assert.False(t, IsBitboardSet(entry.openFileBoard, SQUARE_A1))
+	assert.True(t, IsBitboardSet(entry.openFileBoard, SQUARE_B1))
+	assert.True(t, IsBitboardSet(entry.openFileBoard, SQUARE_C1))
+	assert.False(t, IsBitboardSet(entry.openFileBoard, SQUARE_D1))
+	assert.False(t, IsBitboardSet(entry.openFileBoard, SQUARE_E1))
+	assert.True(t, IsBitboardSet(entry.openFileBoard, SQUARE_F1))
+	assert.True(t, IsBitboardSet(entry.openFileBoard, SQUARE_G1))
+	assert.True(t, IsBitboardSet(entry.openFileBoard, SQUARE_H1))
+}
+
 func TestPassedPawnBitboard(t *testing.T) {
 	entry := PawnTableEntry{}
 	bitboard := SetBitboard(0, SQUARE_D4)

@@ -16,6 +16,9 @@ type PawnTableEntry struct {
 	connectedPawnBoard        [2]uint64
 	connectedPawnCount        [2]int
 	pawnsPerRank              [2][8]uint64
+	openFileBoard             uint64
+	halfOpenFileBoard         [2]uint64
+	pawnColumnBoard           [2]uint64
 }
 
 func GetPawnRankBitboard(pawnBitboard uint64, rank byte) uint64 {
@@ -36,6 +39,7 @@ func computePawnStructure(
 	var passedPawnBoard uint64
 	var isolatedPawnBoard uint64
 	var doubledPawnBoard uint64
+	var pawnColumnBoard uint64
 
 	for pawnBitboard != 0 {
 		sq := byte(bits.TrailingZeros64(pawnBitboard))
@@ -50,10 +54,10 @@ func computePawnStructure(
 		var start int
 		if side == WHITE_OFFSET {
 			inc = 1
-			start = 1
+			start = 0
 		} else {
 			inc = -1
-			start = 6
+			start = 7
 		}
 		for j := start; j < 8 && j >= 0; j += inc {
 			maskSq := idx(col, byte(j))
@@ -74,11 +78,13 @@ func computePawnStructure(
 
 		doubledPawns := columnBoard & (originalBoard ^ (1 << sq))
 		doubledPawnBoard |= doubledPawns
+		pawnColumnBoard |= columnBoard
 	}
 
 	entry.passedPawns[side] = passedPawnBoard
 	entry.isolatedPawnBoard[side] = isolatedPawnBoard
 	entry.doubledPawnBoard[side] = doubledPawnBoard
+	entry.pawnColumnBoard[side] = pawnColumnBoard
 }
 
 // GetPawnTableEntry will return the pawn table entry for the given board state,
@@ -145,5 +151,12 @@ func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
 		entry.doubledPawnCount[side] = bits.OnesCount64(entry.doubledPawnBoard[side])
 		entry.connectedPawnCount[side] = bits.OnesCount64(entry.connectedPawnBoard[side])
 	}
+
+	entry.halfOpenFileBoard[WHITE_OFFSET] = (entry.pawnColumnBoard[WHITE_OFFSET] &
+		(entry.pawnColumnBoard[WHITE_OFFSET] ^ entry.pawnColumnBoard[BLACK_OFFSET]))
+	entry.halfOpenFileBoard[BLACK_OFFSET] = (entry.pawnColumnBoard[BLACK_OFFSET] &
+		(entry.pawnColumnBoard[BLACK_OFFSET] ^ entry.pawnColumnBoard[WHITE_OFFSET]))
+	entry.openFileBoard = 0xFFFFFFFFFFFFFFFF ^ (entry.pawnColumnBoard[WHITE_OFFSET] | entry.pawnColumnBoard[BLACK_OFFSET])
+
 	return &entry
 }
