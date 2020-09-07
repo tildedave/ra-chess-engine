@@ -37,6 +37,7 @@ const BISHOP_SAME_COLOR_PAWN_SCORE = -10
 const KNIGHT_SUPPORTED_BY_PAWN_SCORE = 15
 const ROOK_OPEN_FILE_SCORE = 45
 const ROOK_HALF_OPEN_FILE_SCORE = 30
+const ROOK_DOUBLED_SCORE = 15
 
 var PIECE_BEHIND_BLOCKED_PAWN_SCORE = [7]int{
 	0,
@@ -473,6 +474,17 @@ func evalPiece(
 			evalInfo.numKingAttackers[side]++
 			evalInfo.numKingAttacks[side] += numKingAttacks
 			evalInfo.kingAttackWeight[side] += 3 * numKingAttacks
+		}
+
+		// Doubled rooks (will be taken into account for both rooks)
+		sideRooks := boardState.bitboards.piece[ROOK_MASK] & boardState.bitboards.piece[side]
+		if attackBoard&sideRooks != 0 {
+			// don't bother with more complicated computations if you have > 2 rooks, this
+			// will never happen at a point where it matters
+			otherRookSq := byte(bits.TrailingZeros64(sideRooks))
+			if Column(sq) == Column(otherRookSq) {
+				score += ROOK_DOUBLED_SCORE
+			}
 		}
 
 		// Blocked pawn
