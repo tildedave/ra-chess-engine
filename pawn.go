@@ -18,78 +18,6 @@ type PawnTableEntry struct {
 	pawnsPerRank              [2][8]uint64
 }
 
-// Given a bitboard which is the pawns for a single side, return a bitboard which
-// contains only the doubled pawns.
-func GetDoubledPawnBitboard(pawnBitboard uint64) uint64 {
-	var doubledBitboard uint64
-	originalBoard := pawnBitboard
-	for pawnBitboard != 0 {
-		sq := byte(bits.TrailingZeros64(pawnBitboard))
-		pawnBitboard ^= 1 << sq
-
-		col := sq % 8
-		row := sq / 8
-
-		var columnBoard uint64
-		for j := byte(0); j < 8; j++ {
-			if j == row {
-				continue
-			}
-			columnBoard = SetBitboard(columnBoard, idx(col, j))
-		}
-
-		overlapBoard := (columnBoard & originalBoard)
-		doubledBitboard |= overlapBoard
-
-		if overlapBoard != 0 {
-			// Since we detected a doubled-pawn from this square, it is itself doubled
-			doubledBitboard ^= 1 << sq
-
-			// For every pawn in the overlap, we don't need to check its column again
-			for overlapBoard != 0 {
-				sq := byte(bits.TrailingZeros64(overlapBoard))
-				overlapBoard ^= 1 << sq
-				pawnBitboard ^= 1 << sq
-			}
-		}
-	}
-	return doubledBitboard
-}
-
-func GetPassedPawnBitboard(pawnBitboard uint64, otherSidePawnBitboard uint64, sideToMove int) uint64 {
-	var passedPawnBoard uint64
-	for pawnBitboard != 0 {
-		sq := byte(bits.TrailingZeros64(pawnBitboard))
-		pawnBitboard ^= 1 << sq
-
-		col := sq % 8
-		row := int(sq / 8)
-
-		var columnBoard uint64
-		var inc int
-		if sideToMove == WHITE_OFFSET {
-			inc = 1
-		} else {
-			inc = -1
-		}
-		for j := row + inc; j < 8 && j >= 0; j += inc {
-			maskSq := idx(col, byte(j))
-			columnBoard = SetBitboard(columnBoard, maskSq)
-			if col > 0 {
-				columnBoard = SetBitboard(columnBoard, maskSq-1)
-			}
-			if col < 7 {
-				columnBoard = SetBitboard(columnBoard, maskSq+1)
-			}
-		}
-		if otherSidePawnBitboard&columnBoard == 0 {
-			passedPawnBoard = SetBitboard(passedPawnBoard, sq)
-		}
-	}
-
-	return passedPawnBoard
-}
-
 func GetPawnRankBitboard(pawnBitboard uint64, rank byte) uint64 {
 	var bitboard uint64
 	for j := byte(0); j < 8; j++ {
@@ -98,31 +26,59 @@ func GetPawnRankBitboard(pawnBitboard uint64, rank byte) uint64 {
 	return pawnBitboard & bitboard
 }
 
-func GetIsolatedPawnBitboard(pawnBitboard uint64) uint64 {
-	var bitboard uint64
+func computePawnStructure(
+	entry *PawnTableEntry,
+	pawnBitboard uint64,
+	otherSidePawnBitboard uint64,
+	side int,
+) {
 	originalBoard := pawnBitboard
+	var passedPawnBoard uint64
+	var isolatedPawnBoard uint64
+	var doubledPawnBoard uint64
+
 	for pawnBitboard != 0 {
 		sq := byte(bits.TrailingZeros64(pawnBitboard))
 		pawnBitboard ^= 1 << sq
 
 		col := sq % 8
+		// row := int(sq / 8)
+
+		var adjacentBoard uint64
 		var columnBoard uint64
-		for j := byte(1); j < 7; j++ {
-			maskSq := idx(col, j)
+		var inc int
+		var start int
+		if side == WHITE_OFFSET {
+			inc = 1
+			start = 1
+		} else {
+			inc = -1
+			start = 6
+		}
+		for j := start; j < 8 && j >= 0; j += inc {
+			maskSq := idx(col, byte(j))
+			columnBoard = SetBitboard(columnBoard, maskSq)
 			if col > 0 {
-				columnBoard = SetBitboard(columnBoard, maskSq-1)
+				adjacentBoard = SetBitboard(adjacentBoard, maskSq-1)
 			}
 			if col < 7 {
-				columnBoard = SetBitboard(columnBoard, maskSq+1)
+				adjacentBoard = SetBitboard(adjacentBoard, maskSq+1)
 			}
 		}
-
-		if columnBoard&originalBoard == 0 {
-			bitboard = SetBitboard(bitboard, sq)
+		if otherSidePawnBitboard&(columnBoard|adjacentBoard) == 0 {
+			passedPawnBoard = SetBitboard(passedPawnBoard, sq)
 		}
+		if adjacentBoard&originalBoard == 0 {
+			isolatedPawnBoard = SetBitboard(isolatedPawnBoard, sq)
+		}
+
+		doubledPawns := columnBoard & (originalBoard ^ (1 << sq))
+		doubledPawnBoard |= doubledPawns
 	}
 
-	return bitboard
+	entry.passedPawns[side] = passedPawnBoard
+	entry.isolatedPawnBoard[side] = isolatedPawnBoard
+	entry.doubledPawnBoard[side] = doubledPawnBoard
 }
 
 // GetPawnTableEntry will return the pawn table entry for the given board state,
@@ -141,14 +97,11 @@ func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
 	entry.pawns[WHITE_OFFSET] = whitePawns
 	entry.pawns[BLACK_OFFSET] = blackPawns
 
-	// TODO - avoid looping over the pawns more than once
-	entry.doubledPawnBoard[WHITE_OFFSET] = GetDoubledPawnBitboard(whitePawns)
-	entry.doubledPawnBoard[BLACK_OFFSET] = GetDoubledPawnBitboard(blackPawns)
-	whitePassers := GetPassedPawnBitboard(whitePawns, blackPawns, WHITE_OFFSET)
-	blackPassers := GetPassedPawnBitboard(blackPawns, whitePawns, BLACK_OFFSET)
+	computePawnStructure(&entry, whitePawns, blackPawns, WHITE_OFFSET)
+	computePawnStructure(&entry, blackPawns, whitePawns, BLACK_OFFSET)
 
-	entry.passedPawns[WHITE_OFFSET] = whitePassers
-	entry.passedPawns[BLACK_OFFSET] = blackPassers
+	whitePassers := entry.passedPawns[WHITE_OFFSET]
+	blackPassers := entry.passedPawns[BLACK_OFFSET]
 
 	var whiteQueeningSquares uint64
 	var blackQueeningSquares uint64
@@ -184,8 +137,6 @@ func GetPawnTableEntry(boardState *BoardState) *PawnTableEntry {
 		entry.pawnsPerRank[WHITE_OFFSET][rank] = GetPawnRankBitboard(whitePawns, rank)
 		entry.pawnsPerRank[BLACK_OFFSET][rank] = GetPawnRankBitboard(blackPawns, rank)
 	}
-	entry.isolatedPawnBoard[WHITE_OFFSET] = GetIsolatedPawnBitboard(whitePawns)
-	entry.isolatedPawnBoard[BLACK_OFFSET] = GetIsolatedPawnBitboard(blackPawns)
 	entry.connectedPawnBoard[WHITE_OFFSET] = whitePawns ^ entry.isolatedPawnBoard[WHITE_OFFSET]
 	entry.connectedPawnBoard[BLACK_OFFSET] = blackPawns ^ entry.isolatedPawnBoard[BLACK_OFFSET]
 	boardState.pawnTable[boardState.pawnHashKey] = &entry
