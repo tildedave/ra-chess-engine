@@ -31,6 +31,7 @@ const ISOLATED_PAWN_SCORE = -10
 const DOUBLED_PAWN_SCORE = -10
 const LACK_OF_DEVELOPMENT_SCORE = -15
 const LACK_OF_DEVELOPMENT_SCORE_QUEEN = -5
+const IMBALANCED_PIECE_SCORE = 100
 
 const (
 	PHASE_OPENING    = iota
@@ -60,11 +61,6 @@ var MATERIAL_SCORE = [7]int{
 var pawnProtectionBoard = [2]uint64{
 	0x000000000000FF00,
 	0x00FF000000000000,
-}
-
-var pawnSixthRankBoard = [2]uint64{
-	0x0000FF0000000000,
-	0x0000000000FF0000,
 }
 
 var passedPawnByRankScore = [8]int{
@@ -104,6 +100,7 @@ func Eval(boardState *BoardState) BoardEval {
 
 	whiteOccupancy := boardState.bitboards.color[WHITE_OFFSET]
 	blackOccupancy := boardState.bitboards.color[BLACK_OFFSET]
+	allOccupancies := boardState.GetAllOccupanciesBitboard()
 
 	for pieceMask := PIECE_MASK_MIN; pieceMask <= PIECE_MASK_MAX; pieceMask++ {
 		pieceBoard := boardState.bitboards.piece[pieceMask]
@@ -131,6 +128,19 @@ func Eval(boardState *BoardState) BoardEval {
 		if pieceMask == PAWN_MASK {
 			whitePawnMaterial = whitePieceMaterial
 			blackPawnMaterial = blackPieceMaterial
+		} else {
+			for whitePieceBoard != 0 {
+				sq := byte(bits.TrailingZeros64(whitePieceBoard))
+				pieceScore[WHITE_OFFSET][pieceMask] += evalPiece(boardState, sq, pieceMask, WHITE_OFFSET, allOccupancies)
+				whitePieceBoard ^= 1 << sq
+			}
+			for blackPieceBoard != 0 {
+				sq := byte(bits.TrailingZeros64(blackPieceBoard))
+				pieceScore[BLACK_OFFSET][pieceMask] += evalPiece(boardState, sq, pieceMask, BLACK_OFFSET, allOccupancies)
+				blackPieceBoard ^= 1 << sq
+			}
+
+			// TODO: bonus for bishop pair
 		}
 	}
 
@@ -166,7 +176,6 @@ func Eval(boardState *BoardState) BoardEval {
 		// prioritize center control
 
 		// D4, E4, D5, E5
-		allOccupancies := boardState.GetAllOccupanciesBitboard()
 		for _, sq := range [4]byte{SQUARE_D4, SQUARE_E4, SQUARE_D5, SQUARE_E5} {
 			squareAttackBoard := boardState.GetSquareAttackersBoard(allOccupancies, sq)
 
@@ -284,6 +293,22 @@ func evalPawnStructure(boardState *BoardState, boardPhase int) (int, int) {
 	}
 
 	return whitePawnScore, blackPawnScore
+}
+
+func evalPiece(boardState *BoardState, sq byte, pieceMask byte, side int, allOccupancies uint64) int {
+	moveBitboards := boardState.moveBitboards
+	switch pieceMask {
+	case BISHOP_MASK:
+		bishopKey := hashKey(allOccupancies, moveBitboards.bishopMagics[sq])
+		attackBoard := moveBitboards.bishopAttacks[sq][bishopKey].board
+		bits.OnesCount64(attackBoard)
+	case KNIGHT_MASK:
+	case ROOK_MASK:
+	case QUEEN_MASK:
+	case KING_MASK:
+	}
+
+	return 0
 }
 
 func evalDevelopment(boardState *BoardState, boardPhase int, pieceBoards *[2][7]uint64) (int, int) {
