@@ -80,6 +80,17 @@ var KNIGHT_COLUMN_SCORE = [8]int{
 	-25, // H-column
 }
 
+var ROOK_RANK_SCORE = [8]int{
+	0, // Rank 1
+	0,
+	0,
+	0,
+	0,
+	15, // Rank 6
+	35, // Rank 7
+	0,  // Rank 8
+}
+
 const (
 	PHASE_OPENING    = iota
 	PHASE_MIDDLEGAME = iota
@@ -438,6 +449,12 @@ func evalPiece(
 		}
 
 		// Bonus on 6th/7th rank
+		rookRank := Rank(sq)
+		if side == WHITE_OFFSET {
+			score += ROOK_RANK_SCORE[rookRank-1]
+		} else {
+			score += ROOK_RANK_SCORE[8-rookRank]
+		}
 
 		// Passed pawn support
 		passedPawnSupportBoard := attackBoard & pawnEntry.passedPawns[side]
