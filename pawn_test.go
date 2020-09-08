@@ -50,6 +50,23 @@ func TestOpenFiles(t *testing.T) {
 	assert.True(t, IsBitboardSet(entry.openFileBoard, SQUARE_H1))
 }
 
+func TestBackwardsPawn(t *testing.T) {
+	boardState := CreateEmptyBoardState()
+	boardState.SetPieceAtSquare(SQUARE_A2, PAWN_MASK|WHITE_MASK)
+	boardState.SetPieceAtSquare(SQUARE_D4, PAWN_MASK|WHITE_MASK)
+	boardState.SetPieceAtSquare(SQUARE_E5, PAWN_MASK|WHITE_MASK)
+	boardState.SetPieceAtSquare(SQUARE_G6, PAWN_MASK|BLACK_MASK)
+	boardState.SetPieceAtSquare(SQUARE_F5, PAWN_MASK|BLACK_MASK)
+	entry := GetPawnTableEntry(&boardState)
+
+	assert.True(t, IsBitboardSet(entry.backwardsPawnBoard[WHITE_OFFSET], SQUARE_D4))
+	assert.True(t, IsBitboardSet(entry.backwardsPawnBoard[BLACK_OFFSET], SQUARE_G6))
+	assert.False(t, IsBitboardSet(entry.backwardsPawnBoard[WHITE_OFFSET], SQUARE_E5))
+	assert.False(t, IsBitboardSet(entry.backwardsPawnBoard[BLACK_OFFSET], SQUARE_F5))
+	assert.False(t, IsBitboardSet(entry.backwardsPawnBoard[WHITE_OFFSET], SQUARE_A2),
+		"Isolated pawns should not have been considered backwards")
+}
+
 func TestPassedPawnBitboard(t *testing.T) {
 	boardState := CreateEmptyBoardState()
 	entry := PawnTableEntry{}

@@ -16,6 +16,7 @@ type PawnTableEntry struct {
 	isolatedPawnCount         [2]int
 	connectedPawnBoard        [2]uint64
 	connectedPawnCount        [2]int
+	backwardsPawnBoard        [2]uint64
 	pawnsPerRank              [2][8]uint64
 	openFileBoard             uint64
 	halfOpenFileBoard         [2]uint64
@@ -41,6 +42,7 @@ func computePawnStructure(
 	var passedPawnBoard uint64
 	var isolatedPawnBoard uint64
 	var doubledPawnBoard uint64
+	var backwardsPawnBoard uint64
 	var pawnColumnBoard uint64
 	var attackBoard uint64
 
@@ -49,7 +51,7 @@ func computePawnStructure(
 		pawnBitboard ^= 1 << sq
 
 		col := sq % 8
-		// row := int(sq / 8)
+		pawnRank := Rank(sq)
 
 		var adjacentBoard uint64
 		var columnBoard uint64
@@ -75,8 +77,31 @@ func computePawnStructure(
 		if otherSidePawnBitboard&(columnBoard|adjacentBoard) == 0 {
 			passedPawnBoard = SetBitboard(passedPawnBoard, sq)
 		}
-		if adjacentBoard&originalBoard == 0 {
+		supportingBoard := adjacentBoard & originalBoard
+		if supportingBoard == 0 {
 			isolatedPawnBoard = SetBitboard(isolatedPawnBoard, sq)
+		} else {
+			// determine if backwards
+			isBackwards := true
+			for supportingBoard != 0 {
+				otherPawnSq := byte(bits.TrailingZeros64(supportingBoard))
+				rankOtherPawn := Rank(otherPawnSq)
+				if side == WHITE_OFFSET {
+					if rankOtherPawn < pawnRank {
+						isBackwards = false
+						break
+					}
+				} else {
+					if side == BLACK_OFFSET && pawnRank < rankOtherPawn {
+						isBackwards = false
+						break
+					}
+				}
+				supportingBoard ^= 1 << otherPawnSq
+			}
+			if isBackwards {
+				backwardsPawnBoard = SetBitboard(backwardsPawnBoard, sq)
+			}
 		}
 
 		attackBoard |= boardState.moveBitboards.pawnAttacks[side][sq]
@@ -90,6 +115,7 @@ func computePawnStructure(
 	entry.isolatedPawnBoard[side] = isolatedPawnBoard
 	entry.doubledPawnBoard[side] = doubledPawnBoard
 	entry.pawnColumnBoard[side] = pawnColumnBoard
+	entry.backwardsPawnBoard[side] = backwardsPawnBoard
 }
 
 // GetPawnTableEntry will return the pawn table entry for the given board state,
