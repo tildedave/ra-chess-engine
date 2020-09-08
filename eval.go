@@ -33,7 +33,11 @@ const LACK_OF_DEVELOPMENT_SCORE = -15
 const LACK_OF_DEVELOPMENT_SCORE_QUEEN = -5
 const IMBALANCED_PIECE_SCORE = 100
 const ROOK_SUPPORT_PASSED_PAWN_SCORE = 50
-const BISHOP_SAME_COLOR_PAWN_SCORE = -10
+
+var BISHOP_SAME_COLOR_PAWN_SCORE = [9]int{
+	15, 10, 5, 0, -5, -20, -30, -40, -50,
+}
+
 const KNIGHT_SUPPORTED_BY_PAWN_SCORE = 15
 const ROOK_OPEN_FILE_SCORE = 45
 const ROOK_HALF_OPEN_FILE_SCORE = 30
@@ -442,11 +446,11 @@ func evalPiece(
 		if IsBitboardSet(lightSquareBoard, sq) {
 			// light square bishop, de-incentivize pawns on light squares
 			numSameColorPawns := bits.OnesCount64(lightSquareBoard & pawnEntry.pawns[side])
-			score += int(numSameColorPawns) * BISHOP_SAME_COLOR_PAWN_SCORE
+			score += BISHOP_SAME_COLOR_PAWN_SCORE[int(numSameColorPawns)]
 		} else {
 			// dark square bishop
 			numSameColorPawns := bits.OnesCount64(darkSquareBoard & pawnEntry.pawns[side])
-			score += int(numSameColorPawns) * BISHOP_SAME_COLOR_PAWN_SCORE
+			score += BISHOP_SAME_COLOR_PAWN_SCORE[int(numSameColorPawns)]
 		}
 	case KNIGHT_MASK:
 		attackBoard := moveBitboards.knightAttacks[sq].board
