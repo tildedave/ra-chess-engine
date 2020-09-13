@@ -77,9 +77,9 @@ func TestStaticExchangeEvaluationStackOverflowQuestion(t *testing.T) {
 	// https://stackoverflow.com/questions/44036416/chess-quiescence-search-dominating-runtime
 	boardState, _ := CreateBoardStateFromFENString("rnbqkbnr/pppppppp/8/8/8/8/1PP1PPP1/RNBQKBNR w KQkq - 0 1")
 
-	assert.Equal(t, -700, StaticExchangeEvaluation(&boardState, SQUARE_D7, QUEEN_MASK, SQUARE_E1))
-	assert.Equal(t, -400, StaticExchangeEvaluation(&boardState, SQUARE_A7, ROOK_MASK, SQUARE_A1))
-	assert.Equal(t, -400, StaticExchangeEvaluation(&boardState, SQUARE_H7, ROOK_MASK, SQUARE_H1))
+	assert.Equal(t, -QUEEN_EVAL_SCORE+PAWN_EVAL_SCORE, StaticExchangeEvaluation(&boardState, SQUARE_D7, QUEEN_MASK, SQUARE_E1))
+	assert.Equal(t, -ROOK_EVAL_SCORE+PAWN_EVAL_SCORE, StaticExchangeEvaluation(&boardState, SQUARE_A7, ROOK_MASK, SQUARE_A1))
+	assert.Equal(t, -ROOK_EVAL_SCORE+PAWN_EVAL_SCORE, StaticExchangeEvaluation(&boardState, SQUARE_H7, ROOK_MASK, SQUARE_H1))
 
 	moves := make([]Move, 64)
 	end := GenerateMoves(&boardState, moves[:], 0)
