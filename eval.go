@@ -12,11 +12,6 @@ type EvalOptions struct {
 
 const ENDGAME_MATERIAL_THRESHOLD = 1200
 
-const QUEEN_EVAL_SCORE = 1050
-const PAWN_EVAL_SCORE = 100
-const ROOK_EVAL_SCORE = 500
-const KNIGHT_EVAL_SCORE = 320
-const BISHOP_EVAL_SCORE = 330
 const KING_IN_CENTER_EVAL_SCORE = -30
 const KING_PAWN_COVER_EVAL_SCORE = 10
 const KING_OPEN_FILE_EVAL_SCORE = -30
@@ -109,6 +104,53 @@ var ROOK_RANK_SCORE = [8]int{
 	0,  // Rank 8
 }
 
+var MOBILITY_SCORE = [2][8][]int{
+	// MIDDLEGAME
+	[8][]int{
+		[]int{}, // no piece
+		[]int{}, // pawn - not used
+		[]int{
+			-16, -12, -8, -4, 0, 4, 8, 12, 16,
+		}, // knight - up to 8 moves
+		[]int{
+			-21, // "A blockaded bishop is of little value" - Lisa Simpson
+			-18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18,
+		}, // bishop - up to 13 moves
+		[]int{
+			-14, -12, -10, -8, -6, -4, -2, 0, 2, 4, 6, 8, 10, 12, 14,
+		}, // rook - up to 14 moves
+		[]int{
+			-28, -26, -24, -22, -20, -18, -16, -14, -12, -10, -8, -6, -4, -2, 0,
+			2, 4, 6, 8, 10, 12, 14, 16, 18, 20, 22, 24, 26, 28, 30,
+		}, // queen - up to 27 moves
+		[]int{
+			0, 0, 0, 0, 0, 0, 0, 0, 0,
+		}, // king
+	},
+	// ENDGAME
+	[8][]int{
+		[]int{}, // no piece
+		[]int{}, // pawn - not used
+		[]int{
+			-16, -12, -8, -4, 0, 4, 8, 12, 16,
+		}, // knight
+		[]int{
+			-21, // "A blockaded bishop is of little value" - Lisa Simpson
+			-18, -15, -12, -9, -6, -3, 0, 3, 6, 9, 12, 15, 18,
+		}, // bishop
+		[]int{
+			-28, -24, -20, -16, -12, -8, -4, 0, 4, 8, 12, 16, 20, 24, 28,
+		}, // rook
+		[]int{
+			-42, -30, -25, -21, -16, -8, -4, 0, 4, 8, 12, 16, 20, 24,
+			28, 32, 36, 40, 44, 48, 52, 56, 56, 56, 56, 56, 56, 56, 56,
+		}, // queen
+		[]int{
+			-10, -6, -2, 2, 6, 12, 16, 20, 24,
+		}, // king
+	},
+}
+
 // From https://www.chessprogramming.org/CPW-Engine_eval
 // SafetyTable
 var ATTACK_SCORE = [100]int{
@@ -134,12 +176,13 @@ const (
 )
 
 type BoardEval struct {
+	gamePhase         int
 	sideToMove        int
-	material          int
 	phase             int
 	centerControl     int
-	whiteMaterial     int
-	blackMaterial     int
+	material          [2][2]int
+	nonPawnMaterial   [2][2]int
+	mobility          [2][2]int
 	pieceScore        [2][7]int
 	pieceCount        [2][7]int
 	kingAttackScore   int
@@ -162,8 +205,26 @@ type EvalBitboards struct {
 	blockedPawns   [2]uint64
 }
 
-var MATERIAL_SCORE = [7]int{
-	0, PAWN_EVAL_SCORE, KNIGHT_EVAL_SCORE, BISHOP_EVAL_SCORE, ROOK_EVAL_SCORE, QUEEN_EVAL_SCORE, 0,
+var MATERIAL_SCORE = [2][7]int{
+	// Middlegame
+	[7]int{
+		0,
+		100,  // PAWN_EVAL_SCORE,
+		320,  // KNIGHT_EVAL_SCORE
+		330,  // BISHOP_EVAL_SCORE
+		500,  // ROOK_EVAL_SCORE
+		1050, // QUEEN_EVAL_SCORE,
+		0,    // king
+	},
+	// Endgame
+	[7]int{
+		0,
+		180,  // Pawns: more valuable in endgame
+		320,  // Knights: less good in endgame (relative to other pieces)
+		400,  // Bishops
+		760,  // Rooks: needed to mate
+		1200, // Queens are good
+	},
 }
 
 var pawnProtectionBoard = [2]uint64{
@@ -195,13 +256,7 @@ func Eval(boardState *BoardState) BoardEval {
 	}
 
 	var pieceBoards [2][7]uint64
-	var pieceCount [2][7]int
 	// var attackBoards [2][7]uint64
-	var pieceScore [2][7]int
-	blackMaterial := 0
-	whiteMaterial := 0
-	blackPawnMaterial := 0
-	whitePawnMaterial := 0
 	hasMatingMaterial := true
 
 	pawnEntry := GetPawnTableEntry(boardState)
@@ -217,21 +272,16 @@ func Eval(boardState *BoardState) BoardEval {
 	blackOccupancy := boardState.bitboards.color[BLACK_OFFSET]
 	allOccupancies := boardState.GetAllOccupanciesBitboard()
 
+	eval := BoardEval{
+		sideToMove: boardState.sideToMove,
+	}
+
 	for pieceMask := PIECE_MASK_MIN; pieceMask <= PIECE_MASK_MAX; pieceMask++ {
 		pieceBoard := boardState.bitboards.piece[pieceMask]
 		whitePieceBoard := whiteOccupancy & pieceBoard
 		blackPieceBoard := blackOccupancy & pieceBoard
 		pieceBoards[WHITE_OFFSET][pieceMask] = whitePieceBoard
 		pieceBoards[BLACK_OFFSET][pieceMask] = blackPieceBoard
-
-		pieceCount[WHITE_OFFSET][pieceMask] = bits.OnesCount64(whitePieceBoard)
-		pieceCount[BLACK_OFFSET][pieceMask] = bits.OnesCount64(blackPieceBoard)
-
-		whitePieceMaterial := pieceCount[WHITE_OFFSET][pieceMask] * MATERIAL_SCORE[pieceMask]
-		blackPieceMaterial := pieceCount[BLACK_OFFSET][pieceMask] * MATERIAL_SCORE[pieceMask]
-
-		whiteMaterial += whitePieceMaterial
-		blackMaterial += blackPieceMaterial
 
 		if whitePieceBoard != 0 {
 			whitePieceBitboard = SetBitboard(whitePieceBitboard, pieceMask)
@@ -240,40 +290,28 @@ func Eval(boardState *BoardState) BoardEval {
 			blackPieceBitboard = SetBitboard(blackPieceBitboard, pieceMask)
 		}
 
-		if pieceMask == PAWN_MASK {
-			whitePawnMaterial = whitePieceMaterial
-			blackPawnMaterial = blackPieceMaterial
-		} else {
-			for whitePieceBoard != 0 {
-				sq := byte(bits.TrailingZeros64(whitePieceBoard))
-				pieceScore[WHITE_OFFSET][pieceMask] += evalPiece(boardState, &evalBitboards, pawnEntry, &evalInfo, sq, pieceMask, WHITE_OFFSET)
-				whitePieceBoard ^= 1 << sq
-			}
-			for blackPieceBoard != 0 {
-				sq := byte(bits.TrailingZeros64(blackPieceBoard))
-				pieceScore[BLACK_OFFSET][pieceMask] += evalPiece(boardState, &evalBitboards, pawnEntry, &evalInfo, sq, pieceMask, BLACK_OFFSET)
-				blackPieceBoard ^= 1 << sq
-			}
-
-			// TODO: bonus for bishop pair
+		for whitePieceBoard != 0 {
+			sq := byte(bits.TrailingZeros64(whitePieceBoard))
+			evalPiece(&eval, boardState, &evalBitboards, pawnEntry, &evalInfo, sq, pieceMask, WHITE_OFFSET)
+			whitePieceBoard ^= 1 << sq
+		}
+		for blackPieceBoard != 0 {
+			sq := byte(bits.TrailingZeros64(blackPieceBoard))
+			evalPiece(&eval, boardState, &evalBitboards, pawnEntry, &evalInfo, sq, pieceMask, BLACK_OFFSET)
+			blackPieceBoard ^= 1 << sq
 		}
 	}
 
-	// This isn't correct, bitboards will make this easier
-	if !IsBitboardSet(whitePieceBitboard, PAWN_MASK) &&
-		!IsBitboardSet(blackPieceBitboard, PAWN_MASK) &&
-		blackMaterial <= KNIGHT_EVAL_SCORE &&
-		whiteMaterial <= KNIGHT_EVAL_SCORE {
-		hasMatingMaterial = false
-	}
+	// No pawns, rooks, queens.
+	// 1 bishop/1 knight alone cannot mate
+	// 2 bishops can mate
+	// 1 knight + 1 bishop can mate
+	// 2 knights cannot mate
+	checkForInsufficientMatingMaterial(&eval, whitePieceBitboard, blackPieceBitboard)
 
-	if blackMaterial-blackPawnMaterial < ENDGAME_MATERIAL_THRESHOLD &&
-		whiteMaterial-whitePawnMaterial < ENDGAME_MATERIAL_THRESHOLD {
-		boardPhase = PHASE_ENDGAME
-	}
+	// TODO - endgame calculation
 
-	pieceScore[WHITE_OFFSET][PAWN_MASK],
-		pieceScore[BLACK_OFFSET][PAWN_MASK] = evalPawnStructure(boardState, pawnEntry, boardPhase)
+	evalPawnStructure(&eval, boardState, pawnEntry, boardPhase)
 
 	// TODO - endgame: determine passed pawns and prioritize them
 
@@ -372,22 +410,22 @@ func Eval(boardState *BoardState) BoardEval {
 		}
 
 		// if you have a queen and enemy doesn't that's a good thing
-		blackHasQueen := IsBitboardSet(blackPieceBitboard, QUEEN_MASK)
-		whiteHasQueen := IsBitboardSet(whitePieceBitboard, QUEEN_MASK)
+		// blackHasQueen := IsBitboardSet(blackPieceBitboard, QUEEN_MASK)
+		// whiteHasQueen := IsBitboardSet(whitePieceBitboard, QUEEN_MASK)
 
-		if whiteHasQueen && !blackHasQueen {
-			whiteMaterial += ENDGAME_QUEEN_BONUS_SCORE
-		} else if blackHasQueen && !whiteHasQueen {
-			blackMaterial += ENDGAME_QUEEN_BONUS_SCORE
-		}
+		// if whiteHasQueen && !blackHasQueen {
+		// 	whiteMaterial += ENDGAME_QUEEN_BONUS_SCORE
+		// } else if blackHasQueen && !whiteHasQueen {
+		// 	blackMaterial += ENDGAME_QUEEN_BONUS_SCORE
+		// }
 	}
 
-	pieceScore[WHITE_OFFSET][KING_MASK] = whiteKingPosition
-	pieceScore[BLACK_OFFSET][KING_MASK] = blackKingPosition
+	eval.pieceScore[WHITE_OFFSET][KING_MASK] = whiteKingPosition
+	eval.pieceScore[BLACK_OFFSET][KING_MASK] = blackKingPosition
 
 	var kingAttackScore int
 	for side := WHITE_OFFSET; side <= BLACK_OFFSET; side++ {
-		if pieceCount[side][QUEEN_MASK] > 0 && evalInfo.numKingAttackers[side] > 1 {
+		if eval.pieceCount[side][QUEEN_MASK] > 0 && evalInfo.numKingAttackers[side] > 1 {
 			if side == WHITE_OFFSET {
 				kingAttackScore += ATTACK_SCORE[evalInfo.kingAttackWeight[side]]
 			} else {
@@ -396,24 +434,23 @@ func Eval(boardState *BoardState) BoardEval {
 		}
 	}
 
-	return BoardEval{
-		sideToMove:        boardState.sideToMove,
-		phase:             boardPhase,
-		material:          whiteMaterial - blackMaterial,
-		blackMaterial:     blackMaterial,
-		whiteMaterial:     whiteMaterial,
-		pieceScore:        pieceScore,
-		pieceCount:        pieceCount,
-		kingAttackScore:   kingAttackScore,
-		developmentScore:  whiteDevelopment - blackDevelopment,
-		whiteDevelopment:  whiteDevelopment,
-		blackDevelopment:  blackDevelopment,
-		centerControl:     centerControl,
-		hasMatingMaterial: hasMatingMaterial,
-	}
+	eval.kingAttackScore = kingAttackScore
+	eval.developmentScore = whiteDevelopment - blackDevelopment
+	eval.whiteDevelopment = whiteDevelopment
+	eval.blackDevelopment = blackDevelopment
+	eval.centerControl = centerControl
+	eval.hasMatingMaterial = hasMatingMaterial
+	eval.phase = boardPhase
+
+	return eval
 }
 
-func evalPawnStructure(boardState *BoardState, pawnEntry *PawnTableEntry, boardPhase int) (int, int) {
+func evalPawnStructure(
+	eval *BoardEval,
+	boardState *BoardState,
+	pawnEntry *PawnTableEntry,
+	boardPhase int,
+) {
 	whitePawnScore := 0
 	blackPawnScore := 0
 
@@ -435,10 +472,12 @@ func evalPawnStructure(boardState *BoardState, pawnEntry *PawnTableEntry, boardP
 		blackPawnScore += ISOLATED_PAWN_SCORE * pawnEntry.isolatedPawnCount[BLACK_OFFSET]
 	}
 
-	return whitePawnScore, blackPawnScore
+	eval.pieceScore[WHITE_OFFSET][PAWN_MASK] = whitePawnScore
+	eval.pieceScore[BLACK_OFFSET][PAWN_MASK] = blackPawnScore
 }
 
 func evalPiece(
+	eval *BoardEval,
 	boardState *BoardState,
 	evalBitboards *EvalBitboards,
 	pawnEntry *PawnTableEntry,
@@ -446,7 +485,7 @@ func evalPiece(
 	sq byte,
 	pieceMask byte,
 	side int,
-) int {
+) {
 	moveBitboards := boardState.moveBitboards
 	allOccupancies := evalBitboards.allOccupancies
 	otherSide := BLACK_OFFSET
@@ -456,10 +495,20 @@ func evalPiece(
 
 	var score int = 0
 
+	eval.pieceCount[side][pieceMask]++
+	for j := 0; j <= 1; j++ {
+		eval.material[j][side] += MATERIAL_SCORE[j][pieceMask]
+		if pieceMask != PAWN_MASK {
+			eval.nonPawnMaterial[j][side] += MATERIAL_SCORE[j][pieceMask]
+		}
+	}
+	var attackBoard uint64
+
 	switch pieceMask {
 	case BISHOP_MASK:
+		eval.gamePhase++
 		bishopKey := hashKey(allOccupancies, moveBitboards.bishopMagics[sq])
-		attackBoard := moveBitboards.bishopAttacks[sq][bishopKey].board
+		attackBoard = moveBitboards.bishopAttacks[sq][bishopKey].board
 		// Blocked by pawns that won't move
 		// Attacking pieces
 		// Attacking king
@@ -483,7 +532,8 @@ func evalPiece(
 			score += BISHOP_SAME_COLOR_PAWN_SCORE[int(numSameColorPawns)]
 		}
 	case KNIGHT_MASK:
-		attackBoard := moveBitboards.knightAttacks[sq].board
+		eval.gamePhase++
+		attackBoard = moveBitboards.knightAttacks[sq].board
 		numKingAttacks := bits.OnesCount64(attackBoard & evalBitboards.kingSquares[otherSide])
 		if numKingAttacks != 0 {
 			evalInfo.numKingAttackers[side]++
@@ -511,10 +561,10 @@ func evalPiece(
 		}
 
 		score += KNIGHT_PAWN_ADJUST[bits.OnesCount64(pawnEntry.pawns[side])]
-
 	case ROOK_MASK:
+		eval.gamePhase += 2
 		rookKey := hashKey(allOccupancies, moveBitboards.rookMagics[sq])
-		attackBoard := moveBitboards.rookAttacks[sq][rookKey].board
+		attackBoard = moveBitboards.rookAttacks[sq][rookKey].board
 
 		// Attacking near enemy king
 		numKingAttacks := bits.OnesCount64(attackBoard & evalBitboards.kingSquares[otherSide])
@@ -575,9 +625,10 @@ func evalPiece(
 		}
 
 	case QUEEN_MASK:
+		eval.gamePhase += 4
 		rookKey := hashKey(allOccupancies, moveBitboards.rookMagics[sq])
 		bishopKey := hashKey(allOccupancies, moveBitboards.bishopMagics[sq])
-		attackBoard := (moveBitboards.rookAttacks[sq][rookKey].board | moveBitboards.bishopAttacks[sq][bishopKey].board)
+		attackBoard = moveBitboards.rookAttacks[sq][rookKey].board | moveBitboards.bishopAttacks[sq][bishopKey].board
 		numKingAttacks := bits.OnesCount64(attackBoard & evalBitboards.kingSquares[otherSide])
 		if numKingAttacks != 0 {
 			evalInfo.numKingAttackers[side]++
@@ -586,9 +637,20 @@ func evalPiece(
 		}
 
 	case KING_MASK:
+		attackBoard = moveBitboards.kingAttacks[sq].board
 	}
 
-	return score
+	if attackBoard != 0 {
+		// Don't count mobility as attacking your own piece
+		mobilityBoard := attackBoard ^ (attackBoard & boardState.bitboards.color[side])
+		for j := 0; j <= 1; j++ {
+			numMoves := bits.OnesCount64(mobilityBoard)
+			score := MOBILITY_SCORE[j][pieceMask][numMoves]
+			eval.mobility[j][side] += score
+		}
+	}
+
+	eval.pieceScore[side][pieceMask] += score
 }
 
 func evalDevelopment(boardState *BoardState, boardPhase int, pieceBoards *[2][7]uint64) (int, int) {
@@ -639,7 +701,25 @@ func (eval BoardEval) value() int {
 	for i := PIECE_MASK_MIN; i <= PIECE_MASK_MAX; i++ {
 		totalPieceScore += eval.pieceScore[WHITE_OFFSET][i] - eval.pieceScore[BLACK_OFFSET][i]
 	}
-	score := eval.material + eval.centerControl + totalPieceScore + eval.developmentScore + eval.kingAttackScore
+	middleGameMaterial := eval.material[0][WHITE_OFFSET] - eval.material[0][BLACK_OFFSET]
+	endgameMaterial := eval.material[1][WHITE_OFFSET] - eval.material[1][BLACK_OFFSET]
+	// We want to combine the middlegame material with the endgame material.
+	// This uses a method from the https://www.chessprogramming.org/CPW-Engine_eval
+	var score int
+	midgameWeight := Min(24, eval.gamePhase)
+	endgameWeight := 24 - midgameWeight
+
+	score += (midgameWeight*middleGameMaterial + endgameWeight*endgameMaterial) / 24
+
+	middleGameMobility := eval.mobility[0][WHITE_OFFSET] - eval.mobility[0][BLACK_OFFSET]
+	endgameMobility := eval.mobility[1][WHITE_OFFSET] - eval.mobility[1][BLACK_OFFSET]
+
+	score += (midgameWeight*middleGameMobility + endgameWeight*endgameMobility) / 24
+	score += eval.centerControl
+	score += totalPieceScore
+	score += eval.developmentScore
+	score += eval.kingAttackScore
+
 	if eval.sideToMove == BLACK_OFFSET {
 		return -score - TEMPO_SCORE
 	}
@@ -687,12 +767,21 @@ func BoardEvalToString(eval BoardEval) string {
 		tempoScore = -tempoScore
 	}
 
-	return fmt.Sprintf("VALUE: %d\n\tphase=%s\n\tmaterial=%d (white: %d, black: %d)\n\tpieces=%d [%s]\n\tdevelopment=%d (white: %d, black: %d)\n\tcenterControl=%d\n\tattackScore=%d\n\ttempo=%d",
+	return fmt.Sprintf("VALUE: %d\n\tphase=%s\n\tmiddlegame material=%d (white: %d, black: %d)\n\tendgame material=%d (white: %d, black: %d)\n\tmiddlegame mobility=%d (white: %d, black: %d)\n\tendgame mobility=%d (white: %d, black: %d)\n\tpieces=%d [%s]\n\tdevelopment=%d (white: %d, black: %d)\n\tcenterControl=%d\n\tattackScore=%d\n\ttempo=%d",
 		eval.value(),
 		phaseString,
-		eval.material,
-		eval.whiteMaterial,
-		eval.blackMaterial,
+		eval.material[0][WHITE_OFFSET]-eval.material[0][BLACK_OFFSET],
+		eval.material[0][WHITE_OFFSET],
+		eval.material[0][BLACK_OFFSET],
+		eval.material[1][WHITE_OFFSET]-eval.material[1][BLACK_OFFSET],
+		eval.material[1][WHITE_OFFSET],
+		eval.material[1][BLACK_OFFSET],
+		eval.mobility[0][WHITE_OFFSET]-eval.mobility[0][BLACK_OFFSET],
+		eval.mobility[0][WHITE_OFFSET],
+		eval.mobility[0][BLACK_OFFSET],
+		eval.mobility[1][WHITE_OFFSET]-eval.mobility[1][BLACK_OFFSET],
+		eval.mobility[1][WHITE_OFFSET],
+		eval.mobility[1][BLACK_OFFSET],
 		totalPieceScore,
 		strings.Trim(pieces, " "),
 		eval.developmentScore,
@@ -767,5 +856,43 @@ func createEvalBitboards(boardState *BoardState, pawnEntry *PawnTableEntry) Eval
 			(pawnEntry.pawns[WHITE_OFFSET] << 8 & allOccupancies) >> 8,
 			(pawnEntry.pawns[BLACK_OFFSET] >> 8 & allOccupancies) << 8,
 		},
+	}
+}
+
+func checkForInsufficientMatingMaterial(
+	eval *BoardEval,
+	whitePieceBoard uint64,
+	blackPieceBoard uint64,
+) {
+	if !IsBitboardSet(whitePieceBoard, PAWN_MASK) &&
+		!IsBitboardSet(blackPieceBoard, PAWN_MASK) &&
+		!IsBitboardSet(whitePieceBoard, QUEEN_MASK) &&
+		!IsBitboardSet(blackPieceBoard, QUEEN_MASK) &&
+		!IsBitboardSet(whitePieceBoard, ROOK_MASK) &&
+		!IsBitboardSet(blackPieceBoard, ROOK_MASK) {
+		whiteBishops := eval.pieceCount[WHITE_OFFSET][BISHOP_MASK]
+		blackBishops := eval.pieceCount[BLACK_OFFSET][BISHOP_MASK]
+		whiteKnights := eval.pieceCount[WHITE_OFFSET][KNIGHT_MASK]
+		blackKnights := eval.pieceCount[BLACK_OFFSET][KNIGHT_MASK]
+
+		whiteCanMate := true
+		blackCanMate := true
+		if whiteBishops == 1 && whiteKnights == 0 {
+			whiteCanMate = false
+		} else if whiteKnights == 1 && whiteBishops == 0 {
+			whiteCanMate = false
+		} else if whiteKnights == 2 {
+			whiteCanMate = false
+		}
+
+		if blackBishops == 1 && blackKnights == 0 {
+			blackCanMate = false
+		} else if blackKnights == 1 && blackBishops == 0 {
+			blackCanMate = false
+		} else if blackKnights == 2 {
+			blackCanMate = false
+		}
+
+		eval.hasMatingMaterial = !whiteCanMate && !blackCanMate
 	}
 }

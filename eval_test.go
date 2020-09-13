@@ -16,7 +16,8 @@ func TestEvalEmptyBoard(t *testing.T) {
 
 	boardEval := Eval(&testBoard)
 
-	assert.Equal(t, 0, boardEval.material)
+	assert.Equal(t, [2]int{0, 0}, boardEval.material[0])
+	assert.Equal(t, [2]int{0, 0}, boardEval.material[1])
 }
 
 func TestEvalPawn(t *testing.T) {
@@ -27,7 +28,8 @@ func TestEvalPawn(t *testing.T) {
 
 	boardEval := Eval(&testBoard)
 
-	assert.Equal(t, 100, boardEval.material)
+	assert.Equal(t, [2]int{MATERIAL_SCORE[0][PAWN_MASK], 0}, boardEval.material[0])
+	assert.Equal(t, [2]int{MATERIAL_SCORE[1][PAWN_MASK], 0}, boardEval.material[1])
 }
 
 func TestEvalPawnAgainstBishop(t *testing.T) {
@@ -39,7 +41,7 @@ func TestEvalPawnAgainstBishop(t *testing.T) {
 
 	boardEval := Eval(&testBoard)
 
-	assert.Equal(t, -230, boardEval.material)
+	assert.Equal(t, -230, boardEval.material[0][WHITE_OFFSET]-boardEval.material[0][BLACK_OFFSET])
 }
 
 func TestEvalPassedPawns(t *testing.T) {
@@ -56,7 +58,7 @@ func TestEvalStartingPosition(t *testing.T) {
 	testBoard := CreateInitialBoardState()
 	boardEval := Eval(&testBoard)
 
-	assert.Equal(t, boardEval.material, 0)
+	assert.Equal(t, boardEval.material[0][WHITE_OFFSET]-boardEval.material[0][BLACK_OFFSET], 0)
 }
 
 func TestEvalStartingPositionCenterControl(t *testing.T) {
@@ -65,7 +67,7 @@ func TestEvalStartingPositionCenterControl(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_E4, WHITE_MASK|PAWN_MASK)
 	boardEval := Eval(&testBoard)
 
-	assert.Equal(t, boardEval.material, 0)
+	assert.Equal(t, boardEval.material[0][WHITE_OFFSET], boardEval.material[0][BLACK_OFFSET])
 }
 
 func TestEvalBlockedPawns(t *testing.T) {

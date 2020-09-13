@@ -63,7 +63,7 @@ func TestSearchWhiteForcesPawnPromotion(t *testing.T) {
 
 	result := Search(&boardState, 5, &SearchStats{}, &SearchMoveInfo{})
 
-	assert.True(t, result.value > QUEEN_EVAL_SCORE)
+	assert.True(t, result.value > MATERIAL_SCORE[1][QUEEN_MASK])
 	assert.Equal(t, SQUARE_B5, result.move.from)
 	assert.True(t, result.move.to == SQUARE_C6 || result.move.to == SQUARE_A6)
 }
@@ -76,7 +76,7 @@ func TestSearchBlackStopsPromotion(t *testing.T) {
 
 	result := Search(&boardState, 5, &SearchStats{}, &SearchMoveInfo{})
 
-	assert.True(t, result.value < QUEEN_EVAL_SCORE)
+	assert.True(t, result.value < MATERIAL_SCORE[1][QUEEN_MASK])
 }
 
 func TestSearchWhiteForcesPromotion(t *testing.T) {
@@ -102,7 +102,7 @@ func TestSearchBlackForcesDraw(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D4, WHITE_MASK|PAWN_MASK)
 
 	result := Search(&boardState, 10, &SearchStats{}, &SearchMoveInfo{})
-	assert.True(t, result.value < 300)
+	assert.True(t, result.value < 400)
 }
 
 func TestSearchWhiteSavesKnightFromCapture(t *testing.T) {

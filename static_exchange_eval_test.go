@@ -37,7 +37,7 @@ func TestStaticExchangeEvaluationSingleCapture(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_E3, WHITE_MASK|PAWN_MASK)
 	boardState.SetPieceAtSquare(SQUARE_E8, BLACK_MASK|ROOK_MASK)
 
-	assert.Equal(t, MATERIAL_SCORE[PAWN_MASK], StaticExchangeEvaluation(&boardState, SQUARE_E3, ROOK_MASK, SQUARE_E8))
+	assert.Equal(t, MATERIAL_SCORE[0][PAWN_MASK], StaticExchangeEvaluation(&boardState, SQUARE_E3, ROOK_MASK, SQUARE_E8))
 }
 func TestStaticExchangeEvaluationGuardedCapture(t *testing.T) {
 	boardState := CreateEmptyBoardState()
@@ -48,10 +48,10 @@ func TestStaticExchangeEvaluationGuardedCapture(t *testing.T) {
 	boardState.SetPieceAtSquare(SQUARE_D2, WHITE_MASK|PAWN_MASK)
 	boardState.SetPieceAtSquare(SQUARE_D8, WHITE_MASK|KNIGHT_MASK)
 
-	assert.Equal(t, -MATERIAL_SCORE[ROOK_MASK]+MATERIAL_SCORE[PAWN_MASK],
+	assert.Equal(t, -MATERIAL_SCORE[0][ROOK_MASK]+MATERIAL_SCORE[0][PAWN_MASK],
 		StaticExchangeEvaluation(&boardState, SQUARE_E3, ROOK_MASK, SQUARE_E8))
 
-	assert.Equal(t, MATERIAL_SCORE[KNIGHT_MASK],
+	assert.Equal(t, MATERIAL_SCORE[0][KNIGHT_MASK],
 		StaticExchangeEvaluation(&boardState, SQUARE_D8, ROOK_MASK, SQUARE_E8))
 
 	moves := make([]Move, 64)
@@ -63,7 +63,7 @@ func TestStaticExchangeEvaluationGuardedCapture(t *testing.T) {
 func TestStaticExchangeEvaluationFromFENString(t *testing.T) {
 	boardState, _ := CreateBoardStateFromFENString("1k1r4/1pp4p/p7/4p3/8/P5P1/1PP4P/2K1R3 w - -")
 
-	assert.Equal(t, MATERIAL_SCORE[PAWN_MASK], StaticExchangeEvaluation(&boardState, SQUARE_E5, ROOK_MASK, SQUARE_E1))
+	assert.Equal(t, MATERIAL_SCORE[0][PAWN_MASK], StaticExchangeEvaluation(&boardState, SQUARE_E5, ROOK_MASK, SQUARE_E1))
 
 }
 
@@ -77,9 +77,13 @@ func TestStaticExchangeEvaluationStackOverflowQuestion(t *testing.T) {
 	// https://stackoverflow.com/questions/44036416/chess-quiescence-search-dominating-runtime
 	boardState, _ := CreateBoardStateFromFENString("rnbqkbnr/pppppppp/8/8/8/8/1PP1PPP1/RNBQKBNR w KQkq - 0 1")
 
-	assert.Equal(t, -QUEEN_EVAL_SCORE+PAWN_EVAL_SCORE, StaticExchangeEvaluation(&boardState, SQUARE_D7, QUEEN_MASK, SQUARE_E1))
-	assert.Equal(t, -ROOK_EVAL_SCORE+PAWN_EVAL_SCORE, StaticExchangeEvaluation(&boardState, SQUARE_A7, ROOK_MASK, SQUARE_A1))
-	assert.Equal(t, -ROOK_EVAL_SCORE+PAWN_EVAL_SCORE, StaticExchangeEvaluation(&boardState, SQUARE_H7, ROOK_MASK, SQUARE_H1))
+	queenScore := MATERIAL_SCORE[0][QUEEN_MASK]
+	pawnScore := MATERIAL_SCORE[0][PAWN_MASK]
+	rookScore := MATERIAL_SCORE[0][ROOK_MASK]
+
+	assert.Equal(t, -queenScore+pawnScore, StaticExchangeEvaluation(&boardState, SQUARE_D7, QUEEN_MASK, SQUARE_E1))
+	assert.Equal(t, -rookScore+pawnScore, StaticExchangeEvaluation(&boardState, SQUARE_A7, ROOK_MASK, SQUARE_A1))
+	assert.Equal(t, -rookScore+pawnScore, StaticExchangeEvaluation(&boardState, SQUARE_H7, ROOK_MASK, SQUARE_H1))
 
 	moves := make([]Move, 64)
 	end := GenerateMoves(&boardState, moves[:], 0)
