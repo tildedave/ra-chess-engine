@@ -39,7 +39,7 @@ func TestEvalPawnAgainstBishop(t *testing.T) {
 
 	boardEval := Eval(&testBoard)
 
-	assert.Equal(t, -220, boardEval.material)
+	assert.Equal(t, -230, boardEval.material)
 }
 
 func TestEvalPassedPawns(t *testing.T) {
@@ -98,8 +98,15 @@ func TestEvalKingSafety(t *testing.T) {
 	testBoard.SetPieceAtSquare(SQUARE_F1, WHITE_MASK|ROOK_MASK)
 	testBoard.SetPieceAtSquare(SQUARE_G1, WHITE_MASK|KING_MASK)
 
+	// 3 pawns should mean okay
 	boardEval := Eval(&testBoard)
+	assert.Equal(t, KING_PAWN_COVER_SCORE[3], boardEval.pieceScore[WHITE_OFFSET][KING_MASK])
 
-	assert.Equal(t, KING_PAWN_COVER_EVAL_SCORE*3,
-		boardEval.pieceScore[WHITE_OFFSET][KING_MASK])
+	testBoard.SetPieceAtSquare(SQUARE_F2, 0x00)
+	boardEval = Eval(&testBoard)
+	assert.Equal(t, KING_PAWN_COVER_SCORE[2], boardEval.pieceScore[WHITE_OFFSET][KING_MASK])
+
+	testBoard.SetPieceAtSquare(SQUARE_G2, 0x00)
+	boardEval = Eval(&testBoard)
+	assert.Equal(t, KING_PAWN_COVER_SCORE[1], boardEval.pieceScore[WHITE_OFFSET][KING_MASK])
 }

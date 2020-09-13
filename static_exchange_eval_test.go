@@ -70,7 +70,7 @@ func TestStaticExchangeEvaluationFromFENString(t *testing.T) {
 func TestStaticExchangeEvaluationFromFENString2(t *testing.T) {
 	boardState, _ := CreateBoardStateFromFENString("1k1r3q/1ppn3p/p4b2/4p3/8/P2N2P1/1PP1R1BP/2K1Q3 w - -")
 
-	assert.Equal(t, -200, StaticExchangeEvaluation(&boardState, SQUARE_E5, KNIGHT_MASK, SQUARE_D3))
+	assert.Equal(t, -220, StaticExchangeEvaluation(&boardState, SQUARE_E5, KNIGHT_MASK, SQUARE_D3))
 }
 
 func TestStaticExchangeEvaluationStackOverflowQuestion(t *testing.T) {
