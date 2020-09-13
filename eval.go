@@ -15,10 +15,11 @@ const ENDGAME_MATERIAL_THRESHOLD = 1200
 const QUEEN_EVAL_SCORE = 800
 const PAWN_EVAL_SCORE = 100
 const ROOK_EVAL_SCORE = 500
-const KNIGHT_EVAL_SCORE = 300
-const BISHOP_EVAL_SCORE = 320
+const KNIGHT_EVAL_SCORE = 320
+const BISHOP_EVAL_SCORE = 330
 const KING_IN_CENTER_EVAL_SCORE = -30
 const KING_PAWN_COVER_EVAL_SCORE = 10
+const KING_OPEN_FILE_EVAL_SCORE = -30
 const ENDGAME_KING_ON_EDGE_SCORE = -30
 const ENDGAME_KING_NEAR_EDGE_SCORE = -10
 const ENDGAME_QUEEN_BONUS_SCORE = 400
@@ -61,6 +62,15 @@ var PIECE_ATTACK_ENEMY_KING_SCORE = [7]int{
 	50, // rook
 	50, // queen
 	0,  // king
+}
+
+var KING_PAWN_COVER_SCORE = [9]int{
+	-40, // no pawn cover
+	-30, // 1 pawn
+	-10, // 2 pawns
+	0,   // 3 pawns
+	0,   // 4 and on
+	0, 0, 0, 0,
 }
 
 var KNIGHT_RANK_SCORE = [8]int{
@@ -154,8 +164,8 @@ var MATERIAL_SCORE = [7]int{
 }
 
 var pawnProtectionBoard = [2]uint64{
-	0x000000000000FF00,
-	0x00FF000000000000,
+	0x0000000000C3FF00,
+	0x00FFC30000000000,
 }
 
 var lightSquareBoard uint64 = 0x55AA55AA55AA55AA
@@ -313,19 +323,36 @@ func Eval(boardState *BoardState) BoardEval {
 		}
 
 		if whiteKingSq == SQUARE_G1 || whiteKingSq == SQUARE_C1 || whiteKingSq == SQUARE_B1 {
+			kingAttackBoard := SetBitboardMultiple(
+				boardState.moveBitboards.kingAttacks[whiteKingSq].board,
+				SQUARE_A3,
+				SQUARE_G3,
+				SQUARE_H3)
 			pawns := bits.OnesCount64(
-				boardState.moveBitboards.kingAttacks[whiteKingSq].board &
+				kingAttackBoard &
 					pawnProtectionBoard[WHITE_OFFSET] &
 					boardState.bitboards.piece[PAWN_MASK] &
 					boardState.bitboards.color[WHITE_OFFSET])
-			whiteKingPosition += pawns * KING_PAWN_COVER_EVAL_SCORE
+			whiteKingPosition += KING_PAWN_COVER_SCORE[pawns]
 		}
 		if blackKingSq == SQUARE_G8 || blackKingSq == SQUARE_C8 || blackKingSq == SQUARE_B8 {
-			pawns := bits.OnesCount64(boardState.moveBitboards.kingAttacks[blackKingSq].board &
+			kingAttackBoard := SetBitboardMultiple(
+				boardState.moveBitboards.kingAttacks[blackKingPosition].board,
+				SQUARE_A6,
+				SQUARE_G6,
+				SQUARE_H6)
+			pawns := bits.OnesCount64(kingAttackBoard &
 				pawnProtectionBoard[BLACK_OFFSET] &
 				boardState.bitboards.piece[PAWN_MASK] &
 				boardState.bitboards.color[BLACK_OFFSET])
-			blackKingPosition += pawns * KING_PAWN_COVER_EVAL_SCORE
+			blackKingPosition += KING_PAWN_COVER_SCORE[pawns]
+		}
+
+		if IsBitboardSet(pawnEntry.openFileBoard, whiteKingSq) {
+			whiteKingPosition += KING_OPEN_FILE_EVAL_SCORE
+		}
+		if IsBitboardSet(pawnEntry.openFileBoard, blackKingSq) {
+			blackKingPosition += KING_OPEN_FILE_EVAL_SCORE
 		}
 	} else {
 		// prioritize king position
