@@ -34,6 +34,7 @@ const LACK_OF_DEVELOPMENT_SCORE = -15
 const LACK_OF_DEVELOPMENT_SCORE_QUEEN = -5
 const IMBALANCED_PIECE_SCORE = 100
 const ROOK_SUPPORT_PASSED_PAWN_SCORE = 50
+const TEMPO_SCORE = 10
 
 var BISHOP_SAME_COLOR_PAWN_SCORE = [9]int{
 	15, 10, 5, 0, -5, -20, -30, -40, -50,
@@ -633,9 +634,9 @@ func (eval BoardEval) value() int {
 	}
 	score := eval.material + eval.centerControl + totalPieceScore + eval.developmentScore + eval.kingAttackScore
 	if eval.sideToMove == BLACK_OFFSET {
-		return -score
+		return -score - TEMPO_SCORE
 	}
-	return score
+	return score + TEMPO_SCORE
 }
 
 func BoardEvalToString(eval BoardEval) string {
@@ -674,8 +675,12 @@ func BoardEvalToString(eval BoardEval) string {
 	for i := PIECE_MASK_MIN; i <= PIECE_MASK_MAX; i++ {
 		totalPieceScore += eval.pieceScore[WHITE_OFFSET][i] - eval.pieceScore[BLACK_OFFSET][i]
 	}
+	tempoScore := TEMPO_SCORE
+	if eval.sideToMove == BLACK_OFFSET {
+		tempoScore = -tempoScore
+	}
 
-	return fmt.Sprintf("VALUE: %d\n\tphase=%s\n\tmaterial=%d (white: %d, black: %d)\n\tpieces=%d [%s]\n\tdevelopment=%d (white: %d, black: %d)\n\tcenterControl=%d\n\tattackScore=%d",
+	return fmt.Sprintf("VALUE: %d\n\tphase=%s\n\tmaterial=%d (white: %d, black: %d)\n\tpieces=%d [%s]\n\tdevelopment=%d (white: %d, black: %d)\n\tcenterControl=%d\n\tattackScore=%d\n\ttempo=%d",
 		eval.value(),
 		phaseString,
 		eval.material,
@@ -687,7 +692,9 @@ func BoardEvalToString(eval BoardEval) string {
 		eval.whiteDevelopment,
 		eval.blackDevelopment,
 		eval.centerControl,
-		eval.kingAttackScore)
+		eval.kingAttackScore,
+		tempoScore,
+	)
 }
 
 func RunEvalFile(epdFile string, variation string, options EvalOptions) (bool, error) {
