@@ -92,6 +92,17 @@ func TestPassedPawnBitboard(t *testing.T) {
 	assert.Equal(t, otherBitboard, entry.passedPawns[BLACK_OFFSET])
 }
 
+func TestPawnHoles(t *testing.T) {
+	boardState, _ := CreateBoardStateFromFENString("8/1p1p1ppp/p7/4p3/4P3/8/PPP2PPP/8 w - -")
+
+	entry := GetPawnTableEntry(&boardState)
+
+	assert.True(t, IsBitboardSet(entry.holesBoard[BLACK_OFFSET], SQUARE_D5))
+	assert.True(t, IsBitboardSet(entry.holesBoard[BLACK_OFFSET], SQUARE_D6))
+	assert.True(t, IsBitboardSet(entry.holesBoard[BLACK_OFFSET], SQUARE_B6))
+	assert.Equal(t, entry.holesBoard[WHITE_OFFSET], uint64(0))
+}
+
 func TestGetPawnRankBitboard(t *testing.T) {
 	bitboard := SetBitboardMultiple(0, SQUARE_D4, SQUARE_H4)
 	assert.Equal(t, bitboard, GetPawnRankBitboard(bitboard, RANK_4))

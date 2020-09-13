@@ -41,6 +41,8 @@ var BISHOP_SAME_COLOR_PAWN_SCORE = [9]int{
 }
 
 const KNIGHT_SUPPORTED_BY_PAWN_SCORE = 15
+const KNIGHT_ON_ENEMY_HOLE_SCORE = 40
+const KNIGHT_ATTACK_ENEMY_HOLE_SCORE = 15
 const ROOK_OPEN_FILE_SCORE = 45
 const ROOK_HALF_OPEN_FILE_SCORE = 30
 const ROOK_DOUBLED_SCORE = 15
@@ -502,6 +504,11 @@ func evalPiece(
 			}
 		}
 		score += KNIGHT_COLUMN_SCORE[knightColumn-1]
+		if IsBitboardSet(pawnEntry.holesBoard[otherSide], sq) {
+			score += KNIGHT_ON_ENEMY_HOLE_SCORE
+		} else if pawnEntry.holesBoard[otherSide]&attackBoard != 0 {
+			score += KNIGHT_ATTACK_ENEMY_HOLE_SCORE
+		}
 
 		score += KNIGHT_PAWN_ADJUST[bits.OnesCount64(pawnEntry.pawns[side])]
 

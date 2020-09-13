@@ -21,6 +21,7 @@ type PawnTableEntry struct {
 	openFileBoard             uint64
 	halfOpenFileBoard         [2]uint64
 	pawnColumnBoard           [2]uint64
+	holesBoard                [2]uint64
 }
 
 func GetPawnRankBitboard(pawnBitboard uint64, rank byte) uint64 {
@@ -39,6 +40,7 @@ func computePawnStructure(
 	side int,
 ) {
 	originalBoard := pawnBitboard
+	var advanceAttackBoard uint64
 	var passedPawnBoard uint64
 	var isolatedPawnBoard uint64
 	var doubledPawnBoard uint64
@@ -64,14 +66,24 @@ func computePawnStructure(
 			inc = -1
 			start = 7
 		}
-		for j := start; j < 8 && j >= 0; j += inc {
-			maskSq := idx(col, byte(j))
+		for j := byte(start); j < 8 && j >= 0; j += byte(inc) {
+			maskSq := idx(col, j)
 			columnBoard = SetBitboard(columnBoard, maskSq)
 			if col > 0 {
 				adjacentBoard = SetBitboard(adjacentBoard, maskSq-1)
 			}
 			if col < 7 {
 				adjacentBoard = SetBitboard(adjacentBoard, maskSq+1)
+			}
+
+			if side == WHITE_OFFSET {
+				if j >= pawnRank-1 {
+					advanceAttackBoard |= boardState.moveBitboards.pawnAttacks[side][maskSq]
+				}
+			} else {
+				if j <= pawnRank-1 {
+					advanceAttackBoard |= boardState.moveBitboards.pawnAttacks[side][maskSq]
+				}
 			}
 		}
 		if otherSidePawnBitboard&(columnBoard|adjacentBoard) == 0 {
@@ -110,6 +122,8 @@ func computePawnStructure(
 		pawnColumnBoard |= columnBoard
 	}
 
+	// we don't care about holes on the first or last two ranks
+	entry.holesBoard[side] = 0x0000FFFFFFFF0000 & (0xFFFFFFFFFFFFFF ^ advanceAttackBoard)
 	entry.attackBoard[side] = attackBoard
 	entry.passedPawns[side] = passedPawnBoard
 	entry.isolatedPawnBoard[side] = isolatedPawnBoard
