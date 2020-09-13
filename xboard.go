@@ -131,7 +131,7 @@ ReadLoop:
 }
 
 func sendPreamble(output *bufio.Writer) {
-	sendStringMessage(output, "feature myname=\"ra v0.0.1\" setboard=1 sigterm=0 sigint=0 done=1\n")
+	sendStringMessage(output, "feature myname=\"ra v0.0.1\" setboard=1 sigterm=0 sigint=0 debug=1 done=1\n")
 }
 
 func sendStringMessage(output *bufio.Writer, str string) {
