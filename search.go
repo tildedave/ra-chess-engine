@@ -594,6 +594,10 @@ func sendToThinkingChannel(
 	score int,
 	depthLeft int,
 ) {
+	if shouldAbort {
+		return
+	}
+
 	boardState.ApplyMove(move)
 	pvMoves, _ := extractPV(boardState)
 	boardState.UnapplyMove(move)

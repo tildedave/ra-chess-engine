@@ -174,6 +174,10 @@ func Rank(sq uint8) uint8 {
 	return sq/8 + 1
 }
 
+func Column(sq uint8) uint8 {
+	return sq%8 + 1
+}
+
 func ColumnToAlgebraicNotation(col uint8) string {
 	switch col {
 	case 1:

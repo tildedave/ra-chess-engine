@@ -27,13 +27,13 @@ func StaticExchangeEvaluation(boardState *BoardState, destSq byte, fromPiece byt
 	if initialPiece == 0 {
 		panic("Called StaticExchangeEvaluation on square without piece")
 	}
-	gain[0] = MATERIAL_SCORE[initialPiece&0x0F]
+	gain[0] = MATERIAL_SCORE[0][initialPiece&0x0F]
 	i := 0
 	attackerBoard := SetBitboard(0, fromSq)
 
 	for attackers != 0 {
 		i++
-		gain[i] = MATERIAL_SCORE[fromPiece] - gain[i-1]
+		gain[i] = MATERIAL_SCORE[0][fromPiece] - gain[i-1]
 
 		// clear attacker from allOccupancies, so we compute sliding piece attacks correctly
 		// TODO: recompute the attacker board in a smarter way, see wiki page.
