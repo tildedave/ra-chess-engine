@@ -59,6 +59,16 @@ func (entry *TranspositionEntry) String() string {
 }
 
 func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType int, depth int) {
-	entry := TranspositionEntry{score: score, move: move, entryType: entryType, depth: depth}
-	boardState.transpositionTable[boardState.hashKey] = &entry
+	// Try to avoid a new heap allocation if we already have something at this hash key.
+	var entry *TranspositionEntry
+	if boardState.transpositionTable[boardState.hashKey] != nil {
+		entry = boardState.transpositionTable[boardState.hashKey]
+	} else {
+		entry = &(TranspositionEntry{})
+	}
+	entry.score = score
+	entry.move = move
+	entry.entryType = entryType
+	entry.depth = depth
+	boardState.transpositionTable[boardState.hashKey] = entry
 }
