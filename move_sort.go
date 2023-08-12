@@ -20,20 +20,20 @@ type MoveSort struct {
 	endIndex   int
 }
 
-func (pq MoveSort) Len() int {
-	return pq.endIndex - pq.startIndex
+func (s MoveSort) Len() int {
+	return s.endIndex - s.startIndex
 }
 
-func (pq MoveSort) Less(i, j int) bool {
+func (s MoveSort) Less(i, j int) bool {
 	// We want Pop to give us the highest, not lowest, priority so we use greater than here.
-	idx := pq.startIndex
-	return pq.moveScores[idx+i] > pq.moveScores[idx+j]
+	idx := s.startIndex
+	return s.moveScores[idx+i] > s.moveScores[idx+j]
 }
 
-func (pq MoveSort) Swap(i, j int) {
-	idx := pq.startIndex
-	pq.moves[idx+i], pq.moves[idx+j] = pq.moves[idx+j], pq.moves[idx+i]
-	pq.moveScores[idx+i], pq.moveScores[idx+j] = pq.moveScores[idx+j], pq.moveScores[idx+i]
+func (s MoveSort) Swap(i, j int) {
+	idx := s.startIndex
+	s.moves[idx+i], s.moves[idx+j] = s.moves[idx+j], s.moves[idx+i]
+	s.moveScores[idx+i], s.moveScores[idx+j] = s.moveScores[idx+j], s.moveScores[idx+i]
 }
 
 var moveSort MoveSort
