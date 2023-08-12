@@ -36,6 +36,8 @@ func (pq MoveSort) Swap(i, j int) {
 	pq.moveScores[idx+i], pq.moveScores[idx+j] = pq.moveScores[idx+j], pq.moveScores[idx+i]
 }
 
+var moveSort MoveSort
+
 func SortMoves(
 	boardState *BoardState,
 	moveInfo *SearchMoveInfo,
@@ -69,12 +71,19 @@ func SortMoves(
 		}
 		moveScores[i] = score
 	}
-	moveSort := MoveSort{startIndex: start, endIndex: end, moves: moves, moveScores: moveScores}
+
+	moveSort.startIndex = start
+	moveSort.endIndex = end
+	moveSort.moves = moves
+	moveSort.moveScores = moveScores
 	sort.Sort(&moveSort)
 }
 
 func SortQuiescentMoves(boardState *BoardState, moves []Move, moveScores []int, start int, end int) {
-	moveSort := MoveSort{startIndex: start, endIndex: end, moves: moves, moveScores: moveScores}
+	moveSort.startIndex = start
+	moveSort.endIndex = end
+	moveSort.moves = moves
+	moveSort.moveScores = moveScores
 
 	for i := start; i < end; i++ {
 		capture := moves[i]
@@ -93,11 +102,9 @@ func SortMovesFirstPly(
 	start int,
 	end int,
 ) {
-	moveSort := MoveSort{
-		startIndex: start,
-		endIndex:   end,
-		moves:      moves,
-		moveScores: moveInfo.firstPlyScores[start:end],
-	}
+	moveSort.startIndex = start
+	moveSort.endIndex = end
+	moveSort.moves = moves
+	moveSort.moveScores = moveInfo.firstPlyScores[start:end]
 	sort.Sort(&moveSort)
 }
