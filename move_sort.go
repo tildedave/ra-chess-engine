@@ -55,7 +55,7 @@ func SortMoves(
 			score = MOVE_SCORE_KILLER_MOVE
 		} else if move == moveInfo.killerMoves2[currentDepth] {
 			score = MOVE_SCORE_KILLER_MOVE2
-		} else if move.flags&PROMOTION_MASK|QUEEN_MASK == PROMOTION_MASK|QUEEN_MASK {
+		} else if move.flags&(PROMOTION_MASK|QUEEN_MASK) == PROMOTION_MASK|QUEEN_MASK {
 			// don't bother with scoring underpromotions higher
 			// we probably could avoid the & here since a pawn capture will be ranked
 			// somewhat higher because of MVV priority
