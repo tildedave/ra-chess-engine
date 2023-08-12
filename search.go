@@ -151,12 +151,11 @@ func SearchWithConfig(
 
 // searchAlphaBeta runs an alpha-beta search over the boardState
 //
-// - depth, when positive, is the number of levels until quiescent search begins.
-//   when negative it is the number of levels deep in quiescent search.
-// - currentDepth is the total depth of the search tree, including quiescent levels.
-//  - alpha: minimum score that player to move can achieve
-//  - black: maximum score that opponent can achieve
-//
+//   - depth, when positive, is the number of levels until quiescent search begins.
+//     when negative it is the number of levels deep in quiescent search.
+//   - currentDepth is the total depth of the search tree, including quiescent levels.
+//   - alpha: minimum score that player to move can achieve
+//   - black: maximum score that opponent can achieve
 func searchAlphaBeta(
 	boardState *BoardState,
 	searchStats *SearchStats,
@@ -549,6 +548,20 @@ func SearchValueToString(result SearchResult) string {
 	}
 
 	return strconv.Itoa(result.value)
+}
+
+func (result *SearchStats) add(stats SearchStats) {
+	result.leafnodes += stats.leafnodes
+	result.branchnodes += stats.branchnodes
+	result.qbranchnodes += stats.qbranchnodes
+	result.hashcutoffs += stats.hashcutoffs
+	result.killercutoffs += stats.killercutoffs
+	result.killer2cutoffs += stats.killer2cutoffs
+	result.cutoffs += stats.cutoffs
+	result.qcutoffs += stats.qcutoffs
+	result.nullcutoffs += stats.nullcutoffs
+	result.qcapturesfiltered += stats.qcapturesfiltered
+	result.tthits += stats.tthits
 }
 
 func (stats *SearchStats) String() string {
