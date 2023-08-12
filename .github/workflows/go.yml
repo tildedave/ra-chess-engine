@@ -26,3 +26,6 @@ jobs:
 
     - name: Test
       run: go test -v ./...
+
+    - name: Tactics Test (5 seconds)
+      run: ./ra-chess-engine --tactics --epd test-suites/basic.epd --tacticsthinkingtime 5000 || true
