@@ -29,11 +29,15 @@ func RunTacticsFile(epdFile string, variation string, options TacticsOptions) (b
 		return false, fmt.Errorf("Can only specify variation if regex filters to 1 positions, got %d", len(lines))
 	}
 
+	var totalStats SearchStats
 	for _, line := range lines {
 		prettyMove, result, err := RunTacticsFen(line.fen, variation, options)
+
 		if err != nil {
 			return false, err
 		}
+
+		totalStats.add(result.stats)
 
 		var res string
 		totalPositions++
@@ -78,6 +82,7 @@ func RunTacticsFile(epdFile string, variation string, options TacticsOptions) (b
 
 	fmt.Printf("Complete.  %d/%d positions correct (%.2f%%)\n", successPositions, totalPositions,
 		100.0*float64(successPositions)/float64(totalPositions))
+	fmt.Printf("Final stats %s", totalStats.String())
 	if totalPositions == successPositions {
 		return true, nil
 	}
@@ -116,6 +121,8 @@ func RunTacticsFen(fen string, variation string, options TacticsOptions) (string
 		thinkingTimeMs = INFINITY
 	}
 
+	// Question: Why are stats needed both in the thinkAndChooseMove and
+	// returned in the SearchResult?
 	stats := SearchStats{}
 	go thinkAndChooseMove(&boardState, thinkingTimeMs, &stats, config, ch, thinkingChan)
 	result := <-ch
