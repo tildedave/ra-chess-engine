@@ -124,8 +124,10 @@ func TestThreefoldRepetition(t *testing.T) {
 	boardState := CreateEmptyBoardState()
 	boardState.SetPieceAtSquare(SQUARE_A1, KING_MASK|WHITE_MASK)
 	boardState.SetPieceAtSquare(SQUARE_H8, KING_MASK|BLACK_MASK)
+	assert.False(t, boardState.HasStateOccurred())
 
-	for i := 0; i < 2; i++ {
+	for i := 1; i < 3; i++ {
+		assert.True(t, boardState.RepetitionCount(i))
 		assert.False(t, boardState.RepetitionCount(3))
 
 		boardState.ApplyMove(CreateMove(SQUARE_A1, SQUARE_B1))
@@ -134,6 +136,7 @@ func TestThreefoldRepetition(t *testing.T) {
 
 		boardState.ApplyMove(CreateMove(SQUARE_B1, SQUARE_A1))
 		boardState.ApplyMove(CreateMove(SQUARE_H7, SQUARE_H8))
+		assert.True(t, boardState.RepetitionCount(i+1))
 	}
 
 	assert.True(t, boardState.RepetitionCount(3))

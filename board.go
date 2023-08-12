@@ -581,10 +581,15 @@ func (boardState *BoardState) GetAllOccupanciesBitboard() uint64 {
 
 // RepetitionCount returns the number of times that a position has occurred already
 func (boardState *BoardState) RepetitionCount(cutoff int) bool {
-	currentHash := boardState.hashKey
-	num := 0
+	// A position has always occurred at least 1 time (the current position).
+	if cutoff == 1 {
+		return true
+	}
 
-	for i := boardState.moveIndex; i >= 0 && !boardState.repetitionInfo.pawnMoveOrCapture[i]; i-- {
+	currentHash := boardState.hashKey
+	num := 1
+
+	for i := boardState.moveIndex - 1; i >= 0 && !boardState.repetitionInfo.pawnMoveOrCapture[i]; i-- {
 		if boardState.repetitionInfo.occurredHashes[i] == currentHash {
 			num++
 		}
