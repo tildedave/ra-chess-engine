@@ -420,7 +420,7 @@ func searchAlphaBeta(
 		return score
 	}
 
-	var ttEntryType int
+	var ttEntryType uint8
 	if currentAlpha == alpha {
 		// never raised alpha
 		ttEntryType = TT_FAIL_LOW
