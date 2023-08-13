@@ -78,8 +78,8 @@ func StoreTranspositionTable(boardState *BoardState, move Move, score int16, ent
 	entry |= uint64(move.from) << (64 - 8)
 	entry |= uint64(move.to) << (64 - 16)
 	entry |= uint64(move.flags) << (64 - 24)
-	entry |= uint64(depth) << (64 - 32)
+	entry |= (uint64(depth) & 0xFF) << (64 - 32)
 	entry |= uint64(entryType) << (64 - 40)
-	entry |= uint64(score)
+	entry |= uint64(score) & 0xFFFFFF
 	boardState.transpositionTable[boardState.hashKey] = entry
 }
