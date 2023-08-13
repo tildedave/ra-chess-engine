@@ -250,7 +250,7 @@ type BoardState struct {
 	// Zobrist hash indices
 	hashInfo *HashInfo
 	// Transposition table
-	transpositionTable map[uint64]*TranspositionEntry
+	transpositionTable map[uint64]uint64
 	pawnTable          map[uint64]*PawnTableEntry
 
 	repetitionInfo RepetitionInfo

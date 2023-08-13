@@ -104,6 +104,13 @@ func CreatePromotion(from uint8, to uint8, pieceMask uint8) Move {
 	return m
 }
 
+func MoveToDebugString(move Move) string {
+	return fmt.Sprintf("%s-%s (%d)",
+		SquareToAlgebraicString(move.from),
+		SquareToAlgebraicString(move.to),
+		move.flags)
+}
+
 func MoveToString(move Move, boardState *BoardState) string {
 	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK && !move.IsCapture(boardState) {
 		if move.flags&SPECIAL2_MASK == SPECIAL2_MASK {
