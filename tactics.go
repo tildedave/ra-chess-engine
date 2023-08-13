@@ -144,12 +144,12 @@ func RunTacticsFen(fen string, variation string, options TacticsOptions) (string
 			return "", SearchResult{}, err
 		}
 
-		e := ProbeTranspositionTable(&boardState)
-		fmt.Printf("%s - %s\n", boardState.ToString(), e)
-		for i := 0; i < len(moveList) && e != nil; i++ {
+		hasEntry, e := ProbeTranspositionTable(&boardState)
+		fmt.Printf("%s - %s\n", boardState.ToString(), e.String())
+		for i := 0; i < len(moveList) && hasEntry; i++ {
 			boardState.ApplyMove(moveList[i])
-			e = ProbeTranspositionTable(&boardState)
-			fmt.Printf("%s - %s\n", boardState.ToString(), e)
+			hasEntry, e = ProbeTranspositionTable(&boardState)
+			fmt.Printf("%s - %s\n", boardState.ToString(), e.String())
 		}
 
 		for i := len(moveList) - 1; i >= 0; i-- {

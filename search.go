@@ -176,7 +176,7 @@ func searchAlphaBeta(
 
 	isDebug := searchConfig.isDebug
 
-	if entry := ProbeTranspositionTable(boardState); entry != nil {
+	if hasEntry, entry := ProbeTranspositionTable(boardState); hasEntry {
 		if currentDepth > 0 {
 			if entry.depth >= depthLeft {
 				switch entry.entryType {
@@ -348,9 +348,9 @@ func searchAlphaBeta(
 			if debugMode {
 				pv, _ := extractPV(boardState)
 				str := MoveArrayToXboardString(pv)
-				entry := ProbeTranspositionTable(boardState)
+				hasEntry, entry := ProbeTranspositionTable(boardState)
 				var entryType string
-				if entry == nil {
+				if hasEntry {
 					entryType = EntryTypeToString(entry.entryType)
 				}
 				fmt.Printf("[%d; %s] value=%d (alpha=%d, beta=%d, bestScore=%d) nodes=%d pv=%s result=%s\n",
@@ -642,9 +642,9 @@ func sendToThinkingChannel(
 func extractPV(boardState *BoardState) ([]Move, bool) {
 	isDraw := false
 	pvMoves := make([]Move, 0)
-	e := ProbeTranspositionTable(boardState)
+	hasEntry, e := ProbeTranspositionTable(boardState)
 	var lastDepth int8 = math.MaxInt8
-	for e != nil && e.depth <= lastDepth {
+	for hasEntry && e.depth <= lastDepth {
 		move := e.move
 		if _, err := boardState.IsMoveLegal(move); err != nil {
 			break
@@ -660,7 +660,7 @@ func extractPV(boardState *BoardState) ([]Move, bool) {
 			break
 		}
 		lastDepth = e.depth
-		e = ProbeTranspositionTable(boardState)
+		hasEntry, e = ProbeTranspositionTable(boardState)
 	}
 	for j := len(pvMoves) - 1; j >= 0; j-- {
 		move := pvMoves[j]
