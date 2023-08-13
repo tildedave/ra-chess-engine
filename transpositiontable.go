@@ -6,7 +6,7 @@ import (
 
 type TranspositionEntry struct {
 	move        Move
-	depth       int
+	depth       int8
 	score       int
 	entryType   int
 	searchPhase int
@@ -58,7 +58,7 @@ func (entry *TranspositionEntry) String() string {
 	return fmt.Sprintf("{score=%d, depth=%d, type=%s}", entry.score, entry.depth, entryTypeAsString)
 }
 
-func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType int, depth int) {
+func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType int, depth int8) {
 	// Try to avoid a new heap allocation if we already have something at this hash key.
 	var entry *TranspositionEntry
 	if boardState.transpositionTable[boardState.hashKey] != nil {

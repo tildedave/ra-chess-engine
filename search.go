@@ -2,6 +2,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"time"
@@ -107,7 +108,7 @@ func SearchWithConfig(
 	var moveStart [64]int
 	score := searchAlphaBeta(boardState, stats, moveInfo,
 		thinkingChan,
-		int(depth),
+		int8(depth),
 		0,
 		alpha,
 		beta,
@@ -161,7 +162,7 @@ func searchAlphaBeta(
 	searchStats *SearchStats,
 	moveInfo *SearchMoveInfo,
 	thinkingChan chan ThinkingOutput,
-	depthLeft int,
+	depthLeft int8,
 	currentDepth uint,
 	alpha int,
 	beta int,
@@ -261,7 +262,7 @@ func searchAlphaBeta(
 			// null move logic here
 			boardState.ApplyNullMove()
 
-			var R int
+			var R int8
 			if boardState.bitboards.piece[QUEEN_MASK] != 0 || boardState.bitboards.piece[ROOK_MASK] != 0 {
 				R = 3
 			} else {
@@ -322,7 +323,7 @@ func searchAlphaBeta(
 			}
 			searchConfig.isDebug = false
 
-			D := 0
+			var D int8 = 0
 			if IsPawnNearPromotion(boardState, move) {
 				D = 1
 			}
@@ -437,7 +438,7 @@ func searchQuiescent(
 	boardState *BoardState,
 	searchStats *SearchStats,
 	// depthLeft will always be negative
-	depthLeft int,
+	depthLeft int8,
 	currentDepth uint,
 	alpha int,
 	beta int,
@@ -605,7 +606,7 @@ func sendToThinkingChannel(
 	thinkingChan chan ThinkingOutput,
 	searchConfig SearchConfig,
 	score int,
-	depthLeft int,
+	depthLeft int8,
 ) {
 	boardState.ApplyMove(move)
 	pvMoves, _ := extractPV(boardState)
@@ -644,7 +645,7 @@ func extractPV(boardState *BoardState) ([]Move, bool) {
 	isDraw := false
 	pvMoves := make([]Move, 0)
 	e := ProbeTranspositionTable(boardState)
-	lastDepth := INFINITY
+	var lastDepth int8 = math.MaxInt8
 	for e != nil && e.depth <= lastDepth {
 		move := e.move
 		if _, err := boardState.IsMoveLegal(move); err != nil {
