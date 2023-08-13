@@ -72,7 +72,7 @@ type ExternalSearchConfig struct {
 type SearchMoveInfo struct {
 	killerMoves    [MAX_DEPTH]Move
 	killerMoves2   [MAX_DEPTH]Move
-	firstPlyScores [MAX_MOVES]int
+	firstPlyScores [MAX_MOVES]int16
 }
 
 func Search(
@@ -94,7 +94,7 @@ func SearchWithConfig(
 ) SearchResult {
 	startTime := time.Now()
 
-	alpha := -INFINITY
+	alpha := INFINITY_NEGATIVE
 	beta := INFINITY
 	searchConfig := SearchConfig{
 		isDebug:       config.isDebug,
@@ -103,15 +103,15 @@ func SearchWithConfig(
 		startTime:     startTime,
 	}
 	moves := make([]Move, 64*256)
-	scores := make([]int, len(moves))
+	scores := make([]int16, len(moves))
 
 	var moveStart [64]int
 	score := searchAlphaBeta(boardState, stats, moveInfo,
 		thinkingChan,
 		int8(depth),
 		0,
-		alpha,
-		beta,
+		int16(alpha),
+		int16(beta),
 		searchConfig,
 		moves[:],
 		scores[:],
@@ -134,7 +134,7 @@ func SearchWithConfig(
 	if absScore > CHECKMATE_SCORE-100 {
 		result.flags = CHECKMATE_FLAG
 	}
-	result.value = score
+	result.value = int(score)
 	result.time = time.Now().Sub(startTime)
 	if len(pv) > 0 {
 		result.move = pv[0]
@@ -164,13 +164,13 @@ func searchAlphaBeta(
 	thinkingChan chan ThinkingOutput,
 	depthLeft int8,
 	currentDepth uint,
-	alpha int,
-	beta int,
+	alpha int16,
+	beta int16,
 	searchConfig SearchConfig,
 	moves []Move,
-	moveScores []int,
+	moveScores []int16,
 	moveStart []int,
-) int {
+) int16 {
 	var hashMove Move
 	var hasHashMove bool
 
@@ -234,7 +234,7 @@ func searchAlphaBeta(
 	// 4 = moves
 
 	hasLegalMove := false
-	bestScore := -INFINITY + 1
+	var bestScore int16 = INFINITY_NEGATIVE
 	var bestMove Move
 	currentAlpha := alpha
 
@@ -440,15 +440,15 @@ func searchQuiescent(
 	// depthLeft will always be negative
 	depthLeft int8,
 	currentDepth uint,
-	alpha int,
-	beta int,
+	alpha int16,
+	beta int16,
 	searchConfig SearchConfig,
 	moves []Move,
-	moveScores []int,
+	moveScores []int16,
 	moveStart []int,
-) int {
+) int16 {
 	// var bestMove Move
-	bestScore := -INFINITY + 1
+	var bestScore int16 = INFINITY_NEGATIVE
 
 	// Evaluate the board to see what the position is without making any quiescent moves.
 	score := getLeafResult(boardState, searchStats)
@@ -501,7 +501,7 @@ func searchQuiescent(
 	return bestScore
 }
 
-func getLeafResult(boardState *BoardState, searchStats *SearchStats) int {
+func getLeafResult(boardState *BoardState, searchStats *SearchStats) int16 {
 	// TODO(perf): use an incremental evaluation state passed in as an argument
 	searchStats.leafnodes++
 
@@ -510,13 +510,13 @@ func getLeafResult(boardState *BoardState, searchStats *SearchStats) int {
 		return 0
 	}
 
-	return e.value()
+	return int16(e.value())
 }
 
-func getNoLegalMoveResult(boardState *BoardState, currentDepth uint) int {
+func getNoLegalMoveResult(boardState *BoardState, currentDepth uint) int16 {
 	if boardState.IsInCheck(boardState.sideToMove) {
 		// moves to mate = currentDepth
-		return -(CHECKMATE_SCORE - int(currentDepth) + 1)
+		return -int16(CHECKMATE_SCORE - currentDepth + 1)
 	}
 
 	// Stalemate
@@ -605,7 +605,7 @@ func sendToThinkingChannel(
 	searchStats *SearchStats,
 	thinkingChan chan ThinkingOutput,
 	searchConfig SearchConfig,
-	score int,
+	score int16,
 	depthLeft int8,
 ) {
 	boardState.ApplyMove(move)
@@ -628,7 +628,7 @@ func sendToThinkingChannel(
 		}
 		scoreString = fmt.Sprintf("%sMate%d", prefix, (CHECKMATE_SCORE-absScore+1)/2)
 	} else {
-		scoreString = strconv.Itoa(score)
+		scoreString = strconv.Itoa(int(score))
 	}
 
 	thinkingChan <- ThinkingOutput{

@@ -1,5 +1,7 @@
 package main
 
+import "math"
+
 const EMPTY_SQUARE byte = 0x00
 const PAWN_MASK byte = 0x01
 const KNIGHT_MASK byte = 0x02
@@ -94,6 +96,7 @@ const RANK_6 byte = 0x06
 const RANK_7 byte = 0x07
 const RANK_8 byte = 0x08
 
-const CHECKMATE_SCORE = 100000
+const CHECKMATE_SCORE = 30_000
 const CONTEMPT_SCORE = 200
-const INFINITY = 10000000
+const INFINITY = math.MaxInt16
+const INFINITY_NEGATIVE = math.MinInt16

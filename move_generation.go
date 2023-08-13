@@ -33,7 +33,7 @@ type MoveBitboards struct {
 }
 
 // Lifted from Apep https://github.com/tildedave/apep-chess-engine/blob/master/src/movegen.cpp#L8
-var mvvPriority = [7][7]int{
+var mvvPriority = [7][7]int16{
 	{0, 0, 0, 0, 0, 0, 0},
 	{0, 6, 12, 18, 24, 30, 0}, // PAWN CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
 	{0, 5, 11, 17, 23, 29, 0}, // KNIGHT CAPTURES PRIORITY: PAWN, KNIGHT, BISHOP, ROOK, QUEEN
@@ -242,7 +242,7 @@ func GenerateMoves(boardState *BoardState, moves []Move, start int) int {
 	return start
 }
 
-func GenerateQuiescentMoves(boardState *BoardState, moves []Move, moveScores []int, start int) int {
+func GenerateQuiescentMoves(boardState *BoardState, moves []Move, moveScores []int16, start int) int {
 	// for now only generate captures
 	originalStart := start
 	precomputedInfo := generatePrecomputedInfo(boardState)

@@ -12,7 +12,7 @@ func TestMoveSort(t *testing.T) {
 	move2 := CreateMove(SQUARE_A8, SQUARE_A3)
 	move3 := CreateMove(SQUARE_A8, SQUARE_A1)
 	moves := []Move{move1, move2, move3}
-	moveScores := []int{21, 3, 27}
+	moveScores := []int16{21, 3, 27}
 
 	captureQueue := MoveSort{
 		startIndex: 0,
