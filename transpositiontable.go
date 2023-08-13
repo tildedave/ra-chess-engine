@@ -31,11 +31,11 @@ func generateTranspositionTable(boardState *BoardState) {
 	boardState.pawnTable = make(map[uint64]*PawnTableEntry, PAWN_ENTRY_TABLE_INITIAL_SIZE)
 }
 
-func ProbeTranspositionTable(boardState *BoardState) *TranspositionEntry {
+func ProbeTranspositionTable(boardState *BoardState) (bool, TranspositionEntry) {
 	t := TranspositionEntry{}
 	entry := boardState.transpositionTable[boardState.hashKey]
 	if entry == 0 {
-		return nil
+		return false, TranspositionEntry{}
 	}
 	t.move.from = uint8((entry & (0xFF << (64 - 8))) >> (64 - 8))
 	t.move.to = uint8((entry & (0xFF << (64 - 16))) >> (64 - 16))
@@ -43,7 +43,7 @@ func ProbeTranspositionTable(boardState *BoardState) *TranspositionEntry {
 	t.depth = int8((entry & (0xFF << (64 - 32))) >> (64 - 32))
 	t.entryType = uint8((entry & (0xFF << (64 - 40))) >> (64 - 40))
 	t.score = int16(entry & 0xFFFFFF)
-	return &t
+	return true, t
 }
 
 func EntryTypeToString(entryType uint8) string {
