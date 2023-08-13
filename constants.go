@@ -99,4 +99,3 @@ const RANK_8 byte = 0x08
 const CHECKMATE_SCORE = 30_000
 const CONTEMPT_SCORE = 200
 const INFINITY = math.MaxInt16
-const INFINITY_NEGATIVE = math.MinInt16
