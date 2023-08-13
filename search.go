@@ -315,11 +315,9 @@ func searchAlphaBeta(
 			hasLegalMove = true
 			searchConfig.move = move
 			var nodesStarting uint64
-			var hashKey uint64
 
 			if debugMode {
 				nodesStarting = searchStats.Nodes()
-				hashKey = boardState.hashKey
 			}
 			searchConfig.isDebug = false
 
@@ -350,9 +348,9 @@ func searchAlphaBeta(
 			if debugMode {
 				pv, _ := extractPV(boardState)
 				str := MoveArrayToXboardString(pv)
-				entry := boardState.transpositionTable[hashKey]
+				entry := ProbeTranspositionTable(boardState)
 				var entryType string
-				if entry != nil {
+				if entry == nil {
 					entryType = EntryTypeToString(entry.entryType)
 				}
 				fmt.Printf("[%d; %s] value=%d (alpha=%d, beta=%d, bestScore=%d) nodes=%d pv=%s result=%s\n",
