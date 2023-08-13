@@ -15,7 +15,7 @@ const MOVE_SCORE_KILLER_MOVE2 = 450
 
 type MoveSort struct {
 	moves      []Move
-	moveScores []int
+	moveScores []int16
 	startIndex int
 	endIndex   int
 }
@@ -43,7 +43,7 @@ func SortMoves(
 	moveInfo *SearchMoveInfo,
 	currentDepth uint,
 	moves []Move,
-	moveScores []int,
+	moveScores []int16,
 	start int,
 	end int,
 ) {
@@ -51,7 +51,7 @@ func SortMoves(
 
 	for i := start; i < end; i++ {
 		move := moves[i]
-		var score int = MOVE_SCORE_NORMAL
+		var score int16 = MOVE_SCORE_NORMAL
 		toPiece := boardState.PieceAtSquare(move.to)
 		if move == moveInfo.killerMoves[currentDepth] {
 			score = MOVE_SCORE_KILLER_MOVE
@@ -79,7 +79,7 @@ func SortMoves(
 	sort.Sort(&moveSort)
 }
 
-func SortQuiescentMoves(boardState *BoardState, moves []Move, moveScores []int, start int, end int) {
+func SortQuiescentMoves(boardState *BoardState, moves []Move, moveScores []int16, start int, end int) {
 	moveSort.startIndex = start
 	moveSort.endIndex = end
 	moveSort.moves = moves
