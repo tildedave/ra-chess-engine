@@ -94,7 +94,7 @@ func SearchWithConfig(
 ) SearchResult {
 	startTime := time.Now()
 
-	alpha := INFINITY_NEGATIVE
+	alpha := -INFINITY
 	beta := INFINITY
 	searchConfig := SearchConfig{
 		isDebug:       config.isDebug,
@@ -234,7 +234,7 @@ func searchAlphaBeta(
 	// 4 = moves
 
 	hasLegalMove := false
-	var bestScore int16 = INFINITY_NEGATIVE
+	var bestScore int16 = -INFINITY + 1
 	var bestMove Move
 	currentAlpha := alpha
 
@@ -446,7 +446,7 @@ func searchQuiescent(
 	moveStart []int,
 ) int16 {
 	// var bestMove Move
-	var bestScore int16 = INFINITY_NEGATIVE
+	var bestScore int16 = -INFINITY + 1
 
 	// Evaluate the board to see what the position is without making any quiescent moves.
 	score := getLeafResult(boardState, searchStats)
