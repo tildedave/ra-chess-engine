@@ -5,11 +5,10 @@ import (
 )
 
 type TranspositionEntry struct {
-	move        Move
-	depth       int8
-	score       int
-	entryType   int
-	searchPhase int
+	move      Move
+	depth     int8
+	score     int
+	entryType uint8 // technically this could just be 1-2 bits.
 }
 
 const TT_INITIAL_SIZE = 1048576
@@ -32,7 +31,7 @@ func ProbeTranspositionTable(boardState *BoardState) *TranspositionEntry {
 	return boardState.transpositionTable[boardState.hashKey]
 }
 
-func EntryTypeToString(entryType int) string {
+func EntryTypeToString(entryType uint8) string {
 	switch entryType {
 	case TT_FAIL_HIGH:
 		return "TT_FAIL_HIGH"
@@ -58,7 +57,7 @@ func (entry *TranspositionEntry) String() string {
 	return fmt.Sprintf("{score=%d, depth=%d, type=%s}", entry.score, entry.depth, entryTypeAsString)
 }
 
-func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType int, depth int8) {
+func StoreTranspositionTable(boardState *BoardState, move Move, score int, entryType uint8, depth int8) {
 	// Try to avoid a new heap allocation if we already have something at this hash key.
 	var entry *TranspositionEntry
 	if boardState.transpositionTable[boardState.hashKey] != nil {
