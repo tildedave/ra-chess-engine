@@ -16,24 +16,19 @@ const MOVE_SCORE_KILLER_MOVE2 = 450
 type MoveSort struct {
 	moves      []Move
 	moveScores []int16
-	startIndex int
-	endIndex   int
 }
 
 func (s MoveSort) Len() int {
-	return s.endIndex - s.startIndex
+	return len(s.moves)
 }
 
 func (s MoveSort) Less(i, j int) bool {
-	// We want Pop to give us the highest, not lowest, priority so we use greater than here.
-	idx := s.startIndex
-	return s.moveScores[idx+i] > s.moveScores[idx+j]
+	return s.moveScores[i] > s.moveScores[j]
 }
 
 func (s MoveSort) Swap(i, j int) {
-	idx := s.startIndex
-	s.moves[idx+i], s.moves[idx+j] = s.moves[idx+j], s.moves[idx+i]
-	s.moveScores[idx+i], s.moveScores[idx+j] = s.moveScores[idx+j], s.moveScores[idx+i]
+	s.moves[i], s.moves[j] = s.moves[j], s.moves[i]
+	s.moveScores[i], s.moveScores[j] = s.moveScores[j], s.moveScores[i]
 }
 
 var moveSort MoveSort
@@ -72,18 +67,14 @@ func SortMoves(
 		moveScores[i] = score
 	}
 
-	moveSort.startIndex = start
-	moveSort.endIndex = end
-	moveSort.moves = moves
-	moveSort.moveScores = moveScores
+	moveSort.moves = moves[start:end]
+	moveSort.moveScores = moveScores[start:end]
 	sort.Sort(&moveSort)
 }
 
 func SortQuiescentMoves(boardState *BoardState, moves []Move, moveScores []int16, start int, end int) {
-	moveSort.startIndex = start
-	moveSort.endIndex = end
-	moveSort.moves = moves
-	moveSort.moveScores = moveScores
+	moveSort.moves = moves[start:end]
+	moveSort.moveScores = moveScores[start:end]
 
 	for i := start; i < end; i++ {
 		capture := moves[i]
@@ -102,9 +93,7 @@ func SortMovesFirstPly(
 	start int,
 	end int,
 ) {
-	moveSort.startIndex = start
-	moveSort.endIndex = end
-	moveSort.moves = moves
+	moveSort.moves = moves[start:end]
 	moveSort.moveScores = moveInfo.firstPlyScores[start:end]
 	sort.Sort(&moveSort)
 }
