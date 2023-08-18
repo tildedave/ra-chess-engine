@@ -15,8 +15,6 @@ func TestMoveSort(t *testing.T) {
 	moveScores := []int16{21, 3, 27}
 
 	captureQueue := MoveSort{
-		startIndex: 0,
-		endIndex:   len(moves),
 		moves:      moves[:],
 		moveScores: moveScores[:],
 	}
