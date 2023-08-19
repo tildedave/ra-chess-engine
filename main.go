@@ -29,6 +29,7 @@ func main() {
 	epdFile := flag.String("epd", "", "Position file in EPD format")
 	epdRegex := flag.String("epdregex", "", "Run only positions matching the given id")
 	cpuProfile := flag.String("cpuprofile", "", "File to write CPU profile to")
+	memProfile := flag.String("memprofile", "", "File to write Memory profile to")
 	isPerft := flag.Bool("perft", false, "Perft mode")
 	perftDepth := flag.Uint("perftdepth", 5, "Perft depth to search")
 	perftChecks := flag.Bool("perftchecks", false, "Perft: count check positions (slower)")
@@ -59,13 +60,13 @@ func main() {
 		}
 	}()
 
-	var f *os.File
+	var cpuProfileFile *os.File
 	if *cpuProfile != "" {
-		f, err = os.Create(*cpuProfile)
+		cpuProfileFile, err = os.Create(*cpuProfile)
 		if err != nil {
 			log.Fatal("could not create CPU profile: ", err)
 		}
-		if err := pprof.StartCPUProfile(f); err != nil {
+		if err := pprof.StartCPUProfile(cpuProfileFile); err != nil {
 			log.Fatal("could not start CPU profile: ", err)
 		}
 	}
@@ -130,9 +131,22 @@ func main() {
 		success, err = RunXboard(scanner, output)
 	}
 
-	if f != nil {
+	if cpuProfileFile != nil {
 		pprof.StopCPUProfile()
-		f.Close()
+		cpuProfileFile.Close()
+		fmt.Printf("CPU profile written to %s\n", *cpuProfile)
+	}
+
+	if *memProfile != "" {
+		memProfileFile, err := os.Create(*memProfile)
+		if err != nil {
+			log.Fatal("could not create heap profile: ", err)
+		}
+		if err := pprof.WriteHeapProfile(memProfileFile); err != nil {
+			log.Fatal("could not start heap profile: ", err)
+		} else {
+			fmt.Printf("Heap profile written to %s\n", *memProfile)
+		}
 	}
 
 	if err != nil {
