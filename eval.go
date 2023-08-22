@@ -397,7 +397,7 @@ func RunEvalFen(fen string, variation string, options EvalOptions) (BoardEval, e
 		return BoardEval{}, nil
 	}
 
-	fmt.Println(boardState.ToString())
+	fmt.Println(boardState.String())
 
 	return Eval(&boardState), nil
 }

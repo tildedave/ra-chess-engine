@@ -100,7 +100,7 @@ func RunTacticsFen(fen string, variation string, options TacticsOptions) (string
 	thinkingChan := make(chan ThinkingOutput)
 	output := bufio.NewWriter(os.Stderr)
 
-	output.Write([]byte(boardState.ToString()))
+	output.Write([]byte(boardState.String()))
 	output.WriteRune('\n')
 	output.Flush()
 
@@ -145,11 +145,11 @@ func RunTacticsFen(fen string, variation string, options TacticsOptions) (string
 		}
 
 		hasEntry, e := ProbeTranspositionTable(&boardState)
-		fmt.Printf("%s - %s\n", boardState.ToString(), e.String())
+		fmt.Printf("%s - %s\n", boardState.String(), e.String())
 		for i := 0; i < len(moveList) && hasEntry; i++ {
 			boardState.ApplyMove(moveList[i])
 			hasEntry, e = ProbeTranspositionTable(&boardState)
-			fmt.Printf("%s - %s\n", boardState.ToString(), e.String())
+			fmt.Printf("%s - %s\n", boardState.String(), e.String())
 		}
 
 		for i := len(moveList) - 1; i >= 0; i-- {

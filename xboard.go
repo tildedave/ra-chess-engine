@@ -141,7 +141,7 @@ func sendStringMessage(output *bufio.Writer, str string) {
 }
 
 func sendBoardAsComment(output *bufio.Writer, boardState *BoardState) {
-	str := boardState.ToString()
+	str := boardState.String()
 	for _, line := range strings.Split(str, "\n") {
 		sendStringMessage(output, "# "+line+"\n")
 	}
