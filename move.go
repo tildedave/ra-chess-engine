@@ -6,12 +6,29 @@ import (
 	"strings"
 )
 
-// Move will be encoded as 16 bits - should still be fast
-// 6 bits for "from"
-// 6 bits for "to"
-// 2 bits for masks
-
-// Eventually consider trying a smaller representation
+// Move will be encoded as 32 bits - should still be fast
+// 8 bits for "from"
+// 8 bits for "to"
+// 8 bits for masks
+//
+// In theory, we could do better, and stuff it in an int16.
+// 6 bits are needed for "from" (0-63)
+// 6 bits are needed for "to" (0-63)
+// This leaves 4 bits left.  In this we need to store the normal flags
+// for kingside/queenside castling and, for promotions, the piece that's being
+// promoted to.
+// We'll outline promotions first as it's simplest. There are 6 unique piece
+// types, of which only 4 can be promoted to. So 2 bits for the promotion piece,
+// understanding that we're no longer using KNIGHT_MASK &c (all the create and
+// "which piece" logic needs to be changed).
+// OK so this gives us 2 bits to encode the rest of the masks.
+// Kingside/Queenside castling is a trinary state, castle (y/n), which type.
+// 2 bits.  If we say we'll update the code that checks if a move is
+// kingside/queenside to ALSO check if the king is the piece being moved, we can
+// use these 2 bits for other flags.
+// Pawn moves, en passant capture and promotion are 2 bits.  These flags also
+// need to be checked based on the piece type.
+// That's it.  Everything stored in 16 bits.
 type Move uint32
 
 const CAPTURE_MASK = 0x80
