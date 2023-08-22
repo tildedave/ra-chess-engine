@@ -6,13 +6,13 @@ import (
 	"strings"
 )
 
-// Move will be encoded as 32 bits - should still be fast
+// Move will be encoded as 16 bits - should still be fast
+// 6 bits for "from"
+// 6 bits for "to"
+// 2 bits for masks
+
 // Eventually consider trying a smaller representation
-type Move struct {
-	from  uint8
-	to    uint8
-	flags uint8
-}
+type Move uint32
 
 const CAPTURE_MASK = 0x80
 const PROMOTION_MASK = 0x40 // may not be needed
@@ -22,135 +22,146 @@ const SPECIAL2_MASK = 0x10
 // IsCapture returns whether this move is a capture.
 // Due to it checking the board array, it should not be used in any performance-critical places.
 func (m Move) IsCapture(boardState *BoardState) bool {
-	return m.IsEnPassantCapture() || boardState.board[m.to] != EMPTY_SQUARE
+	return m.IsEnPassantCapture() || boardState.board[m.To()] != EMPTY_SQUARE
 }
 
 func (m Move) IsQueensideCastle() bool {
-	return m.flags == SPECIAL1_MASK|SPECIAL2_MASK
+	return m.Flags() == SPECIAL1_MASK|SPECIAL2_MASK
 }
 
 func (m Move) IsKingsideCastle() bool {
-	return m.flags == SPECIAL1_MASK
+	return m.Flags() == SPECIAL1_MASK
 }
 
 func (m Move) IsCastle() bool {
-	var flag = m.flags & 0xF0
+	var flag = m.Flags() & 0xF0
 	return flag == SPECIAL1_MASK || flag == SPECIAL1_MASK|SPECIAL2_MASK
 }
 
 func (m Move) IsPromotion() bool {
-	var flag = m.flags & 0xF0
+	var flag = m.Flags() & 0xF0
 	return flag == PROMOTION_MASK || flag == PROMOTION_MASK|CAPTURE_MASK
 }
 
 func (m Move) IsEnPassantCapture() bool {
-	var flag = m.flags & 0xF0
+	var flag = m.Flags() & 0xF0
 	return flag == CAPTURE_MASK|SPECIAL1_MASK
 }
 
 // GetPromotionPiece returns the piece that the promotion move will be returned to (colorless).
 func (m Move) GetPromotionPiece() uint8 {
-	return m.flags & 0x0F
+	return m.Flags() & 0x0F
+}
+
+func (m Move) From() uint8 {
+	return uint8(m >> (32 - 8))
+}
+
+func (m Move) To() uint8 {
+	return uint8((m >> (32 - 16)) & 0xFF)
+}
+
+func (m Move) Flags() uint8 {
+	return uint8(m & 0xFF)
+}
+
+// Hopefully these all get inlined
+
+func SetFrom(m Move, from uint8) Move {
+	return Move(uint32(m) | uint32(from)<<(32-8))
+}
+
+func SetTo(m Move, to uint8) Move {
+	return Move(uint32(m) | uint32(to)<<(32-16))
+}
+
+func SetFlags(m Move, flags uint8) Move {
+	return Move(uint32(m) | uint32(flags))
 }
 
 func CreateMove(from uint8, to uint8) Move {
 	var m Move
-	m.from = from
-	m.to = to
+	m = SetFrom(m, from)
+	m = SetTo(m, to)
+	return m
+}
 
+func CreateMoveWithFlags(from uint8, to uint8, flags uint8) Move {
+	var m Move
+	m = SetFrom(m, from)
+	m = SetTo(m, to)
+	m = SetFlags(m, flags)
 	return m
 }
 
 func CreatePromotionCapture(from uint8, to uint8, pieceMask uint8) Move {
-	var m Move = CreateMove(from, to)
-
-	m.flags |= PROMOTION_MASK | pieceMask
-
-	return m
+	return CreateMoveWithFlags(from, to, PROMOTION_MASK|pieceMask)
 }
 
 func CreateEnPassantCapture(from uint8, to uint8) Move {
-	var m Move = CreateMove(from, to)
-	m.flags |= SPECIAL1_MASK | CAPTURE_MASK
-
-	return m
+	return CreateMoveWithFlags(from, to, SPECIAL1_MASK|CAPTURE_MASK)
 }
 
 func CreateKingsideCastle(from uint8, to uint8) Move {
-	var m Move
-	m.from = from
-	m.to = to
-	m.flags |= SPECIAL1_MASK
-
-	return m
+	return CreateMoveWithFlags(from, to, SPECIAL1_MASK)
 }
 
 func CreateQueensideCastle(from uint8, to uint8) Move {
-	var m Move
-	m.from = from
-	m.to = to
-	m.flags |= SPECIAL1_MASK | SPECIAL2_MASK
-
-	return m
+	return CreateMoveWithFlags(from, to, SPECIAL1_MASK|SPECIAL2_MASK)
 }
 
 func CreatePromotion(from uint8, to uint8, pieceMask uint8) Move {
 	// Piece is stored in bottom half of the promotion
-	var m Move
-	m.from = from
-	m.to = to
-	m.flags |= PROMOTION_MASK | pieceMask
-
-	return m
+	return CreateMoveWithFlags(from, to, PROMOTION_MASK|pieceMask)
 }
 
 func MoveToDebugString(move Move) string {
 	return fmt.Sprintf("%s-%s (%d)",
-		SquareToAlgebraicString(move.from),
-		SquareToAlgebraicString(move.to),
-		move.flags)
+		SquareToAlgebraicString(move.From()),
+		SquareToAlgebraicString(move.To()),
+		move.Flags())
 }
 
 func MoveToString(move Move, boardState *BoardState) string {
-	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK && !move.IsCapture(boardState) {
-		if move.flags&SPECIAL2_MASK == SPECIAL2_MASK {
+	if move.Flags()&SPECIAL1_MASK == SPECIAL1_MASK && !move.IsCapture(boardState) {
+		if move.Flags()&SPECIAL2_MASK == SPECIAL2_MASK {
 			return "O-O-O"
 		}
 		return "O-O"
 	}
 
 	var s string
-	s += SquareToAlgebraicString(move.from)
+	s += SquareToAlgebraicString(move.From())
 	if move.IsCapture(boardState) {
 		s += "x"
 	} else {
 		s += "-"
 	}
-	s += SquareToAlgebraicString(move.to)
+	s += SquareToAlgebraicString(move.To())
 	if move.IsPromotion() {
-		s += "=" + string(pieceToString(move.flags|WHITE_MASK))
+		s += "=" + string(pieceToString(move.Flags()|WHITE_MASK))
 	}
 
 	return s
 }
 
 func MoveToPrettyString(move Move, boardState *BoardState) string {
-	if move.flags&SPECIAL1_MASK == SPECIAL1_MASK && !move.IsCapture(boardState) {
-		if move.flags&SPECIAL2_MASK == SPECIAL2_MASK {
+	if move.Flags()&SPECIAL1_MASK == SPECIAL1_MASK && !move.IsCapture(boardState) {
+		if move.Flags()&SPECIAL2_MASK == SPECIAL2_MASK {
 			return "O-O-O"
 		}
 		return "O-O"
 	}
 
-	var p byte = boardState.board[move.from]
+	var p byte = boardState.board[move.From()]
 	if p&0x0F == PAWN_MASK {
 		if move.IsCapture(boardState) {
-			return ColumnToAlgebraicNotation(move.from%8+1) + "x" + SquareToAlgebraicString(move.to)
+			return ColumnToAlgebraicNotation(move.From()%8+1) + "x" + SquareToAlgebraicString(move.To())
 		}
 
-		s := SquareToAlgebraicString(move.to)
+		s := SquareToAlgebraicString(move.To())
 		if move.IsPromotion() {
-			s += "=" + string(pieceToString(move.flags|WHITE_MASK))
+			s += "=" + string(pieceToString(move.Flags()|WHITE_MASK))
 		}
 		return s
 	}
@@ -165,7 +176,7 @@ func MoveToPrettyString(move Move, boardState *BoardState) string {
 		s += "x"
 	}
 
-	s += SquareToAlgebraicString(move.to)
+	s += SquareToAlgebraicString(move.To())
 
 	return s
 }
@@ -196,7 +207,7 @@ func MoveArrayToPrettyString(moveArr []Move, boardState *BoardState) (string, er
 }
 
 func ParsePrettyMove(moveStr string, boardState *BoardState) (Move, error) {
-	move := Move{}
+	move := Move(0)
 
 	var err error
 	var toSquare byte
@@ -249,8 +260,8 @@ func ParsePrettyMove(moveStr string, boardState *BoardState) (Move, error) {
 	moves := make([]Move, 256)
 	end := GenerateMoves(boardState, moves[:], 0)
 	for _, candidateMove := range moves[0:end] {
-		p := boardState.PieceAtSquare(candidateMove.from) & 0x0F
-		if (candidateMove.to == toSquare || isKingsideCastle || isQueensideCastle) &&
+		p := boardState.PieceAtSquare(candidateMove.From()) & 0x0F
+		if (candidateMove.To() == toSquare || isKingsideCastle || isQueensideCastle) &&
 			p == piece &&
 			isCapture == candidateMove.IsCapture(boardState) &&
 			isPromotion == candidateMove.IsPromotion() &&

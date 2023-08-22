@@ -37,9 +37,11 @@ func ProbeTranspositionTable(boardState *BoardState) (bool, TranspositionEntry) 
 	if entry == 0 {
 		return false, TranspositionEntry{}
 	}
-	t.move.from = uint8(entry >> (64 - 8))
-	t.move.to = uint8((entry >> (64 - 16)) & 0xFF)
-	t.move.flags = uint8((entry >> (64 - 24)) & 0xFF)
+	var move Move
+	move = SetFrom(move, uint8(entry>>(64-8)))
+	move = SetTo(move, uint8((entry>>(64-16))&0xFF))
+	move = SetFlags(move, uint8((entry>>(64-24))&0xFF))
+	t.move = move
 	t.depth = int8((entry >> (64 - 32)) & 0xFF)
 	t.entryType = uint8((entry >> (64 - 40)) & 0xFF)
 	t.score = int16(entry & 0xFFFFFF)
@@ -75,9 +77,9 @@ func (entry *TranspositionEntry) String() string {
 
 func StoreTranspositionTable(boardState *BoardState, move Move, score int16, entryType uint8, depth int8) {
 	var entry uint64
-	entry |= uint64(move.from) << (64 - 8)
-	entry |= uint64(move.to) << (64 - 16)
-	entry |= uint64(move.flags) << (64 - 24)
+	entry |= uint64(move.From()) << (64 - 8)
+	entry |= uint64(move.To()) << (64 - 16)
+	entry |= uint64(move.Flags()) << (64 - 24)
 	entry |= (uint64(depth) & 0xFF) << (64 - 32)
 	entry |= uint64(entryType) << (64 - 40)
 	entry |= uint64(score) & 0xFFFFFF

@@ -13,7 +13,7 @@ var _ = fmt.Println
 func filterMovesFrom(moves []Move, from uint8) []Move {
 	var filteredMoves []Move
 	for _, move := range moves {
-		if move.from == from {
+		if move.From() == from {
 			filteredMoves = append(filteredMoves, move)
 		}
 	}
@@ -25,7 +25,7 @@ func filterCaptures(moves []Move, boardState *BoardState) []Move {
 	var captures []Move
 
 	for _, move := range moves {
-		if boardState.board[move.to] != EMPTY_SQUARE || move.IsEnPassantCapture() {
+		if boardState.board[move.To()] != EMPTY_SQUARE || move.IsEnPassantCapture() {
 			captures = append(captures, move)
 		}
 	}
@@ -222,7 +222,7 @@ func TestGenerateQuiescentMoves(t *testing.T) {
 	assert.Equal(t, 3, end)
 
 	// verify ordering of captures
-	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_A8, flags: CAPTURE_MASK}, moves[0])
-	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_A1, flags: CAPTURE_MASK}, moves[1])
-	assert.Equal(t, Move{from: SQUARE_A5, to: SQUARE_B5, flags: CAPTURE_MASK}, moves[2])
+	assert.Equal(t, CreateMoveWithFlags(SQUARE_A5, SQUARE_A8, CAPTURE_MASK), moves[0])
+	assert.Equal(t, CreateMoveWithFlags(SQUARE_A5, SQUARE_A1, CAPTURE_MASK), moves[1])
+	assert.Equal(t, CreateMoveWithFlags(SQUARE_A5, SQUARE_B5, CAPTURE_MASK), moves[2])
 }

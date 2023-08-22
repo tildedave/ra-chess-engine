@@ -122,8 +122,8 @@ func TestParseXboardCommandSetboard(t *testing.T) {
 	assert.Equal(t, fenString, state.boardState.ToFENString())
 
 	// assert.True(t, move.IsCapture())
-	// assert.Equal(t, SQUARE_E5, move.from)
-	// assert.Equal(t, SQUARE_D6, move.to)
+	// assert.Equal(t, SQUARE_E5, move.From())
+	// assert.Equal(t, SQUARE_D6, move.To())
 }
 
 func TestParseXboardMoveMove(t *testing.T) {
@@ -131,7 +131,7 @@ func TestParseXboardMoveMove(t *testing.T) {
 	move, err := ParseXboardMove("e2e4", &boardState)
 
 	assert.Nil(t, err)
-	assert.Equal(t, Move{from: SQUARE_E2, to: SQUARE_E4}, move)
+	assert.Equal(t, CreateMove(SQUARE_E2, SQUARE_E4), move)
 }
 
 func TestParseXboardMoveCapture(t *testing.T) {
@@ -142,7 +142,7 @@ func TestParseXboardMoveCapture(t *testing.T) {
 	move, err := ParseXboardMove("a1a2", &boardState)
 
 	assert.Nil(t, err)
-	assert.Equal(t, Move{from: SQUARE_A1, to: SQUARE_A2}, move)
+	assert.Equal(t, CreateMove(SQUARE_A1, SQUARE_A2), move)
 }
 
 func TestParseXboardMovePromotion(t *testing.T) {
@@ -153,9 +153,9 @@ func TestParseXboardMovePromotion(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, move.IsPromotion())
-	assert.Equal(t, move.from, SQUARE_H7)
-	assert.Equal(t, move.to, SQUARE_H8)
-	assert.Equal(t, move.flags, PROMOTION_MASK|QUEEN_MASK)
+	assert.Equal(t, move.From(), SQUARE_H7)
+	assert.Equal(t, move.To(), SQUARE_H8)
+	assert.Equal(t, move.Flags(), PROMOTION_MASK|QUEEN_MASK)
 }
 
 func TestParseXboardMoveRegexp(t *testing.T) {
@@ -172,9 +172,9 @@ func TestParseXboardMovePromotionCapture(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, move.IsPromotion())
-	assert.Equal(t, move.from, SQUARE_H7)
-	assert.Equal(t, move.to, SQUARE_G8)
-	assert.Equal(t, move.flags, PROMOTION_MASK|ROOK_MASK)
+	assert.Equal(t, move.From(), SQUARE_H7)
+	assert.Equal(t, move.To(), SQUARE_G8)
+	assert.Equal(t, move.Flags(), PROMOTION_MASK|ROOK_MASK)
 }
 
 func TestParseXboardMoveKingsideCastle(t *testing.T) {
@@ -186,8 +186,8 @@ func TestParseXboardMoveKingsideCastle(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, move.IsKingsideCastle())
-	assert.Equal(t, SQUARE_E1, move.from)
-	assert.Equal(t, SQUARE_G1, move.to)
+	assert.Equal(t, SQUARE_E1, move.From())
+	assert.Equal(t, SQUARE_G1, move.To())
 }
 
 func TestParseXboardMoveQueensideCastle(t *testing.T) {
@@ -201,8 +201,8 @@ func TestParseXboardMoveQueensideCastle(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, move.IsQueensideCastle())
-	assert.Equal(t, SQUARE_E8, move.from)
-	assert.Equal(t, SQUARE_C8, move.to)
+	assert.Equal(t, SQUARE_E8, move.From())
+	assert.Equal(t, SQUARE_C8, move.To())
 }
 
 func TestParseXboardMoveEnPassantCapture(t *testing.T) {
@@ -215,6 +215,6 @@ func TestParseXboardMoveEnPassantCapture(t *testing.T) {
 
 	assert.Nil(t, err)
 	assert.True(t, move.IsEnPassantCapture())
-	assert.Equal(t, SQUARE_E5, move.from)
-	assert.Equal(t, SQUARE_D6, move.to)
+	assert.Equal(t, SQUARE_E5, move.From())
+	assert.Equal(t, SQUARE_D6, move.To())
 }

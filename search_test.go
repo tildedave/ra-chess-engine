@@ -32,7 +32,7 @@ func TestSearchMateInOne(t *testing.T) {
 	result := Search(&boardState, 2, &SearchStats{}, &SearchMoveInfo{})
 
 	assert.Equal(t, CHECKMATE_SCORE, result.value)
-	assert.Equal(t, Move{from: SQUARE_D5, to: SQUARE_A2}, result.move)
+	assert.Equal(t, CreateMove(SQUARE_D5, SQUARE_A2), result.move)
 }
 
 func TestSearchMateInOneBlack(t *testing.T) {
@@ -42,7 +42,7 @@ func TestSearchMateInOneBlack(t *testing.T) {
 	result := Search(&boardState, 2, &SearchStats{}, &SearchMoveInfo{})
 
 	assert.Equal(t, -CHECKMATE_SCORE, result.value)
-	assert.Equal(t, Move{from: SQUARE_D5, to: SQUARE_A2}, result.move)
+	assert.Equal(t, CreateMove(SQUARE_D5, SQUARE_A2), result.move)
 }
 
 func TestSearchAvoidMateInOne(t *testing.T) {
@@ -52,7 +52,7 @@ func TestSearchAvoidMateInOne(t *testing.T) {
 
 	result := Search(&boardState, 2, &SearchStats{}, &SearchMoveInfo{})
 
-	assert.Equal(t, Move{from: SQUARE_F5, to: SQUARE_D5, flags: CAPTURE_MASK}, result.move)
+	assert.Equal(t, CreateMoveWithFlags(SQUARE_F5, SQUARE_D5, CAPTURE_MASK), result.move)
 }
 
 func TestSearchWhiteForcesPawnPromotion(t *testing.T) {
@@ -64,8 +64,8 @@ func TestSearchWhiteForcesPawnPromotion(t *testing.T) {
 	result := Search(&boardState, 5, &SearchStats{}, &SearchMoveInfo{})
 
 	assert.True(t, result.value > QUEEN_EVAL_SCORE)
-	assert.Equal(t, SQUARE_B5, result.move.from)
-	assert.True(t, result.move.to == SQUARE_C6 || result.move.to == SQUARE_A6)
+	assert.Equal(t, SQUARE_B5, result.move.From())
+	assert.True(t, result.move.To() == SQUARE_C6 || result.move.To() == SQUARE_A6)
 }
 
 func TestSearchBlackStopsPromotion(t *testing.T) {
@@ -110,7 +110,7 @@ func TestSearchWhiteSavesKnightFromCapture(t *testing.T) {
 
 	result := Search(&boardState, 3, &SearchStats{}, &SearchMoveInfo{})
 
-	assert.Equal(t, result.move.from, SQUARE_C3)
+	assert.Equal(t, result.move.From(), SQUARE_C3)
 }
 
 func TestDoesNotHangCheckmate(t *testing.T) {
@@ -132,7 +132,7 @@ func TestSearchWhiteDoesNotHangKnight(t *testing.T) {
 	result := Search(&boardState, 4, &stats, &searchMoveInfo)
 
 	assert.True(t, result.value >= -100)
-	assert.False(t, result.move.from == SQUARE_B5 && result.move.to == SQUARE_C7)
+	assert.False(t, result.move.From() == SQUARE_B5 && result.move.To() == SQUARE_C7)
 }
 
 func TestSearchWhiteDoesNotUseTranspositionTableOnFirstDepth(t *testing.T) {
@@ -144,5 +144,5 @@ func TestSearchWhiteDoesNotUseTranspositionTableOnFirstDepth(t *testing.T) {
 	Search(&boardState, 3, &stats, &searchMoveInfo)
 	result := Search(&boardState, 4, &stats, &searchMoveInfo)
 
-	assert.False(t, result.move.from == SQUARE_A1 && result.move.to == SQUARE_A1)
+	assert.False(t, result.move.From() == SQUARE_A1 && result.move.To() == SQUARE_A1)
 }

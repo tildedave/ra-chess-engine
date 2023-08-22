@@ -53,18 +53,18 @@ func (boardState *BoardState) IsInCheck(offset int) bool {
 }
 
 func (boardState *BoardState) IsMoveCheck(move Move, checkInfo *CheckDetectionInfo) bool {
-	switch boardState.board[move.from] & 0x0F {
+	switch boardState.board[move.From()] & 0x0F {
 	case KNIGHT_MASK:
-		return IsBitboardSet(checkInfo.knightMask, move.to)
+		return IsBitboardSet(checkInfo.knightMask, move.To())
 	case PAWN_MASK:
-		return IsBitboardSet(checkInfo.pawnMask, move.to)
+		return IsBitboardSet(checkInfo.pawnMask, move.To())
 	case QUEEN_MASK:
-		return IsBitboardSet(checkInfo.bishopMask, move.to) ||
-			IsBitboardSet(checkInfo.rookMask, move.to)
+		return IsBitboardSet(checkInfo.bishopMask, move.To()) ||
+			IsBitboardSet(checkInfo.rookMask, move.To())
 	case BISHOP_MASK:
-		return IsBitboardSet(checkInfo.bishopMask, move.to)
+		return IsBitboardSet(checkInfo.bishopMask, move.To())
 	case ROOK_MASK:
-		return IsBitboardSet(checkInfo.rookMask, move.to)
+		return IsBitboardSet(checkInfo.rookMask, move.To())
 	}
 
 	return false
