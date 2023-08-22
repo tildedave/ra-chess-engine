@@ -36,7 +36,7 @@ func TestInitialBoard(t *testing.T) {
 func TestToString(t *testing.T) {
 	var initialBoard BoardState = CreateInitialBoardState()
 
-	var str = initialBoard.ToString()
+	var str = initialBoard.String()
 	assert.Equal(t, "rnbqkbnr\npppppppp\n........\n........\n........\n........\nPPPPPPPP\nRNBQKBNR\n\nrnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1", str)
 }
 

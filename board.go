@@ -86,7 +86,7 @@ func sideToMoveToColorMask(sideToMove int) uint8 {
 	return BLACK_MASK
 }
 
-func (boardState *BoardState) ToString() string {
+func (boardState *BoardState) String() string {
 	var s [9 * 8]byte
 
 	for i := byte(0); i < 8; i++ {
@@ -662,7 +662,7 @@ func sanityCheckBitboards(reason string, boardState *BoardState) {
 				}
 			}
 			if isError {
-				fmt.Println(boardState.ToString())
+				fmt.Println(boardState.String())
 				fmt.Println(BitboardToString(bitboard))
 				fmt.Println(reason)
 				panic(message)

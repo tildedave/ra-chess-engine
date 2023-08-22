@@ -78,7 +78,7 @@ func RunPerft(fen string, variation string, depth uint, options PerftOptions) (b
 		}
 
 		if i == uint(0) {
-			fmt.Println(boardState.ToString())
+			fmt.Println(boardState.String())
 		}
 
 		if err == nil {
@@ -207,7 +207,7 @@ func testMoveLegality(boardState *BoardState, move Move) {
 	legal, err := boardState.IsMoveLegal(move)
 	if !legal {
 		fmt.Println(err)
-		fmt.Println(boardState.ToString())
+		fmt.Println(boardState.String())
 		fmt.Println(MoveToString(move, boardState))
 		panic("Illegal move")
 	}
