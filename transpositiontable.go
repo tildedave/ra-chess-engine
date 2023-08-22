@@ -37,11 +37,11 @@ func ProbeTranspositionTable(boardState *BoardState) (bool, TranspositionEntry) 
 	if entry == 0 {
 		return false, TranspositionEntry{}
 	}
-	t.move.from = uint8((entry & (0xFF << (64 - 8))) >> (64 - 8))
-	t.move.to = uint8((entry & (0xFF << (64 - 16))) >> (64 - 16))
-	t.move.flags = uint8((entry & (0xFF << (64 - 24))) >> (64 - 24))
-	t.depth = int8((entry & (0xFF << (64 - 32))) >> (64 - 32))
-	t.entryType = uint8((entry & (0xFF << (64 - 40))) >> (64 - 40))
+	t.move.from = uint8(entry >> (64 - 8))
+	t.move.to = uint8((entry >> (64 - 16)) & 0xFF)
+	t.move.flags = uint8((entry >> (64 - 24)) & 0xFF)
+	t.depth = int8((entry >> (64 - 32)) & 0xFF)
+	t.entryType = uint8((entry >> (64 - 40)) & 0xFF)
 	t.score = int16(entry & 0xFFFFFF)
 	return true, t
 }
