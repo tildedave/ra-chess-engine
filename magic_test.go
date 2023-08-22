@@ -12,7 +12,7 @@ import (
 func assertMovePresent(t *testing.T, moves []Move, fromSq byte, toSq byte) {
 	found := false
 	for _, move := range moves {
-		if move.from == fromSq && move.to == toSq {
+		if move.From() == fromSq && move.To() == toSq {
 			found = true
 		}
 	}
@@ -23,7 +23,7 @@ func assertMovePresent(t *testing.T, moves []Move, fromSq byte, toSq byte) {
 func assertMoveNotPresent(t *testing.T, moves []Move, fromSq byte, toSq byte) {
 	found := false
 	for _, move := range moves {
-		if move.from == fromSq && move.to == toSq {
+		if move.From() == fromSq && move.To() == toSq {
 			found = true
 		}
 	}

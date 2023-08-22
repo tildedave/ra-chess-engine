@@ -241,7 +241,7 @@ func thinkAndChooseMove(
 					break ThinkingLoop
 				}
 
-				if bestResult.move.from != bestResult.move.to && bestResult.depth == config.searchToDepth {
+				if bestResult.move.From() != bestResult.move.To() && bestResult.depth == config.searchToDepth {
 					logger.Printf("Only wanted to search depth %d, done", config.searchToDepth)
 					break ThinkingLoop
 				}
@@ -623,11 +623,11 @@ func ParseXboardMove(command string, boardState *BoardState) (Move, error) {
 }
 
 func MoveToXboardString(move Move) string {
-	from := SquareToAlgebraicString(move.from)
-	to := SquareToAlgebraicString(move.to)
+	from := SquareToAlgebraicString(move.From())
+	to := SquareToAlgebraicString(move.To())
 	if move.IsPromotion() {
 		var piece rune
-		switch move.flags & 0x0F {
+		switch move.Flags() & 0x0F {
 		case ROOK_MASK:
 			piece = 'r'
 		case QUEEN_MASK:

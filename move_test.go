@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"testing"
 	"unsafe"
 
@@ -10,21 +11,22 @@ import (
 func TestCreateMove(t *testing.T) {
 	var m = CreateMove(31, 51)
 
-	assert.Equal(t, uintptr(3), unsafe.Sizeof(m))
-	assert.Equal(t, Move{from: 31, to: 51}, m)
+	assert.Equal(t, uintptr(4), unsafe.Sizeof(m))
+	assert.Equal(t, CreateMove(31, 51), m)
 }
 
 func TestCreateCapturePromotion(t *testing.T) {
 	var m = CreatePromotionCapture(SQUARE_A7, SQUARE_B8, QUEEN_MASK)
+	fmt.Printf("move: %d hex: %x\n", m, m)
 
-	assert.Equal(t, Move{from: SQUARE_A7, to: SQUARE_B8, flags: 0x45}, m)
+	assert.Equal(t, CreateMoveWithFlags(SQUARE_A7, SQUARE_B8, 0x45), m)
 	assert.True(t, m.IsPromotion())
 }
 
 func TestCreateEnPassantCapture(t *testing.T) {
 	var m = CreateEnPassantCapture(31, 51)
 
-	assert.Equal(t, Move{from: 31, to: 51, flags: 0xA0}, m)
+	assert.Equal(t, CreateMoveWithFlags(31, 51, 0xA0), m)
 	assert.True(t, m.IsEnPassantCapture())
 }
 
@@ -63,11 +65,11 @@ func TestParsePrettyMoveFromInitial(t *testing.T) {
 
 	move, err := ParsePrettyMove("Nf3", &boardState)
 	assert.Nil(t, err)
-	assert.Equal(t, Move{from: SQUARE_G1, to: SQUARE_F3}, move)
+	assert.Equal(t, CreateMove(SQUARE_G1, SQUARE_F3), move)
 
 	move, err = ParsePrettyMove("e4", &boardState)
 	assert.Nil(t, err)
-	assert.Equal(t, Move{from: SQUARE_E2, to: SQUARE_E4}, move)
+	assert.Equal(t, CreateMove(SQUARE_E2, SQUARE_E4), move)
 
 	move, err = ParsePrettyMove("e6", &boardState)
 	assert.NotNil(t, err)

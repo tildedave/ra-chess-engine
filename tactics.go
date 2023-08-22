@@ -60,7 +60,7 @@ func RunTacticsFile(epdFile string, variation string, options TacticsOptions) (b
 		if moveToCheck != "" {
 			var moveMatches bool
 			if strings.Contains(moveToCheck, prettyMove) ||
-				strings.Contains(moveToCheck, SquareToAlgebraicString(result.move.from)+SquareToAlgebraicString(result.move.to)) {
+				strings.Contains(moveToCheck, SquareToAlgebraicString(result.move.From())+SquareToAlgebraicString(result.move.To())) {
 				moveMatches = true
 			}
 			success = moveMatches == wantMatch
@@ -129,7 +129,7 @@ func RunTacticsFen(fen string, variation string, options TacticsOptions) (string
 
 	output.Flush()
 
-	if (result.move == Move{}) {
+	if result.move == 0 {
 		// no result was given in thinking time :(
 		return "", result, nil
 	}

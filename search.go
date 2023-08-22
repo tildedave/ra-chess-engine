@@ -205,7 +205,7 @@ func searchAlphaBeta(
 
 	if shouldAbort || currentDepth >= MAX_DEPTH {
 		score := getLeafResult(boardState, searchStats)
-		StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
+		StoreTranspositionTable(boardState, 0, score, TT_EXACT, depthLeft)
 
 		return score
 	}
@@ -413,7 +413,7 @@ func searchAlphaBeta(
 
 	if !hasLegalMove {
 		score := getNoLegalMoveResult(boardState, currentDepth)
-		StoreTranspositionTable(boardState, Move{}, score, TT_EXACT, depthLeft)
+		StoreTranspositionTable(boardState, 0, score, TT_EXACT, depthLeft)
 
 		return score
 	}
@@ -588,12 +588,12 @@ func (stats *SearchStats) Nodes() uint64 {
 
 // Used to determine if we should extend search
 func IsPawnNearPromotion(boardState *BoardState, m Move) bool {
-	movePiece := boardState.board[m.to]
+	movePiece := boardState.board[m.To()]
 	if movePiece&0x0F != PAWN_MASK {
 		return false
 	}
 
-	rank := Rank(m.to)
+	rank := Rank(m.To())
 	return (movePiece == WHITE_MASK|PAWN_MASK && rank == 7) || (rank == 2)
 }
 

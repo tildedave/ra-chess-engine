@@ -47,18 +47,18 @@ func SortMoves(
 	for i := start; i < end; i++ {
 		move := moves[i]
 		var score int16 = MOVE_SCORE_NORMAL
-		toPiece := boardState.PieceAtSquare(move.to)
+		toPiece := boardState.PieceAtSquare(move.To())
 		if move == moveInfo.killerMoves[currentDepth] {
 			score = MOVE_SCORE_KILLER_MOVE
 		} else if move == moveInfo.killerMoves2[currentDepth] {
 			score = MOVE_SCORE_KILLER_MOVE2
-		} else if move.flags&(PROMOTION_MASK|QUEEN_MASK) == PROMOTION_MASK|QUEEN_MASK {
+		} else if move.Flags()&(PROMOTION_MASK|QUEEN_MASK) == PROMOTION_MASK|QUEEN_MASK {
 			// don't bother with scoring underpromotions higher
 			// we probably could avoid the & here since a pawn capture will be ranked
 			// somewhat higher because of MVV priority
 			score = MOVE_SCORE_PROMOTIONS
 		} else if toPiece != EMPTY_SQUARE {
-			fromPiece := boardState.PieceAtSquare(move.from)
+			fromPiece := boardState.PieceAtSquare(move.From())
 			priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
 			score = MOVE_SCORE_CAPTURES + priority
 		} else if boardState.IsMoveCheck(move, &checkDetectionInfo) {
@@ -78,8 +78,8 @@ func SortQuiescentMoves(boardState *BoardState, moves []Move, moveScores []int16
 
 	for i := start; i < end; i++ {
 		capture := moves[i]
-		fromPiece := boardState.PieceAtSquare(capture.from)
-		toPiece := boardState.PieceAtSquare(capture.to)
+		fromPiece := boardState.PieceAtSquare(capture.From())
+		toPiece := boardState.PieceAtSquare(capture.To())
 		priority := mvvPriority[fromPiece&0x0F][toPiece&0x0F]
 		moveScores[i] = priority
 	}

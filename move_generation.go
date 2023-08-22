@@ -291,7 +291,7 @@ func GenerateQuiescentMoves(boardState *BoardState, moves []Move, moveScores []i
 func CreateMovesFromBitboard(from byte, bitboard uint64, moves []Move, start int, flags byte) int {
 	for bitboard != 0 {
 		to := byte(bits.TrailingZeros64(bitboard))
-		moves[start] = Move{from: from, to: to, flags: flags}
+		moves[start] = CreateMoveWithFlags(from, to, flags)
 		start++
 		bitboard ^= 1 << to
 	}
@@ -373,11 +373,10 @@ func generatePieceMoves(
 	}
 
 	for _, move := range pieceMoves {
-		oppositePiece := boardState.PieceAtSquare(move.to)
+		oppositePiece := boardState.PieceAtSquare(move.To())
 		if oppositePiece != EMPTY_SQUARE {
 			if oppositePiece&0xF0 != p&0xF0 {
-				move.flags |= CAPTURE_MASK
-				moves[start] = move
+				moves[start] = SetFlags(move, CAPTURE_MASK)
 				start++
 			} else {
 				// same color, just skip it
@@ -457,27 +456,23 @@ func generatePawnMoves(
 
 	for i := start; i < originalEnd; i++ {
 		capture := moves[i]
-		var destRank = Rank(capture.to)
+		var destRank = Rank(capture.To())
 		if destRank == RANK_8 || destRank == RANK_1 {
 			// promotion time
 			var flags byte = PROMOTION_MASK | CAPTURE_MASK
-			capture.flags = flags | QUEEN_MASK
-			moves[i] = capture
+			moves[i] = SetFlags(capture, flags|QUEEN_MASK)
 
 			// Now add the rest to the end
-			capture.flags = flags | ROOK_MASK
-			moves[captureEnd] = capture
+			moves[captureEnd] = SetFlags(capture, flags|ROOK_MASK)
 			captureEnd++
-			capture.flags = flags | BISHOP_MASK
-			moves[captureEnd] = capture
+			moves[captureEnd] = SetFlags(capture, flags|BISHOP_MASK)
 			captureEnd++
-			capture.flags = flags | KNIGHT_MASK
-			moves[captureEnd] = capture
+			moves[captureEnd] = SetFlags(capture, flags|KNIGHT_MASK)
 			captureEnd++
 		} else {
-			if capture.to == boardState.boardInfo.enPassantTargetSquare {
-				capture.flags |= SPECIAL1_MASK | CAPTURE_MASK
-				moves[i] = capture
+			if capture.To() == boardState.boardInfo.enPassantTargetSquare {
+				// This used to be ||= flags, not clear if it matters.
+				moves[i] = SetFlags(capture, SPECIAL1_MASK|CAPTURE_MASK)
 			}
 		}
 	}

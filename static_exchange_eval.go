@@ -57,13 +57,13 @@ func StaticExchangeEvaluation(boardState *BoardState, destSq byte, fromPiece byt
 func (boardState *BoardState) FilterSEECaptures(moves []Move, start int, end int) int {
 	for start < end {
 		capture := moves[start]
-		fromPiece := boardState.board[capture.from] & 0x0F
+		fromPiece := boardState.board[capture.From()] & 0x0F
 		if fromPiece == PAWN_MASK {
 			start++
-		} else if boardState.board[capture.to] == EMPTY_SQUARE {
+		} else if boardState.board[capture.To()] == EMPTY_SQUARE {
 			moves[start] = moves[start+1]
 			end--
-		} else if StaticExchangeEvaluation(boardState, capture.to, fromPiece, capture.from) > 0 {
+		} else if StaticExchangeEvaluation(boardState, capture.To(), fromPiece, capture.From()) > 0 {
 			start++
 		} else {
 			// this move is garbage

@@ -109,17 +109,17 @@ func (boardState *BoardState) UpdateHashApplyMove(oldBoardInfo BoardInfo, move M
 			var pos uint8
 			var capturePiece byte
 			if boardState.sideToMove == BLACK_OFFSET {
-				pos = move.to - 8
+				pos = move.To() - 8
 				capturePiece = BLACK_MASK | PAWN_MASK
 			} else {
-				pos = move.to + 8
+				pos = move.To() + 8
 				capturePiece = WHITE_MASK | PAWN_MASK
 			}
 			key ^= info.content[pos][capturePiece]
 			pawnKey ^= info.content[pos][capturePiece]
 		} else {
 			capturePiece := boardState.captureStack.Peek()
-			update := info.content[move.to][capturePiece]
+			update := info.content[move.To()][capturePiece]
 			key ^= update
 			if capturePiece&0x0F == PAWN_MASK {
 				pawnKey ^= update
@@ -136,19 +136,19 @@ func (boardState *BoardState) UpdateHashApplyMove(oldBoardInfo BoardInfo, move M
 		toPiece = colorMask | pieceMask
 		fromPiece = colorMask | PAWN_MASK
 	} else {
-		toPiece = boardState.board[move.to]
+		toPiece = boardState.board[move.To()]
 		fromPiece = toPiece
 	}
 
-	key ^= info.content[move.to][toPiece]
-	key ^= info.content[move.from][fromPiece]
+	key ^= info.content[move.To()][toPiece]
+	key ^= info.content[move.From()][fromPiece]
 	key ^= info.sideToMove
 
 	if fromPiece&0x0F == PAWN_MASK {
-		pawnKey ^= info.content[move.from][fromPiece]
+		pawnKey ^= info.content[move.From()][fromPiece]
 	}
 	if toPiece&0x0F == PAWN_MASK {
-		pawnKey ^= info.content[move.to][toPiece]
+		pawnKey ^= info.content[move.To()][toPiece]
 	}
 
 	if boardState.sideToMove == BLACK_OFFSET {
@@ -202,16 +202,16 @@ func (boardState *BoardState) UpdateHashUnapplyMove(oldBoardInfo BoardInfo, move
 		if move.IsEnPassantCapture() {
 			var pos uint8
 			if boardState.sideToMove == WHITE_OFFSET {
-				pos = move.to - 8
+				pos = move.To() - 8
 			} else {
-				pos = move.to + 8
+				pos = move.To() + 8
 			}
 			update := info.content[pos][boardState.board[pos]]
 			key ^= update
 			pawnKey ^= update
 		} else {
-			capturedPiece := boardState.board[move.to]
-			update := info.content[move.to][capturedPiece]
+			capturedPiece := boardState.board[move.To()]
+			update := info.content[move.To()][capturedPiece]
 			key ^= update
 			if capturedPiece&0x0F == PAWN_MASK {
 				pawnKey ^= update
@@ -228,18 +228,18 @@ func (boardState *BoardState) UpdateHashUnapplyMove(oldBoardInfo BoardInfo, move
 		toPiece = colorMask | pieceMask
 		fromPiece = colorMask | PAWN_MASK
 	} else {
-		toPiece = boardState.board[move.from]
+		toPiece = boardState.board[move.From()]
 		fromPiece = toPiece
 	}
 
-	key ^= info.content[move.to][toPiece]
-	key ^= info.content[move.from][fromPiece]
+	key ^= info.content[move.To()][toPiece]
+	key ^= info.content[move.From()][fromPiece]
 	key ^= info.sideToMove
 	if toPiece&0x0F == PAWN_MASK {
-		pawnKey ^= info.content[move.to][toPiece]
+		pawnKey ^= info.content[move.To()][toPiece]
 	}
 	if fromPiece&0x0F == PAWN_MASK {
-		pawnKey ^= info.content[move.from][fromPiece]
+		pawnKey ^= info.content[move.From()][fromPiece]
 	}
 
 	if boardState.sideToMove == WHITE_OFFSET {

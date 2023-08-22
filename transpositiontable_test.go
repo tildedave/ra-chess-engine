@@ -11,7 +11,7 @@ func TestStoreAndProbe(t *testing.T) {
 
 	hasEntry, entry := ProbeTranspositionTable(&boardState)
 	assert.False(t, hasEntry)
-	move := Move{from: SQUARE_A1, to: SQUARE_H4, flags: CAPTURE_MASK}
+	move := CreateMoveWithFlags(SQUARE_A1, SQUARE_H4, CAPTURE_MASK)
 	StoreTranspositionTable(&boardState, move, 14_000, TT_EXACT, 32)
 
 	hasEntry, entry = ProbeTranspositionTable(&boardState)
@@ -20,7 +20,7 @@ func TestStoreAndProbe(t *testing.T) {
 		TranspositionEntry{move: move, depth: 32, entryType: TT_EXACT, score: 14_000},
 		entry)
 
-	move = Move{from: SQUARE_B3, to: SQUARE_A8, flags: PROMOTION_MASK | CAPTURE_MASK}
+	move = CreateMoveWithFlags(SQUARE_B3, SQUARE_A8, PROMOTION_MASK|CAPTURE_MASK)
 	StoreTranspositionTable(&boardState, move, -32, TT_FAIL_HIGH, -10)
 
 	hasEntry, entry = ProbeTranspositionTable(&boardState)
